@@ -1,3 +1,3 @@
 # Compiler
 
-![.NET Core](https://github.com/PauloHMattos/Compiler/workflows/.NET%20Core/badge.svg)
+![.NET Core](https://github.com/PauloHMattos/Compiler/workflows/.NET%20Core/badge.svg?branch=main)
