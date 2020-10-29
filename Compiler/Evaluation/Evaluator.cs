@@ -19,12 +19,11 @@ namespace Compiler.Evaluation
 
         private int EvaluateExpression(ExpressionSyntax root)
         {
-            // 
             switch (root.Kind)
             {
-                case SyntaxKind.NumberExpression:
-                    var numberExpression = (NumberExpressionSyntax)root;
-                    return (int)numberExpression.NumberToken.Value;
+                case SyntaxKind.LiteralExpression:
+                    var numberExpression = (LiteralExpressionSyntax)root;
+                    return (int)numberExpression.LiteralToken.Value;
 
                 case SyntaxKind.BinaryExpression:
                     var binaryExpression = (BinaryExpressionSyntax)root;
@@ -35,7 +34,7 @@ namespace Compiler.Evaluation
                     return EvaluateExpression(parenthesizedExpression.Expression);
 
                 default:
-                    throw new Exception("");
+                    throw new Exception($"Unexpected node {root.Kind}");
             }
         }
 

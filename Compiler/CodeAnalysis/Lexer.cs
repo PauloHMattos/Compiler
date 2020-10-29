@@ -2,7 +2,7 @@
 
 namespace Compiler.CodeAnalysis
 {
-    internal class Lexer
+    internal sealed class Lexer
     {
         private int _position;
         private readonly string _text;
@@ -28,7 +28,7 @@ namespace Compiler.CodeAnalysis
             _diagnostics = new List<string>();
         }
 
-        public SyntaxToken NexToken()
+        public SyntaxToken Lex()
         {
             if (_position >= _text.Length)
             {
@@ -43,7 +43,7 @@ namespace Compiler.CodeAnalysis
                 }
 
                 var length = _position - start;
-                var text = _text.Substring(start, length); //.AsSpan(start, length);
+                var text = _text.Substring(start, length);
                 if (!int.TryParse(text, out var value))
                 {
                     _diagnostics.Add($"ERROR: The number {text} isn't a valid Int32");
@@ -59,7 +59,7 @@ namespace Compiler.CodeAnalysis
                 }
 
                 var length = _position - start;
-                var text = _text.Substring(start, length); //.AsSpan(start, length);
+                var text = _text.Substring(start, length);
                 return new SyntaxToken(SyntaxKind.WhitespaceToken, start, text, null);
             }
 
@@ -77,10 +77,10 @@ namespace Compiler.CodeAnalysis
                     return new SyntaxToken(SyntaxKind.OpenParenthesisToken, _position++, "(", null);
                 case ')':
                     return new SyntaxToken(SyntaxKind.CloseParenthesisToken, _position++, ")", null);
-                default:
-                    _diagnostics.Add($"ERROR: bad character in input: '{Current}', at {_position}");
-                    return new SyntaxToken(SyntaxKind.BadToken, _position, _text.Substring(_position++, 1), null);
             }
+
+            _diagnostics.Add($"ERROR: bad character in input: '{Current}', at {_position}");
+            return new SyntaxToken(SyntaxKind.BadToken, _position, _text.Substring(_position++, 1), null);
         }
 
         private void Next()
