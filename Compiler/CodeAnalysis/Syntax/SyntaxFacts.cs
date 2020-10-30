@@ -31,5 +31,18 @@
                     return 0;
             }
         }
+
+        public static SyntaxKind GetKeywordKind(string text)
+        {
+            switch (text)
+            {
+                case "true":
+                    return SyntaxKind.TrueKeywordToken;
+                case "false":
+                    return SyntaxKind.FalseKeywordToken;
+                default:
+                    return SyntaxKind.IdentifierToken;
+            }
+        }
     }
 }

@@ -8,6 +8,11 @@
         WhitespaceToken,
         OpenParenthesisToken,
         CloseParenthesisToken,
+        IdentifierToken,
+
+        // Keywords
+        FalseKeywordToken,
+        TrueKeywordToken,
 
         // Literals
         NumberToken,
@@ -22,6 +27,6 @@
         LiteralExpression,
         BinaryExpression,
         ParenthesizedExpression,
-        UnaryExpression
+        UnaryExpression,
     }
 }

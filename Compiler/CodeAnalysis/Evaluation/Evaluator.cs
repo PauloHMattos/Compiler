@@ -13,18 +13,18 @@ namespace Compiler.CodeAnalysis.Evaluation
             _root = root;
         }
 
-        public int Evaluate()
+        public object Evaluate()
         {
             return EvaluateExpression(_root);
         }
 
-        private int EvaluateExpression(BoundExpression root)
+        private object EvaluateExpression(BoundExpression root)
         {
             switch (root.Kind)
             {
                 case BoundNodeKind.LiteralExpression:
                     var boundLiteralExpression = (BoundLiteralExpression)root;
-                    return (int)boundLiteralExpression.Value;
+                    return boundLiteralExpression.Value;
 
                 case BoundNodeKind.UnaryExpression:
                     var boundUnaryExpression = (BoundUnaryExpression)root;
@@ -43,25 +43,27 @@ namespace Compiler.CodeAnalysis.Evaluation
             }
         }
 
-        private int EvaluateUnaryExpression(BoundUnaryExpression unaryExpression)
+        private object EvaluateUnaryExpression(BoundUnaryExpression unaryExpression)
         {
+            var operand = (int)EvaluateExpression(unaryExpression.Operand);
+            
             switch (unaryExpression.OperatorKind)
             {
                 case BoundUnaryOperatorKind.Identity:
-                    return EvaluateExpression(unaryExpression.Operand);
+                    return operand;
 
                 case BoundUnaryOperatorKind.Negation:
-                    return -EvaluateExpression(unaryExpression.Operand);
+                    return -operand;
 
                 default:
                     throw new ArgumentOutOfRangeException();
             }
         }
 
-        private int EvaluateBinaryExpression(BoundBinaryExpression binaryExpression)
+        private object EvaluateBinaryExpression(BoundBinaryExpression binaryExpression)
         {
-            var left = EvaluateExpression(binaryExpression.Left);
-            var right = EvaluateExpression(binaryExpression.Right);
+            var left = (int)EvaluateExpression(binaryExpression.Left);
+            var right = (int)EvaluateExpression(binaryExpression.Right);
 
             switch (binaryExpression.OperatorKind)
             {
