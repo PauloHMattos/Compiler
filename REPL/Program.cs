@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
-using Compiler.CodeAnalysis.Binding;
-using Compiler.CodeAnalysis.Evaluation;
+using Compiler.CodeAnalysis;
 using Compiler.CodeAnalysis.Syntax;
 
 namespace Compiler.REPL
@@ -33,8 +32,10 @@ namespace Compiler.REPL
                 }
 
                 var syntaxTree = SyntaxTree.Parse(line);
-                var boundExpression = Binder.Bind(syntaxTree.Root, out var binderDiagnostics);
-                var diagnostics = syntaxTree.Diagnostics.Concat(binderDiagnostics).ToArray();
+                var compilation = new Compilation(syntaxTree);
+                var compilationResult = compilation.Evaluate();
+
+                var diagnostics = compilationResult.Diagnostics;
 
                 if (showTree)
                 {
@@ -45,9 +46,7 @@ namespace Compiler.REPL
 
                 if (!diagnostics.Any())
                 {
-                    var evaluator = new Evaluator(boundExpression);
-                    var result = evaluator.Evaluate();
-                    Console.WriteLine(result);
+                    Console.WriteLine(compilationResult.Value);
                 }
                 else
                 {
@@ -63,9 +62,6 @@ namespace Compiler.REPL
 
         private static void PrintSyntaxTree(SyntaxNode node, string indent = "", bool isLast = true)
         {
-            // └──
-            // │
-            // ├──
             var marker = isLast ? "└──" : "├──";
 
             Console.Write(indent);

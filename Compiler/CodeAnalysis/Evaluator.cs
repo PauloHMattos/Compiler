@@ -1,9 +1,9 @@
 ﻿using System;
 using Compiler.CodeAnalysis.Binding;
 
-namespace Compiler.CodeAnalysis.Evaluation
+namespace Compiler.CodeAnalysis
 {
-    public class Evaluator
+    internal class Evaluator
     {
         private readonly BoundExpression _root;
 

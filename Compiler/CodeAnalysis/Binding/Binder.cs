@@ -4,24 +4,17 @@ using Compiler.CodeAnalysis.Syntax;
 
 namespace Compiler.CodeAnalysis.Binding
 {
-    public sealed class Binder
+    internal sealed class Binder
     {
         private readonly List<string> _diagnostics;
-        
-        private Binder()
+        public IEnumerable<string> Diagnostics => _diagnostics;
+
+        public Binder()
         {
             _diagnostics = new List<string>();
         }
 
-        public static BoundExpression Bind(ExpressionSyntax syntax, out IEnumerable<string> diagnostics)
-        {
-            var binder = new Binder();
-            var boundExpression = binder.BindExpression(syntax);
-            diagnostics = binder._diagnostics;
-            return boundExpression;
-        }
-
-        private BoundExpression BindExpression(ExpressionSyntax syntax)
+        public BoundExpression BindExpression(ExpressionSyntax syntax)
         {
             var kind = syntax.Kind;
             switch (kind)
