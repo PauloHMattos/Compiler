@@ -1,6 +1,5 @@
 ﻿using System;
 using Compiler.CodeAnalysis.Binding;
-using Compiler.CodeAnalysis.Syntax;
 
 namespace Compiler.CodeAnalysis.Evaluation
 {
@@ -77,6 +76,11 @@ namespace Compiler.CodeAnalysis.Evaluation
                     return (bool)left && (bool)right;
                 case BoundBinaryOperatorKind.LogicalOr:
                     return (bool)left || (bool)right;
+
+                case BoundBinaryOperatorKind.Equals:
+                    return left.Equals(right);
+                case BoundBinaryOperatorKind.NotEquals:
+                    return !left.Equals(right);
 
                 default:
                     throw new Exception($"Unexpected binary operator {binaryExpression.Operator.Kind}");

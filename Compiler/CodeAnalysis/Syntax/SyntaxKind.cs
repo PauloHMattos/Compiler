@@ -25,6 +25,8 @@
         BangToken,
         AmpersandAmpersandToken,
         PipePipeToken,
+        BangEqualsToken,
+        EqualsEqualsToken,
 
         // Expressions
         LiteralExpression,

@@ -93,6 +93,11 @@ namespace Compiler.CodeAnalysis.Syntax
                 case ')':
                     return new SyntaxToken(SyntaxKind.CloseParenthesisToken, _position++, ")", null);
                 case '!':
+                    if (Lookahead == '=')
+                    {
+                        _position += 2;
+                        return new SyntaxToken(SyntaxKind.BangEqualsToken, _position, "!=", null);
+                    }
                     return new SyntaxToken(SyntaxKind.BangToken, _position++, "!", null);
                 case '&':
                     if (Lookahead == '&')
@@ -106,6 +111,13 @@ namespace Compiler.CodeAnalysis.Syntax
                     {
                         _position += 2;
                         return new SyntaxToken(SyntaxKind.PipePipeToken, _position, "||", null);
+                    }
+                    break;
+                case '=':
+                    if (Lookahead == '=')
+                    {
+                        _position += 2;
+                        return new SyntaxToken(SyntaxKind.EqualsEqualsToken, _position, "==", null);
                     }
                     break;
 
