@@ -6,11 +6,8 @@ on:
 
 jobs: 
   test:
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     name: "CI: Automated Testing"
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macOS-latest, windows-latest]
     steps:
     - uses: actions/checkout@v2
     - name: Setup .NET Core
@@ -21,16 +18,13 @@ jobs:
       run: dotnet test Compiler.sln --configuration Release
       
   build:
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     name: "CI: Automated Build"
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macOS-latest, windows-latest]
     steps:
     - uses: actions/checkout@v2
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1.4.0
       with:
-        dotnet-version: 3.1.100
+        dotnet-version: 3.1.301
     - name: Build
       run: dotnet build Compiler.sln --configuration Release
