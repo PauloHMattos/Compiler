@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
-using Compiler.CodeAnalysis;
-using Compiler.Evaluation;
+using Compiler.CodeAnalysis.Evaluation;
+using Compiler.CodeAnalysis.Syntax;
 
 namespace Compiler.REPL
 {
