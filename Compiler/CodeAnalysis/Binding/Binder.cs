@@ -1,4 +1,6 @@
-﻿using System.Data;
+﻿using System.Collections.Generic;
+using System.Data;
+using System.Linq;
 using Compiler.CodeAnalysis.Syntax;
 using Compiler.CodeAnalysis.Text;
 
@@ -6,10 +8,12 @@ namespace Compiler.CodeAnalysis.Binding
 {
     internal sealed class Binder
     {
+        private readonly Dictionary<VariableSymbol, object> _variables;
         public DiagnosticBag Diagnostics { get; }
 
-        public Binder()
+        public Binder(Dictionary<VariableSymbol, object> variables)
         {
+            _variables = variables;
             Diagnostics = new DiagnosticBag();
         }
 
@@ -22,9 +26,13 @@ namespace Compiler.CodeAnalysis.Binding
                 case SyntaxKind.BinaryExpression:
                     return BindBinaryExpression((BinaryExpressionSyntax)syntax);
                 case SyntaxKind.ParenthesizedExpression:
-                    return BindExpression(((ParenthesizedExpressionSyntax)syntax).Expression);
+                    return BindParenthesizedExpression((ParenthesizedExpressionSyntax)syntax);
                 case SyntaxKind.UnaryExpression:
                     return BindUnaryExpression((UnaryExpressionSyntax)syntax);
+                case SyntaxKind.NameExpression:
+                    return BindNameExpression((NameExpressionSyntax)syntax);
+                case SyntaxKind.AssignmentExpression:
+                    return BindAssignmentExpression((AssignmentExpressionSyntax)syntax);
                 default:
                     throw new InvalidExpressionException($"Unexpected expression syntax {syntax.Kind}");
             }
@@ -48,6 +56,11 @@ namespace Compiler.CodeAnalysis.Binding
             return new BoundUnaryExpression(boundOperand, boundOperatorKind);
         }
 
+        private BoundExpression BindParenthesizedExpression(ParenthesizedExpressionSyntax syntax)
+        {
+            return BindExpression(syntax.Expression);
+        }
+
         private BoundExpression BindBinaryExpression(BinaryExpressionSyntax syntax)
         {
             var boundLeft = BindExpression(syntax.Left);
@@ -59,6 +72,33 @@ namespace Compiler.CodeAnalysis.Binding
                 return boundLeft;
             }
             return new BoundBinaryExpression(boundLeft, boundOperatorKind, boundRight);
+        }
+
+        private BoundExpression BindNameExpression(NameExpressionSyntax syntax)
+        {
+            var name = syntax.IdentifierToken.Text;
+            var variable = _variables.Keys.FirstOrDefault(e => e.Name == name);
+            if (variable == null)
+            {
+                Diagnostics.ReportUndefinedName(syntax.IdentifierToken.Span, name);
+                return new BoundLiteralExpression(0);
+            }
+            return new BoundVariableExpression(variable);
+        }
+
+        private BoundExpression BindAssignmentExpression(AssignmentExpressionSyntax syntax)
+        {
+            var name = syntax.IdentifierToken.Text;
+            var boundExpression = BindExpression(syntax.Expression);
+
+            var variable = _variables.Keys.FirstOrDefault(e => e.Name == name);
+            if (variable != null)
+            {
+                _variables.Remove(variable);
+            }
+
+            variable = new VariableSymbol(name, boundExpression.Type);
+            return new BoundAssignmentExpression(variable, boundExpression);
         }
     }
 }

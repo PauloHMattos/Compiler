@@ -5,5 +5,7 @@
         LiteralExpression,
         UnaryExpression,
         BinaryExpression,
+        VariableExpression,
+        AssignmentExpression
     }
 }

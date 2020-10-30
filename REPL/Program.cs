@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Compiler.CodeAnalysis;
 using Compiler.CodeAnalysis.Syntax;
@@ -9,8 +10,9 @@ namespace Compiler.REPL
     {
         private static bool _showTree;
 
-        private static void Main(string[] args)
+        private static void Main()
         {
+            var variables = new Dictionary<VariableSymbol, object>();
             while (true)
             {
                 Console.Write("> ");
@@ -27,7 +29,7 @@ namespace Compiler.REPL
 
                 var syntaxTree = SyntaxTree.Parse(line);
                 var compilation = new Compilation(syntaxTree);
-                var compilationResult = compilation.Evaluate();
+                var compilationResult = compilation.Evaluate(variables);
 
                 var diagnostics = compilationResult.Diagnostics;
 

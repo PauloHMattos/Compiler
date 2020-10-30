@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data;
 using Compiler.CodeAnalysis.Binding;
 
@@ -7,10 +8,12 @@ namespace Compiler.CodeAnalysis
     internal class Evaluator
     {
         private readonly BoundExpression _root;
+        private readonly Dictionary<VariableSymbol, object> _variables;
 
-        public Evaluator(BoundExpression root)
+        public Evaluator(BoundExpression root, Dictionary<VariableSymbol, object> variables)
         {
             _root = root;
+            _variables = variables;
         }
 
         public object Evaluate()
@@ -25,6 +28,16 @@ namespace Compiler.CodeAnalysis
                 case BoundNodeKind.LiteralExpression:
                     var boundLiteralExpression = (BoundLiteralExpression)root;
                     return boundLiteralExpression.Value;
+
+                case BoundNodeKind.VariableExpression:
+                    var boundVariableExpression = (BoundVariableExpression)root;
+                    return _variables[boundVariableExpression.VariableSymbol];
+
+                case BoundNodeKind.AssignmentExpression:
+                    var assignmentExpression = (BoundAssignmentExpression)root;
+                    var value = EvaluateExpression(assignmentExpression.Expression);
+                    _variables[assignmentExpression.VariableSymbol] = value;
+                    return value;
 
                 case BoundNodeKind.UnaryExpression:
                     var boundUnaryExpression = (BoundUnaryExpression)root;

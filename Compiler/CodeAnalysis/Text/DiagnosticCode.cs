@@ -7,5 +7,6 @@
         UnexpectedToken,
         UndefinedUnaryOperator,
         UndefinedBinaryOperator,
+        UndefinedName
     }
 }

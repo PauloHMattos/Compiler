@@ -25,13 +25,16 @@
         BangToken,
         AmpersandAmpersandToken,
         PipePipeToken,
+        EqualsToken,
         BangEqualsToken,
         EqualsEqualsToken,
 
         // Expressions
         LiteralExpression,
+        NameExpression,
         BinaryExpression,
         ParenthesizedExpression,
         UnaryExpression,
+        AssignmentExpression,
     }
 }
