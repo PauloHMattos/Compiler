@@ -2,11 +2,11 @@ name: .NET Core
 
 on:
   pull_request:
-    branches: [ main ]
-    types: [created, edited]
-    
+    branches:
+      - main
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   build:
