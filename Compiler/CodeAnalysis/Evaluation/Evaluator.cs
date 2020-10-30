@@ -43,7 +43,7 @@ namespace Compiler.CodeAnalysis.Evaluation
         {
             var operand = EvaluateExpression(unaryExpression.Operand);
 
-            switch (unaryExpression.OperatorKind)
+            switch (unaryExpression.Operator.Kind)
             {
                 case BoundUnaryOperatorKind.Identity:
                     return (int)operand;
@@ -53,7 +53,7 @@ namespace Compiler.CodeAnalysis.Evaluation
                     return !(bool)operand;
 
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    throw new Exception($"Unexpected unary operator {unaryExpression.Operator.Kind}");
             }
         }
 
@@ -62,7 +62,7 @@ namespace Compiler.CodeAnalysis.Evaluation
             var left = EvaluateExpression(binaryExpression.Left);
             var right = EvaluateExpression(binaryExpression.Right);
 
-            switch (binaryExpression.OperatorKind)
+            switch (binaryExpression.Operator.Kind)
             {
                 case BoundBinaryOperatorKind.Addition:
                     return (int)left + (int)right;
@@ -78,18 +78,8 @@ namespace Compiler.CodeAnalysis.Evaluation
                 case BoundBinaryOperatorKind.LogicalOr:
                     return (bool)left || (bool)right;
 
-
-                //case BoundBinaryOperatorKind.BitwiseAnd:
-                //    if (left is bool bLeft)
-                //    {
-                //        return bLeft & (bool)right;
-                //    }
-                //    return (int)left & (int)right;
-                //case BoundBinaryOperatorKind.BitwiseOr:
-                //    return (bool)left || (bool)right;
-
                 default:
-                    throw new Exception($"Unexpected binary operator {binaryExpression.OperatorKind}");
+                    throw new Exception($"Unexpected binary operator {binaryExpression.Operator.Kind}");
             }
         }
     }
