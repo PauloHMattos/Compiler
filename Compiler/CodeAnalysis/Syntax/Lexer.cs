@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using Compiler.CodeAnalysis.Binding;
+using Compiler.CodeAnalysis.Text;
 
 namespace Compiler.CodeAnalysis.Syntax
 {
@@ -6,12 +8,18 @@ namespace Compiler.CodeAnalysis.Syntax
     {
         private int _position;
         private readonly string _text;
-        private readonly List<string> _diagnostics;
+        private readonly DiagnosticBag _diagnostics;
 
-        public IEnumerable<string> Diagnostics => _diagnostics;
+        public DiagnosticBag Diagnostics => _diagnostics;
 
         private char Current => Peek(0);
         private char Lookahead => Peek(1);
+
+        public Lexer(string text)
+        {
+            _text = text;
+            _diagnostics = new DiagnosticBag();
+        }
 
         private char Peek(int offset)
         {
@@ -21,12 +29,6 @@ namespace Compiler.CodeAnalysis.Syntax
                     return '\0';
                 }
                 return _text[index];
-        }
-
-        public Lexer(string text)
-        {
-            _text = text;
-            _diagnostics = new List<string>();
         }
 
         public SyntaxToken Lex()
@@ -47,7 +49,7 @@ namespace Compiler.CodeAnalysis.Syntax
                 var text = _text.Substring(start, length);
                 if (!int.TryParse(text, out var value))
                 {
-                    _diagnostics.Add($"ERROR: The number {text} isn't a valid Int32");
+                    _diagnostics.ReportInvalidLiteralType(new TextSpan(_position, length), text, TypeSymbol.Int);
                 }
                 return new SyntaxToken(SyntaxKind.NumberToken, start, text, value);
             }
@@ -120,10 +122,9 @@ namespace Compiler.CodeAnalysis.Syntax
                         return new SyntaxToken(SyntaxKind.EqualsEqualsToken, _position, "==", null);
                     }
                     break;
-
             }
 
-            _diagnostics.Add($"ERROR: bad character in input: '{Current}', at {_position}");
+            _diagnostics.ReportBadCharacter(new TextSpan(_position, 1), Current);
             return new SyntaxToken(SyntaxKind.BadToken, _position, _text.Substring(_position++, 1), null);
         }
 

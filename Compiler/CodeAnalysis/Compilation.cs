@@ -2,6 +2,7 @@
 using System.Linq;
 using Compiler.CodeAnalysis.Binding;
 using Compiler.CodeAnalysis.Syntax;
+using Compiler.CodeAnalysis.Text;
 
 namespace Compiler.CodeAnalysis
 {
@@ -28,7 +29,7 @@ namespace Compiler.CodeAnalysis
             }
 
             var value = evaluator.Evaluate();
-            return new EvaluationResult(Array.Empty<string>(), value);
+            return new EvaluationResult(Array.Empty<Diagnostic>(), value);
         }
     }
 }

@@ -50,12 +50,27 @@ namespace Compiler.REPL
                 }
                 else
                 {
-                    Console.ForegroundColor = ConsoleColor.DarkRed;
                     foreach (var diagnostic in diagnostics)
                     {
-                        Console.WriteLine(diagnostic);
+                        Console.WriteLine();
+
+                        Console.ForegroundColor = ConsoleColor.DarkRed;
+                        Console.WriteLine(diagnostic.Message);
+                        Console.ResetColor();
+
+                        var prefix = line.Substring(0, diagnostic.Span.Start);
+                        var error = line.Substring(diagnostic.Span.Start, diagnostic.Span.Length);
+                        var suffix = line.Substring(diagnostic.Span.End);
+                        
+                        Console.Write(prefix);
+
+                        Console.ForegroundColor = ConsoleColor.DarkRed;
+                        Console.Write(error);
+                        Console.ResetColor();
+
+                        Console.WriteLine(suffix);
                     }
-                    Console.ResetColor();
+                    Console.WriteLine();
                 }
             }
         }

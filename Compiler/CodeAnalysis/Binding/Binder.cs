@@ -1,17 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using Compiler.CodeAnalysis.Syntax;
+using Compiler.CodeAnalysis.Text;
 
 namespace Compiler.CodeAnalysis.Binding
 {
     internal sealed class Binder
     {
-        private readonly List<string> _diagnostics;
-        public IEnumerable<string> Diagnostics => _diagnostics;
+        public DiagnosticBag Diagnostics { get; }
 
         public Binder()
         {
-            _diagnostics = new List<string>();
+            Diagnostics = new DiagnosticBag();
         }
 
         public BoundExpression BindExpression(ExpressionSyntax syntax)
@@ -44,7 +44,7 @@ namespace Compiler.CodeAnalysis.Binding
             var boundOperatorKind = BoundUnaryOperator.Bind(syntax.OperatorToken.Kind, boundOperand.Type);
             if (boundOperatorKind == null)
             {
-                _diagnostics.Add($"Unary operator '{syntax.OperatorToken.Kind}' is not defined for type '{boundOperand.Type}'");
+                Diagnostics.ReportUndefinedUnaryOperator(syntax.OperatorToken.Span, syntax.OperatorToken.Text, boundOperand.Type);
                 return boundOperand;
             }
             return new BoundUnaryExpression(boundOperand, boundOperatorKind);
@@ -57,7 +57,7 @@ namespace Compiler.CodeAnalysis.Binding
             var boundOperatorKind = BoundBinaryOperator.Bind(syntax.OperatorToken.Kind, boundLeft.Type, boundRight.Type);
             if (boundOperatorKind == null)
             {
-                _diagnostics.Add($"Binary operator '{syntax.OperatorToken.Kind}' is not defined for types '{boundLeft.Type}' and '{boundRight.Type}'");
+                Diagnostics.ReportUndefinedBinaryOperator(syntax.OperatorToken.Span, syntax.OperatorToken.Text, boundLeft.Type, boundRight.Type);
                 return boundLeft;
             }
             return new BoundBinaryExpression(boundLeft, boundOperatorKind, boundRight);

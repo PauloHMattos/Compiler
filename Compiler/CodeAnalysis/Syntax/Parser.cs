@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Compiler.CodeAnalysis.Text;
 
 namespace Compiler.CodeAnalysis.Syntax
 {
@@ -6,13 +7,13 @@ namespace Compiler.CodeAnalysis.Syntax
     {
         private int _currentTokenId;
         private readonly SyntaxToken[] _tokens;
-        private readonly List<string> _diagnostics;
+        private readonly DiagnosticBag _diagnostics;
 
-        public IEnumerable<string> Diagnostics => _diagnostics;
+        public DiagnosticBag Diagnostics => _diagnostics;
 
         public Parser(string text)
         {
-            _diagnostics = new List<string>();
+            _diagnostics = new DiagnosticBag();
             var lexer = new Lexer(text);
             
             SyntaxToken token;
@@ -58,7 +59,8 @@ namespace Compiler.CodeAnalysis.Syntax
             {
                 return NextToken();
             }
-            _diagnostics.Add($"ERROR: Unexpected token <{Current.Kind}>, expected <{kind}>");
+
+            _diagnostics.ReportUnexpectedToken(Current.Span, Current.Kind, kind);
             return new SyntaxToken(kind, Current.Position, null, null);
         }
 
