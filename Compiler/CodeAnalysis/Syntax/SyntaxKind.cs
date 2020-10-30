@@ -22,6 +22,9 @@
         MinusToken,
         StarToken,
         SlashToken,
+        BangToken,
+        AmpersandAmpersandToken,
+        PipePipeToken,
 
         // Expressions
         LiteralExpression,

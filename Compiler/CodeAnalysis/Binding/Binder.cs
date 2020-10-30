@@ -73,42 +73,55 @@ namespace Compiler.CodeAnalysis.Binding
 
         private static BoundUnaryOperatorKind? BindUnaryOperatorKind(SyntaxKind operatorTokenKind, Type operandType)
         {
-            if (operandType != typeof(int))
+            if (operandType == typeof(int))
             {
-                return null;
+                switch (operatorTokenKind)
+                {
+                    case SyntaxKind.PlusToken:
+                        return BoundUnaryOperatorKind.Identity;
+                    case SyntaxKind.MinusToken:
+                        return BoundUnaryOperatorKind.Negation;
+                }
+            }
+            else if (operandType == typeof(bool))
+            {
+                switch (operatorTokenKind)
+                {
+                    case SyntaxKind.BangToken:
+                        return BoundUnaryOperatorKind.LogicalNegation;
+                }
             }
 
-            switch (operatorTokenKind)
-            {
-                case SyntaxKind.PlusToken:
-                    return BoundUnaryOperatorKind.Identity;
-                case SyntaxKind.MinusToken:
-                    return BoundUnaryOperatorKind.Negation;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(operatorTokenKind), operatorTokenKind, $"Unexpected unary operator {operatorTokenKind}");
-            }
+            return null;
         }
 
         private static BoundBinaryOperatorKind? BindBinaryOperatorKind(SyntaxKind operatorTokenKind, Type leftType, Type rightType)
         {
-            if (leftType != typeof(int) || leftType != rightType)
+            if (leftType == typeof(int) && leftType == rightType)
             {
-                return null;
+                switch (operatorTokenKind)
+                {
+                    case SyntaxKind.PlusToken:
+                        return BoundBinaryOperatorKind.Addition;
+                    case SyntaxKind.MinusToken:
+                        return BoundBinaryOperatorKind.Subtraction;
+                    case SyntaxKind.StarToken:
+                        return BoundBinaryOperatorKind.Multiplication;
+                    case SyntaxKind.SlashToken:
+                        return BoundBinaryOperatorKind.Division;
+                }
             }
-
-            switch (operatorTokenKind)
+            else if (leftType == typeof(bool) && leftType == rightType)
             {
-                case SyntaxKind.PlusToken:
-                    return BoundBinaryOperatorKind.Addition;
-                case SyntaxKind.MinusToken:
-                    return BoundBinaryOperatorKind.Subtraction;
-                case SyntaxKind.StarToken:
-                    return BoundBinaryOperatorKind.Multiplication;
-                case SyntaxKind.SlashToken:
-                    return BoundBinaryOperatorKind.Division;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(operatorTokenKind), operatorTokenKind, $"Unexpected binary operator {operatorTokenKind}");
+                switch (operatorTokenKind)
+                {
+                    case SyntaxKind.AmpersandAmpersandToken:
+                        return BoundBinaryOperatorKind.LogicalAnd;
+                    case SyntaxKind.PipePipeToken:
+                        return BoundBinaryOperatorKind.LogicalOr;
+                }
             }
+            return null;
         }
     }
 }
