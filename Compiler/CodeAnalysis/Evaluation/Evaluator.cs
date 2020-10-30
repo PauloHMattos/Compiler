@@ -1,13 +1,14 @@
 ﻿using System;
+using Compiler.CodeAnalysis.Binding;
 using Compiler.CodeAnalysis.Syntax;
 
 namespace Compiler.CodeAnalysis.Evaluation
 {
     public class Evaluator
     {
-        private readonly ExpressionSyntax _root;
+        private readonly BoundExpression _root;
 
-        public Evaluator(ExpressionSyntax root)
+        public Evaluator(BoundExpression root)
         {
             _root = root;
         }
@@ -17,39 +18,39 @@ namespace Compiler.CodeAnalysis.Evaluation
             return EvaluateExpression(_root);
         }
 
-        private int EvaluateExpression(ExpressionSyntax root)
+        private int EvaluateExpression(BoundExpression root)
         {
             switch (root.Kind)
             {
-                case SyntaxKind.LiteralExpression:
-                    var numberExpression = (LiteralExpressionSyntax)root;
-                    return (int)numberExpression.LiteralToken.Value;
+                case BoundNodeKind.LiteralExpression:
+                    var boundLiteralExpression = (BoundLiteralExpression)root;
+                    return (int)boundLiteralExpression.Value;
 
-                case SyntaxKind.UnaryExpression:
-                    var unaryExpression = (UnaryExpressionSyntax)root;
-                    return EvaluateUnaryExpression(unaryExpression);
+                case BoundNodeKind.UnaryExpression:
+                    var boundUnaryExpression = (BoundUnaryExpression)root;
+                    return EvaluateUnaryExpression(boundUnaryExpression);
 
-                case SyntaxKind.BinaryExpression:
-                    var binaryExpression = (BinaryExpressionSyntax)root;
-                    return EvaluateBinaryExpression(binaryExpression);
+                case BoundNodeKind.BinaryExpression:
+                    var boundBinaryExpression = (BoundBinaryExpression)root;
+                    return EvaluateBinaryExpression(boundBinaryExpression);
 
-                case SyntaxKind.ParenthesizedExpression:
-                    var parenthesizedExpression = (ParenthesizedExpressionSyntax)root;
-                    return EvaluateExpression(parenthesizedExpression.Expression);
+                //case BoundNodeKind.ParenthesizedExpression:
+                //    var parenthesizedExpression = (ParenthesizedExpressionSyntax)root;
+                //    return EvaluateExpression(parenthesizedExpression.Expression);
 
                 default:
                     throw new Exception($"Unexpected node {root.Kind}");
             }
         }
 
-        private int EvaluateUnaryExpression(UnaryExpressionSyntax unaryExpression)
+        private int EvaluateUnaryExpression(BoundUnaryExpression unaryExpression)
         {
-            switch (unaryExpression.OperatorToken.Kind)
+            switch (unaryExpression.OperatorKind)
             {
-                case SyntaxKind.PlusToken:
+                case BoundUnaryOperatorKind.Identity:
                     return EvaluateExpression(unaryExpression.Operand);
 
-                case SyntaxKind.MinusToken:
+                case BoundUnaryOperatorKind.Negation:
                     return -EvaluateExpression(unaryExpression.Operand);
 
                 default:
@@ -57,23 +58,23 @@ namespace Compiler.CodeAnalysis.Evaluation
             }
         }
 
-        private int EvaluateBinaryExpression(BinaryExpressionSyntax binaryExpression)
+        private int EvaluateBinaryExpression(BoundBinaryExpression binaryExpression)
         {
             var left = EvaluateExpression(binaryExpression.Left);
             var right = EvaluateExpression(binaryExpression.Right);
 
-            switch (binaryExpression.OperatorToken.Kind)
+            switch (binaryExpression.OperatorKind)
             {
-                case SyntaxKind.PlusToken:
+                case BoundBinaryOperatorKind.Addition:
                     return left + right;
-                case SyntaxKind.MinusToken:
+                case BoundBinaryOperatorKind.Subtraction:
                     return left - right;
-                case SyntaxKind.StarToken:
+                case BoundBinaryOperatorKind.Multiplication:
                     return left * right;
-                case SyntaxKind.SlashToken:
+                case BoundBinaryOperatorKind.Division:
                     return left / right;
                 default:
-                    throw new Exception($"Unexpected binary operator {binaryExpression.OperatorToken.Kind}");
+                    throw new Exception($"Unexpected binary operator {binaryExpression.OperatorKind}");
             }
         }
     }

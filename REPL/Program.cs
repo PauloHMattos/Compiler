@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using Compiler.CodeAnalysis.Binding;
 using Compiler.CodeAnalysis.Evaluation;
 using Compiler.CodeAnalysis.Syntax;
 
@@ -32,6 +33,8 @@ namespace Compiler.REPL
                 }
 
                 var syntaxTree = SyntaxTree.Parse(line);
+                var boundExpression = Binder.Bind(syntaxTree.Root, out var binderDiagnostics);
+                var diagnostics = syntaxTree.Diagnostics.Concat(binderDiagnostics).ToArray();
 
                 if (showTree)
                 {
@@ -40,16 +43,16 @@ namespace Compiler.REPL
                     Console.ResetColor();
                 }
 
-                if (!syntaxTree.Diagnostics.Any())
+                if (!diagnostics.Any())
                 {
-                    var evaluator = new Evaluator(syntaxTree.Root);
+                    var evaluator = new Evaluator(boundExpression);
                     var result = evaluator.Evaluate();
                     Console.WriteLine(result);
                 }
                 else
                 {
                     Console.ForegroundColor = ConsoleColor.DarkRed;
-                    foreach (var diagnostic in syntaxTree.Diagnostics)
+                    foreach (var diagnostic in diagnostics)
                     {
                         Console.WriteLine(diagnostic);
                     }
