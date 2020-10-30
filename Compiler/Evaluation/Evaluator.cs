@@ -25,6 +25,10 @@ namespace Compiler.Evaluation
                     var numberExpression = (LiteralExpressionSyntax)root;
                     return (int)numberExpression.LiteralToken.Value;
 
+                case SyntaxKind.UnaryExpression:
+                    var unaryExpression = (UnaryExpressionSyntax)root;
+                    return EvaluateUnaryExpression(unaryExpression);
+
                 case SyntaxKind.BinaryExpression:
                     var binaryExpression = (BinaryExpressionSyntax)root;
                     return EvaluateBinaryExpression(binaryExpression);
@@ -35,6 +39,21 @@ namespace Compiler.Evaluation
 
                 default:
                     throw new Exception($"Unexpected node {root.Kind}");
+            }
+        }
+
+        private int EvaluateUnaryExpression(UnaryExpressionSyntax unaryExpression)
+        {
+            switch (unaryExpression.OperatorToken.Kind)
+            {
+                case SyntaxKind.PlusToken:
+                    return EvaluateExpression(unaryExpression.Operand);
+
+                case SyntaxKind.MinusToken:
+                    return -EvaluateExpression(unaryExpression.Operand);
+
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
         }
 
