@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Data;
 using Compiler.CodeAnalysis.Syntax;
 using Compiler.CodeAnalysis.Text;
 
@@ -16,8 +15,7 @@ namespace Compiler.CodeAnalysis.Binding
 
         public BoundExpression BindExpression(ExpressionSyntax syntax)
         {
-            var kind = syntax.Kind;
-            switch (kind)
+            switch (syntax.Kind)
             {
                 case SyntaxKind.LiteralExpression:
                     return BindLiteralExpression((LiteralExpressionSyntax)syntax);
@@ -28,7 +26,7 @@ namespace Compiler.CodeAnalysis.Binding
                 case SyntaxKind.UnaryExpression:
                     return BindUnaryExpression((UnaryExpressionSyntax)syntax);
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(kind), kind, $"Unexpected syntax {kind}");
+                    throw new InvalidExpressionException($"Unexpected expression syntax {syntax.Kind}");
             }
         }
 

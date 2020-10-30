@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data;
 using Compiler.CodeAnalysis.Binding;
 
 namespace Compiler.CodeAnalysis
@@ -34,7 +35,7 @@ namespace Compiler.CodeAnalysis
                     return EvaluateBinaryExpression(boundBinaryExpression);
 
                 default:
-                    throw new Exception($"Unexpected node {root.Kind}");
+                    throw new InvalidExpressionException($"Unexpected node {root.Kind}");
             }
         }
 
@@ -52,7 +53,7 @@ namespace Compiler.CodeAnalysis
                     return !(bool)operand;
 
                 default:
-                    throw new Exception($"Unexpected unary operator {unaryExpression.Operator.Kind}");
+                    throw new InvalidExpressionException($"Unexpected unary operator {unaryExpression.Operator.Kind}");
             }
         }
 
@@ -83,7 +84,7 @@ namespace Compiler.CodeAnalysis
                     return !left.Equals(right);
 
                 default:
-                    throw new Exception($"Unexpected binary operator {binaryExpression.Operator.Kind}");
+                    throw new InvalidExpressionException($"Unexpected binary operator {binaryExpression.Operator.Kind}");
             }
         }
     }

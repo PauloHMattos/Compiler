@@ -5,11 +5,12 @@ using Compiler.CodeAnalysis.Syntax;
 
 namespace Compiler.REPL
 {
-    internal class Program
+    internal static class Program
     {
+        private static bool _showTree;
+
         private static void Main(string[] args)
         {
-            var showTree = false;
             while (true)
             {
                 Console.Write("> ");
@@ -19,15 +20,8 @@ namespace Compiler.REPL
                     return;
                 }
 
-                if (line == "#tree")
+                if (CheckCommands(line))
                 {
-                    showTree = !showTree;
-                    Console.WriteLine(showTree ? "Showing parse trees" : "Not showing parse trees");
-                    continue;
-                }
-                if (line == "#cls")
-                {
-                    Console.Clear();
                     continue;
                 }
 
@@ -37,7 +31,7 @@ namespace Compiler.REPL
 
                 var diagnostics = compilationResult.Diagnostics;
 
-                if (showTree)
+                if (_showTree)
                 {
                     Console.ForegroundColor = ConsoleColor.DarkGray;
                     PrintSyntaxTree(syntaxTree.Root);
@@ -47,32 +41,49 @@ namespace Compiler.REPL
                 if (!diagnostics.Any())
                 {
                     Console.WriteLine(compilationResult.Value);
+                    continue;
                 }
-                else
+
+                foreach (var diagnostic in diagnostics)
                 {
-                    foreach (var diagnostic in diagnostics)
-                    {
-                        Console.WriteLine();
-
-                        Console.ForegroundColor = ConsoleColor.DarkRed;
-                        Console.WriteLine(diagnostic.Message);
-                        Console.ResetColor();
-
-                        var prefix = line.Substring(0, diagnostic.Span.Start);
-                        var error = line.Substring(diagnostic.Span.Start, diagnostic.Span.Length);
-                        var suffix = line.Substring(diagnostic.Span.End);
-                        
-                        Console.Write(prefix);
-
-                        Console.ForegroundColor = ConsoleColor.DarkRed;
-                        Console.Write(error);
-                        Console.ResetColor();
-
-                        Console.WriteLine(suffix);
-                    }
                     Console.WriteLine();
+
+                    Console.ForegroundColor = ConsoleColor.DarkRed;
+                    Console.WriteLine(diagnostic.Message);
+                    Console.ResetColor();
+
+                    var prefix = line.Substring(0, diagnostic.Span.Start);
+                    var error = line.Substring(diagnostic.Span.Start, diagnostic.Span.Length);
+                    var suffix = line.Substring(diagnostic.Span.End);
+                    
+                    Console.Write(prefix);
+
+                    Console.ForegroundColor = ConsoleColor.DarkRed;
+                    Console.Write(error);
+                    Console.ResetColor();
+
+                    Console.WriteLine(suffix);
                 }
+                Console.WriteLine();
             }
+        }
+
+        private static bool CheckCommands(string line)
+        {
+            if (line == "#tree")
+            {
+                _showTree = !_showTree;
+                Console.WriteLine(_showTree ? "Showing parse trees" : "Not showing parse trees");
+                return true;
+            }
+
+            if (line == "#cls")
+            {
+                Console.Clear();
+                return true;
+            }
+
+            return false;
         }
 
         private static void PrintSyntaxTree(SyntaxNode node, string indent = "", bool isLast = true)
