@@ -4,6 +4,9 @@ on:
   pull_request:
     branches: [ main ]
     types: [created, edited]
+    
+  push:
+    branches: [ main ]
 
 jobs:
   build:
