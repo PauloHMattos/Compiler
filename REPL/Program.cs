@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
+using System.Text;
 using Compiler.CodeAnalysis;
+using Compiler.CodeAnalysis.Diagnostic;
 using Compiler.CodeAnalysis.Syntax;
 using Compiler.CodeAnalysis.Text;
 
@@ -14,21 +17,37 @@ namespace Compiler.REPL
         private static void Main()
         {
             var variables = new Dictionary<VariableSymbol, object>();
+            var textBuilder = new StringBuilder();
+
             while (true)
             {
-                Console.Write("> ");
-                var line = Console.ReadLine();
-                if (string.IsNullOrWhiteSpace(line))
+                Console.Write(textBuilder.Length == 0 ? "> " : "| ");
+
+                var input = Console.ReadLine();
+                var isBlank = string.IsNullOrWhiteSpace(input);
+
+                if (textBuilder.Length == 0)
                 {
-                    return;
+                    if (isBlank)
+                    {
+                        break;
+                    }
+                    if (CheckCommands(input))
+                    {
+                        continue;
+                    }
                 }
 
-                if (CheckCommands(line))
+                textBuilder.AppendLine(input);
+                var text = textBuilder.ToString();
+
+                var syntaxTree = SyntaxTree.Parse(text);
+
+                if (!isBlank && syntaxTree.Diagnostics.Any())
                 {
                     continue;
                 }
 
-                var syntaxTree = SyntaxTree.Parse(line);
                 var compilation = new Compilation(syntaxTree);
                 var compilationResult = compilation.Evaluate(variables);
 
@@ -44,39 +63,47 @@ namespace Compiler.REPL
                 if (!diagnostics.Any())
                 {
                     Console.WriteLine(compilationResult.Value);
-                    continue;
                 }
-
-
-                var text = syntaxTree.Text;
-                foreach (var diagnostic in diagnostics)
+                else
                 {
-                    var lineIndex = text.GetLineIndex(diagnostic.Span.Start);
-                    var diagnosticLine = text.Lines[lineIndex];
-                    var character = diagnostic.Span.Start - diagnosticLine.Start + 1;
-                    var lineNumber = lineIndex + 1;
-
-
-                    Console.WriteLine();
-
-                    Console.ForegroundColor = ConsoleColor.DarkRed;
-                    Console.Write($"({lineNumber}, {character}): ");
-                    Console.WriteLine(diagnostic.Message);
-                    Console.ResetColor();
-
-                    var prefix = line.Substring(0, diagnostic.Span.Start);
-                    var error = line.Substring(diagnostic.Span.Start, diagnostic.Span.Length);
-                    var suffix = line.Substring(diagnostic.Span.End);
-                    
-                    Console.Write(prefix);
-
-                    Console.ForegroundColor = ConsoleColor.DarkRed;
-                    Console.Write(error);
-                    Console.ResetColor();
-
-                    Console.WriteLine(suffix);
+                    PrintDiagnostics(syntaxTree.Text, diagnostics);
                 }
+
+                textBuilder.Clear();
+            }
+        }
+
+        private static void PrintDiagnostics(SourceText textSource, ImmutableArray<Diagnostic> diagnostics)
+        {
+            foreach (var diagnostic in diagnostics)
+            {
+                var lineIndex = textSource.GetLineIndex(diagnostic.Span.Start);
+                var diagnosticLine = textSource.Lines[lineIndex];
+                var character = diagnostic.Span.Start - diagnosticLine.Start + 1;
+                var lineNumber = lineIndex + 1;
+
+
                 Console.WriteLine();
+
+                Console.ForegroundColor = ConsoleColor.DarkRed;
+                Console.Write($"({lineNumber}, {character}): ");
+                Console.WriteLine(diagnostic.Message);
+                Console.ResetColor();
+
+                var prefixSpan = TextSpan.FromBounds(diagnosticLine.Start, diagnostic.Span.Start);
+                var suffixSpan = TextSpan.FromBounds(diagnostic.Span.End, diagnosticLine.End);
+
+                var prefix = textSource.ToString(prefixSpan);
+                var error = textSource.ToString(diagnostic.Span.Start, diagnostic.Span.Length);
+                var suffix = textSource.ToString(suffixSpan);
+
+                Console.Write(prefix);
+
+                Console.ForegroundColor = ConsoleColor.DarkRed;
+                Console.Write(error);
+                Console.ResetColor();
+
+                Console.WriteLine(suffix);
             }
         }
 
