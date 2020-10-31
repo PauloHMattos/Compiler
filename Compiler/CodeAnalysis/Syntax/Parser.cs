@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Collections.Immutable;
 using Compiler.CodeAnalysis.Text;
 
 namespace Compiler.CodeAnalysis.Syntax
@@ -6,7 +7,7 @@ namespace Compiler.CodeAnalysis.Syntax
     internal sealed class Parser
     {
         private int _currentTokenId;
-        private readonly SyntaxToken[] _tokens;
+        private readonly ImmutableArray<SyntaxToken> _tokens;
 
         public DiagnosticBag Diagnostics { get; }
 
@@ -29,7 +30,7 @@ namespace Compiler.CodeAnalysis.Syntax
 
             } while (token.Kind != SyntaxKind.EndOfFileToken);
 
-            _tokens = tokens.ToArray();
+            _tokens = tokens.ToImmutableArray();
             Diagnostics.AddRange(lexer.Diagnostics);
         }
 
@@ -67,7 +68,7 @@ namespace Compiler.CodeAnalysis.Syntax
         {
             var expression = ParseExpression();
             var endOfFileToken = MatchToken(SyntaxKind.EndOfFileToken);
-            return new SyntaxTree(Diagnostics, expression, endOfFileToken);
+            return new SyntaxTree(Diagnostics.ToImmutableArray(), expression, endOfFileToken);
         }
 
         private ExpressionSyntax ParseExpression()
