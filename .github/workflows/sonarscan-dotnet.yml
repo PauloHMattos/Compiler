@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 name: SonarCloud Scan
-=======
-name: .NET Core
->>>>>>> 52d7ecb... Atualiza workflows
 
 on:
   pull_request:
@@ -13,18 +9,14 @@ on:
       - main
 
 jobs:
-<<<<<<< HEAD
   scan:
-=======
-  build:
->>>>>>> 52d7ecb... Atualiza workflows
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 0
 
-    - name: Sonarcloud
+    - name: SonarCloud
       uses: highbyte/sonarscan-dotnet@1.0
       with:
         # The key of the SonarQube project
