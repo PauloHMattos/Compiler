@@ -13,30 +13,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
         
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 3.1.x
         
-    - name: Restore
-      run: dotnet restore -v m
+    - name: Install dependencies
+      run: dotnet restore
       
     - name: Build
-      run: dotnet build --configuration Release --no-restore -v m
+      run: dotnet build --configuration Release --no-restore
       
     - name: Test
-      run: dotnet test --configuration Release --no-build --no-restore -v m /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
-      
-    - name: Sonarcloud
-      uses: spoland/dotnet-sonarcloud-analysis@v1.0
-      with:
-        project-key: PauloHMattos_Compiler
-        sonar-host-url: https://sonarcloud.io
-        sonar-organization: paulohmattos
-        opencover-reports-paths: "**/*.opencover.xml"
-      env:
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: dotnet test --no-restore --verbosity normal
