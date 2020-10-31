@@ -16,7 +16,7 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Sonarcloud
+    - name: SonarCloud
       uses: highbyte/sonarscan-dotnet@1.0
       with:
         # The key of the SonarQube project
