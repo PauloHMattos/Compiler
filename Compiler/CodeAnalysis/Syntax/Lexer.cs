@@ -7,7 +7,7 @@ namespace Compiler.CodeAnalysis.Syntax
 {
     internal sealed class Lexer
     {
-        private readonly string _text;
+        private readonly SourceText _text;
 
         private int _position;
         private int _start;
@@ -29,7 +29,7 @@ namespace Compiler.CodeAnalysis.Syntax
             }    
         }
         
-        public Lexer(string text)
+        public Lexer(SourceText text)
         {
             _text = text;
             Diagnostics = new DiagnosticBag();
@@ -143,7 +143,7 @@ namespace Compiler.CodeAnalysis.Syntax
             if (_tokenText == null)
             {
                 var length = _position - _start;
-                _tokenText = _text.Substring(_start, length);
+                _tokenText = _text.ToString(_start, length);
             }
             return new SyntaxToken(_kind, _start, _tokenText, _value);
         }
@@ -152,7 +152,7 @@ namespace Compiler.CodeAnalysis.Syntax
         {
             ConsumesTokenWhile(char.IsDigit);
             var length = _position - _start;
-            _tokenText = _text.Substring(_start, length);
+            _tokenText = _text.ToString(_start, length);
             if (!int.TryParse(_tokenText, out var value))
             {
                 Diagnostics.ReportInvalidLiteralType(new TextSpan(_position, length), _tokenText, TypeSymbol.Int);
@@ -172,7 +172,7 @@ namespace Compiler.CodeAnalysis.Syntax
         {
             ConsumesTokenWhile(char.IsLetter);
             var length = _position - _start;
-            _tokenText = _text.Substring(_start, length);
+            _tokenText = _text.ToString(_start, length);
             _kind = SyntaxFacts.GetKeywordKind(_tokenText);
         }
 

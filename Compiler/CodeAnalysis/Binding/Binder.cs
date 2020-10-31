@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using Compiler.CodeAnalysis.Diagnostic;
 using Compiler.CodeAnalysis.Syntax;
-using Compiler.CodeAnalysis.Text;
 
 namespace Compiler.CodeAnalysis.Binding
 {

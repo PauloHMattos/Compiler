@@ -9,11 +9,13 @@ namespace Compiler.CodeAnalysis.Syntax
     {
         private int _currentTokenId;
         private readonly ImmutableArray<SyntaxToken> _tokens;
+        private readonly SourceText _text;
 
         public DiagnosticBag Diagnostics { get; }
 
-        public Parser(string text)
+        public Parser(SourceText text)
         {
+            _text = text;
             Diagnostics = new DiagnosticBag();
             var lexer = new Lexer(text);
             
@@ -69,7 +71,7 @@ namespace Compiler.CodeAnalysis.Syntax
         {
             var expression = ParseExpression();
             var endOfFileToken = MatchToken(SyntaxKind.EndOfFileToken);
-            return new SyntaxTree(Diagnostics.ToImmutableArray(), expression, endOfFileToken);
+            return new SyntaxTree(_text, Diagnostics.ToImmutableArray(), expression, endOfFileToken);
         }
 
         private ExpressionSyntax ParseExpression()

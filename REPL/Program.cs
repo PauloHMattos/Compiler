@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Compiler.CodeAnalysis;
 using Compiler.CodeAnalysis.Syntax;
+using Compiler.CodeAnalysis.Text;
 
 namespace Compiler.REPL
 {
@@ -46,11 +47,20 @@ namespace Compiler.REPL
                     continue;
                 }
 
+
+                var text = syntaxTree.Text;
                 foreach (var diagnostic in diagnostics)
                 {
+                    var lineIndex = text.GetLineIndex(diagnostic.Span.Start);
+                    var diagnosticLine = text.Lines[lineIndex];
+                    var character = diagnostic.Span.Start - diagnosticLine.Start + 1;
+                    var lineNumber = lineIndex + 1;
+
+
                     Console.WriteLine();
 
                     Console.ForegroundColor = ConsoleColor.DarkRed;
+                    Console.Write($"({lineNumber}, {character}): ");
                     Console.WriteLine(diagnostic.Message);
                     Console.ResetColor();
 
