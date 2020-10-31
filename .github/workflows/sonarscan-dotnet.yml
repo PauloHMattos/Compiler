@@ -1,4 +1,4 @@
-name: SonarCound Scan
+name: SonarCloud Scan
 
 on:
   pull_request:
