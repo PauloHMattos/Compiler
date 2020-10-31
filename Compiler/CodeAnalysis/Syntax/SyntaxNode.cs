@@ -1,11 +1,24 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
+using Compiler.CodeAnalysis.Text;
 
 namespace Compiler.CodeAnalysis.Syntax
 {
     public abstract class SyntaxNode
     {
         public abstract SyntaxKind Kind { get; }
+
+        public virtual TextSpan Span
+        {
+            get
+            {
+                var children = GetChildren();
+                var first = children.First().Span;
+                var last = children.Last().Span;
+                return TextSpan.FromBounds(first.Start, last.End);
+            }
+        }
 
         public IEnumerable<SyntaxNode> GetChildren()
         {

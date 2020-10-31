@@ -8,7 +8,7 @@ namespace Compiler.CodeAnalysis.Syntax
         public string Text { get; }
         public object Value { get; }
         public override SyntaxKind Kind { get; }
-        public TextSpan Span { get; }
+        public override TextSpan Span { get; }
 
         public SyntaxToken(SyntaxKind kind, int position, string text, object value)
         {

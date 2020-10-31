@@ -11,5 +11,10 @@
             Start = start;
             Length = length;
         }
+
+        public static TextSpan FromBounds(in int start, in int end)
+        {
+            return new TextSpan(start, end - start);
+        }
     }
 }
