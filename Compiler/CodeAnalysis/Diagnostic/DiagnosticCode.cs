@@ -1,4 +1,4 @@
-﻿namespace Compiler.CodeAnalysis.Text
+﻿namespace Compiler.CodeAnalysis.Diagnostic
 {
     public enum DiagnosticCode
     {

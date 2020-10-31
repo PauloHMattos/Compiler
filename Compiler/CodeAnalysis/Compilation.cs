@@ -30,7 +30,7 @@ namespace Compiler.CodeAnalysis
             }
 
             var value = evaluator.Evaluate();
-            return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, value);
+            return new EvaluationResult(ImmutableArray<Diagnostic.Diagnostic>.Empty, value);
         }
     }
 }

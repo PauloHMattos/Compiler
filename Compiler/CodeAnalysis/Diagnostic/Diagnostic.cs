@@ -1,4 +1,6 @@
-﻿namespace Compiler.CodeAnalysis.Text
+﻿using Compiler.CodeAnalysis.Text;
+
+namespace Compiler.CodeAnalysis.Diagnostic
 {
     public sealed class Diagnostic
     {

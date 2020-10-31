@@ -6,11 +6,11 @@ namespace Compiler.CodeAnalysis.Syntax
 {
     public sealed class SyntaxTree
     {
-        public ImmutableArray<Diagnostic> Diagnostics { get; }
+        public ImmutableArray<Diagnostic.Diagnostic> Diagnostics { get; }
         public ExpressionSyntax Root { get; }
         public SyntaxToken EndOfFileToken { get; }
 
-        public SyntaxTree(ImmutableArray<Diagnostic> diagnostics, ExpressionSyntax root, SyntaxToken endOfFileToken)
+        public SyntaxTree(ImmutableArray<Diagnostic.Diagnostic> diagnostics, ExpressionSyntax root, SyntaxToken endOfFileToken)
         {
             Diagnostics = diagnostics;
             Root = root;

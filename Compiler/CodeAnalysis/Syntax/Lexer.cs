@@ -1,5 +1,6 @@
 ﻿using System;
 using Compiler.CodeAnalysis.Binding;
+using Compiler.CodeAnalysis.Diagnostic;
 using Compiler.CodeAnalysis.Text;
 
 namespace Compiler.CodeAnalysis.Syntax
