@@ -36,7 +36,7 @@ namespace Compiler.CodeAnalysis.Text
                     return index;
                 }
 
-                if (position <= start)
+                if (start <= position)
                 {
                     lower = index + 1;
                 }
@@ -45,7 +45,7 @@ namespace Compiler.CodeAnalysis.Text
                     upper = index - 1;
                 }
             }
-            return lower;
+            return lower - 1;
         }
 
         private static ImmutableArray<TextLine> ParseLines(SourceText sourceText, string text)
