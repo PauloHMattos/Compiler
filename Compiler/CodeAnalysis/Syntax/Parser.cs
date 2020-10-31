@@ -132,11 +132,11 @@ namespace Compiler.CodeAnalysis.Syntax
                     return new ParenthesizedExpressionSyntax(left, expression, right);
                 }
 
-                case SyntaxKind.TrueKeywordToken:
-                case SyntaxKind.FalseKeywordToken:
+                case SyntaxKind.TrueKeyword:
+                case SyntaxKind.FalseKeyword:
                 {
                     var keywordToken = NextToken();
-                    var value = keywordToken.Kind == SyntaxKind.TrueKeywordToken;
+                    var value = keywordToken.Kind == SyntaxKind.TrueKeyword;
                     return new LiteralExpressionSyntax(keywordToken, value);
                 }
 

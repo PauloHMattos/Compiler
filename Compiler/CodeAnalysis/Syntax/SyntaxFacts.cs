@@ -49,9 +49,9 @@
             switch (text)
             {
                 case "true":
-                    return SyntaxKind.TrueKeywordToken;
+                    return SyntaxKind.TrueKeyword;
                 case "false":
-                    return SyntaxKind.FalseKeywordToken;
+                    return SyntaxKind.FalseKeyword;
                 default:
                     return SyntaxKind.IdentifierToken;
             }
