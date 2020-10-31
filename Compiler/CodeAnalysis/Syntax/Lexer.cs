@@ -1,151 +1,186 @@
-﻿using Compiler.CodeAnalysis.Binding;
+﻿using System;
+using Compiler.CodeAnalysis.Binding;
 using Compiler.CodeAnalysis.Text;
 
 namespace Compiler.CodeAnalysis.Syntax
 {
     internal sealed class Lexer
     {
-        private int _position;
         private readonly string _text;
+
+        private int _position;
+        private int _start;
+        private SyntaxKind _kind;
+        private object _value;
+        private string _tokenText;
 
         public DiagnosticBag Diagnostics { get; }
 
-        private char Current => Peek(0);
-        private char Lookahead => Peek(1);
-
+        private char Current 
+        {
+            get
+            {
+                if (_position >= _text.Length)
+                {
+                    return '\0';
+                }
+                return _text[_position];
+            }    
+        }
+        
         public Lexer(string text)
         {
             _text = text;
             Diagnostics = new DiagnosticBag();
         }
 
-        private char Peek(int offset)
-        {
-            var index = _position + offset;
-                if (index >= _text.Length)
-                {
-                    return '\0';
-                }
-                return _text[index];
-        }
-
-        private void Next()
-        {
-            _position++;
-        }
-
         public SyntaxToken Lex()
         {
-            if (_position >= _text.Length)
-            {
-                return new SyntaxToken(SyntaxKind.EndOfFileToken, _position, "\0", null);
-            }
+            _start = _position;
+            _kind = SyntaxKind.BadToken;
+            _value = null;
+            _tokenText = null;
 
-            if (char.IsDigit(Current))
-            {
-                return LexDigit();
-            }
-
-            if (char.IsWhiteSpace(Current))
-            {
-                return LexWhitespace();
-            }
-
-            if (char.IsLetter(Current))
-            {
-                return LexLetter();
-            }
-
-            var start = _position;
             switch (Current)
             {
+                case '\0':
+                    _kind = SyntaxKind.EndOfFileToken;
+                    break;
                 case '+':
-                    return new SyntaxToken(SyntaxKind.PlusToken, _position++, "+", null);
+                    _position++;
+                    _kind = SyntaxKind.PlusToken;
+                    break;
                 case '-':
-                    return new SyntaxToken(SyntaxKind.MinusToken, _position++, "-", null);
+                    _position++;
+                    _kind = SyntaxKind.MinusToken;
+                    break;
                 case '*':
-                    return new SyntaxToken(SyntaxKind.StarToken, _position++, "*", null);
+                    _position++;
+                    _kind = SyntaxKind.StarToken;
+                    break;
                 case '/':
-                    return new SyntaxToken(SyntaxKind.SlashToken, _position++, "/", null);
+                    _position++;
+                    _kind = SyntaxKind.SlashToken;
+                    break;
                 case '(':
-                    return new SyntaxToken(SyntaxKind.OpenParenthesisToken, _position++, "(", null);
+                    _position++;
+                    _kind = SyntaxKind.OpenParenthesisToken;
+                    break;
                 case ')':
-                    return new SyntaxToken(SyntaxKind.CloseParenthesisToken, _position++, ")", null);
+                    _position++;
+                    _kind = SyntaxKind.CloseParenthesisToken;
+                    break;
                 case '!':
-                    if (Lookahead == '=')
+                    _position++;
+                    if (Current == '=')
                     {
-                        _position += 2;
-                        return new SyntaxToken(SyntaxKind.BangEqualsToken, start, "!=", null);
+                        _position++;
+                        _kind = SyntaxKind.BangEqualsToken;
                     }
-                    return new SyntaxToken(SyntaxKind.BangToken, _position++, "!", null);
-                case '&':
-                    if (Lookahead == '&')
+                    else
                     {
-                        _position += 2;
-                        return new SyntaxToken(SyntaxKind.AmpersandAmpersandToken, start, "&&", null);
+                        _kind = SyntaxKind.BangToken;
+                    }
+                    break;
+                case '&':
+                    _position++;
+                    if (Current == '&')
+                    {
+                        _position++;
+                        _kind = SyntaxKind.AmpersandAmpersandToken;
                     }
                     break;
                 case '|':
-                    if (Lookahead == '|')
+                    _position++;
+                    if (Current == '|')
                     {
-                        _position += 2;
-                        return new SyntaxToken(SyntaxKind.PipePipeToken, start, "||", null);
+                        _position++;
+                        _kind = SyntaxKind.PipePipeToken;
                     }
                     break;
                 case '=':
-                    if (Lookahead == '=')
+                    _position++;
+                    if (Current == '=')
                     {
-                        _position += 2;
-                        return new SyntaxToken(SyntaxKind.EqualsEqualsToken, start, "==", null);
+                        _position++;
+                        _kind = SyntaxKind.EqualsEqualsToken;
                     }
-                    return new SyntaxToken(SyntaxKind.EqualsToken, _position++, "=", null);
+                    else
+                    {
+                        _kind = SyntaxKind.EqualsToken;
+                    }
+                    break;
+                case '0': case '1': case '2': case '3': case '4':
+                case '5': case '6': case '7': case '8': case '9':
+                    LexDigit();
+                    break;
+                case ' ':
+                case '\t':
+                case '\n':
+                case '\r':
+                    LexWhitespace();
+                    break;
+                default:
+                    if (char.IsLetter(Current))
+                    {
+                        LexLetter();
+                    }
+                    else if (char.IsWhiteSpace(Current))
+                    {
+                        LexWhitespace();
+                    }
+                    else
+                    {
+                        Diagnostics.ReportBadCharacter(new TextSpan(_position, 1), Current);
+                        _kind = SyntaxKind.BadToken;
+                        _position++;
+                    }
+                    break;
             }
-
-            Diagnostics.ReportBadCharacter(new TextSpan(_position, 1), Current);
-            return new SyntaxToken(SyntaxKind.BadToken, _position, _text.Substring(_position++, 1), null);
+            
+            _tokenText ??= _kind.GetText();
+            if (_tokenText == null)
+            {
+                var length = _position - _start;
+                _tokenText = _text.Substring(_start, length);
+            }
+            return new SyntaxToken(_kind, _start, _tokenText, _value);
         }
-        private SyntaxToken LexDigit()
+
+        private void LexDigit()
         {
-            var start = _position;
-            while (char.IsDigit(Current))
+            ConsumesTokenWhile(char.IsDigit);
+            var length = _position - _start;
+            _tokenText = _text.Substring(_start, length);
+            if (!int.TryParse(_tokenText, out var value))
             {
-                Next();
+                Diagnostics.ReportInvalidLiteralType(new TextSpan(_position, length), _tokenText, TypeSymbol.Int);
             }
 
-            var length = _position - start;
-            var text = _text.Substring(start, length);
-            if (!int.TryParse(text, out var value))
-            {
-                Diagnostics.ReportInvalidLiteralType(new TextSpan(_position, length), text, TypeSymbol.Int);
-            }
-
-            return new SyntaxToken(SyntaxKind.NumberToken, start, text, value);
-        }
-        private SyntaxToken LexWhitespace()
-        {
-            var start = _position;
-            while (char.IsWhiteSpace(Current))
-            {
-                Next();
-            }
-
-            var length = _position - start;
-            var text = _text.Substring(start, length);
-            return new SyntaxToken(SyntaxKind.WhitespaceToken, start, text, null);
+            _value = value;
+            _kind = SyntaxKind.NumberToken;
         }
 
-        private SyntaxToken LexLetter()
+        private void LexWhitespace()
         {
-            var start = _position;
-            while (char.IsLetter(Current))
-            {
-                Next();
-            }
+            ConsumesTokenWhile(char.IsWhiteSpace);
+            _kind = SyntaxKind.WhitespaceToken;
+        }
 
-            var length = _position - start;
-            var text = _text.Substring(start, length);
-            var kind = SyntaxFacts.GetKeywordKind(text);
-            return new SyntaxToken(kind, start, text, null);
+        private void LexLetter()
+        {
+            ConsumesTokenWhile(char.IsLetter);
+            var length = _position - _start;
+            _tokenText = _text.Substring(_start, length);
+            _kind = SyntaxFacts.GetKeywordKind(_tokenText);
+        }
+
+        private void ConsumesTokenWhile(Func<char, bool> func)
+        {
+            while (func(Current))
+            {
+                _position++;
+            }
         }
     }
 }
