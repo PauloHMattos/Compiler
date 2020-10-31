@@ -11,8 +11,8 @@
         IdentifierToken,
 
         // Keywords
-        FalseKeywordToken,
-        TrueKeywordToken,
+        FalseKeyword,
+        TrueKeyword,
 
         // Literals
         NumberToken,
