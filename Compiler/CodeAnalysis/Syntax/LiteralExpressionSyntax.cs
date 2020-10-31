@@ -18,10 +18,5 @@ namespace Compiler.CodeAnalysis.Syntax
             LiteralToken = literalToken;
             Value = value;
         }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return LiteralToken;
-        }
     }
 }

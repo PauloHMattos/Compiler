@@ -15,12 +15,5 @@ namespace Compiler.CodeAnalysis.Syntax
             EqualsToken = equalsToken;
             Expression = expression;
         }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return IdentifierToken;
-            yield return EqualsToken;
-            yield return Expression;
-        }
     }
 }

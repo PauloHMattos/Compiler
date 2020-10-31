@@ -20,10 +20,5 @@ namespace Compiler.CodeAnalysis.Syntax
             Value = value;
             Span = new TextSpan(position, Text.Length);
         }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            return Enumerable.Empty<SyntaxNode>();
-        }
     }
 }
