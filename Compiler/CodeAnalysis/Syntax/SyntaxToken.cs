@@ -16,7 +16,7 @@ namespace Compiler.CodeAnalysis.Syntax
             Position = position;
             Text = text ?? string.Empty;
             Value = value;
-            Span = new TextSpan(position, Text.Length);
+            Span = new TextSpan(position, Text?.Length ?? 0);
         }
     }
 }
