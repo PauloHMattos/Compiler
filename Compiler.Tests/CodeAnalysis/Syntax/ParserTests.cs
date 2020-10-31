@@ -12,11 +12,7 @@ namespace Compiler.Tests.CodeAnalysis.Syntax
         {
             var op1Precedence = op1.GetBinaryOperatorPrecedence();
             var op2Precedence = op2.GetBinaryOperatorPrecedence();
-<<<<<<< HEAD
             var op1Text = op1.GetText();
-=======
-            var op1Text= op1.GetText();
->>>>>>> 5dfc6d7... Adiciona teste para verificar precedencia de operadores binários
             var op2Text = op2.GetText();
 
             var text = $"a {op1Text} b {op2Text} c";
@@ -63,7 +59,6 @@ namespace Compiler.Tests.CodeAnalysis.Syntax
                     e.AssertNode(SyntaxKind.NameExpression);
                     e.AssertToken(SyntaxKind.IdentifierToken, "c");
                 }
-<<<<<<< HEAD
             }
         }
 
@@ -117,9 +112,6 @@ namespace Compiler.Tests.CodeAnalysis.Syntax
                     e.AssertToken(SyntaxKind.IdentifierToken, "b");
                 }
             }
-=======
-            } 
->>>>>>> 5dfc6d7... Adiciona teste para verificar precedencia de operadores binários
         }
 
         public static IEnumerable<object[]> GetBinaryOperatorsPairsData()
@@ -132,7 +124,6 @@ namespace Compiler.Tests.CodeAnalysis.Syntax
                 }
             }
         }
-<<<<<<< HEAD
 
         public static IEnumerable<object[]> GetUnaryOperatorsPairsData()
         {
@@ -144,7 +135,5 @@ namespace Compiler.Tests.CodeAnalysis.Syntax
                 }
             }
         }
-=======
->>>>>>> 5dfc6d7... Adiciona teste para verificar precedencia de operadores binários
     }
 }
