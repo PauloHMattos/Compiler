@@ -30,7 +30,9 @@ namespace Compiler.REPL
 
         private static bool Loop(StringBuilder textBuilder, Dictionary<VariableSymbol, object> variables)
         {
-            Console.Write(textBuilder.Length == 0 ? "> " : "| ");
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.Write(textBuilder.Length == 0 ? "» " : "· ");
+            Console.ResetColor();
 
             var input = Console.ReadLine();
             var isBlank = string.IsNullOrWhiteSpace(input);
@@ -72,7 +74,9 @@ namespace Compiler.REPL
             var diagnostics = compilationResult.Diagnostics;
             if (!diagnostics.Any())
             {
+                Console.ForegroundColor = ConsoleColor.DarkMagenta;
                 Console.WriteLine(compilationResult.Value);
+                Console.ResetColor();
             }
             else
             {
