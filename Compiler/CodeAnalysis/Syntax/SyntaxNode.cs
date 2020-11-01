@@ -53,7 +53,7 @@ namespace Compiler.CodeAnalysis.Syntax
 
         public void WriteTo(TextWriter writer)
         {
-            PrintSyntaxTree(writer, this);
+            PrintTree(writer, this);
         }
 
         public override string ToString()
@@ -63,7 +63,7 @@ namespace Compiler.CodeAnalysis.Syntax
             return writer.ToString();
         }
 
-        private static void PrintSyntaxTree(TextWriter writer, SyntaxNode node, string indent = "", bool isLast = true)
+        private static void PrintTree(TextWriter writer, SyntaxNode node, string indent = "", bool isLast = true)
         {
             var marker = isLast ? "└──" : "├──";
 
@@ -84,7 +84,7 @@ namespace Compiler.CodeAnalysis.Syntax
 
             foreach (var child in node.GetChildren())
             {
-                PrintSyntaxTree(writer, child, indent, child == lastChild);
+                PrintTree(writer, child, indent, child == lastChild);
             }
         }
     }

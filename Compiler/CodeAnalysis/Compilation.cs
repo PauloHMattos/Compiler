@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using Compiler.CodeAnalysis.Binding;
@@ -57,6 +58,11 @@ namespace Compiler.CodeAnalysis
 
             var value = evaluator.Evaluate();
             return new EvaluationResult(ImmutableArray<Diagnostic.Diagnostic>.Empty, value);
+        }
+
+        public void EmitTree(TextWriter writer)
+        {
+            GlobalScope.Statement.WriteTo(writer);
         }
     }
 }

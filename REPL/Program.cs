@@ -13,6 +13,7 @@ namespace Compiler.REPL
     internal static class Program
     {
         private static bool _showTree;
+        private static bool _showProgram;
         private static Compilation _previous;
         private static StringBuilder _textBuilder;
         private static Dictionary<VariableSymbol, object> _variables;
@@ -73,6 +74,11 @@ namespace Compiler.REPL
                 Console.ForegroundColor = ConsoleColor.DarkGray;
                 syntaxTree.Root.WriteTo(Console.Out);
                 Console.ResetColor();
+            }
+
+            if (_showProgram)
+            {
+                compilation.EmitTree(Console.Out);
             }
 
             var diagnostics = compilationResult.Diagnostics;
@@ -142,6 +148,11 @@ namespace Compiler.REPL
 
                 case "#reset":
                     _previous = null;
+                    return true;
+
+                case "#program":
+                    _showProgram = !_showProgram;
+                    Console.WriteLine(_showProgram ? "Showing bound trees" : "Not showing bound trees");
                     return true;
 
                 default:
