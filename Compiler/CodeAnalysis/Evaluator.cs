@@ -42,6 +42,10 @@ namespace Compiler.CodeAnalysis
                     EvaluateIfStatement((BoundIfStatement)statement);
                     break;
 
+                case BoundNodeKind.WhileStatement:
+                    EvaluateWhileStatement((BoundWhileStatement)statement);
+                    break;
+
                 default:
                     throw new InvalidOperationException($"Unexpected expression {statement.Kind}");
             }
@@ -64,6 +68,14 @@ namespace Compiler.CodeAnalysis
             else if (statement.ElseStatement != null)
             {
                 EvaluateStatement(statement.ElseStatement);
+            }
+        }
+
+        private void EvaluateWhileStatement(BoundWhileStatement statement)
+        {
+            while ((bool)EvaluateExpression(statement.Condition))
+            {
+                EvaluateStatement(statement.Body);
             }
         }
 

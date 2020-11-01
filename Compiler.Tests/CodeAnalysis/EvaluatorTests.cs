@@ -50,6 +50,8 @@ namespace Compiler.Tests.CodeAnalysis
         [InlineData("{ var a = 5 if a == 0 a = 10 }", 5)]
         [InlineData("{ var a = 0 if a == 0 a = 10 else a = 20}", 10)]
         [InlineData("{ var a = 5 if a == 0 a = 10 else a = 20}", 20)]
+        [InlineData("{ var a = 5 while a > 0 a = a - 1 a}", 0)]
+        [InlineData("{ var a = 5 while a == 0 a = a - 1 a}", 5)]
         public void Evaluator_Compute_CorrectValues(string text, object expectedValue)
         {
             AssertValue(text, expectedValue);
@@ -121,6 +123,24 @@ namespace Compiler.Tests.CodeAnalysis
                     var x = 0
                     if [10]
                         x = 10
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.CannotConvert.GetDiagnostic(TypeSymbol.Int, TypeSymbol.Bool)
+            };
+            AssertHasDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_WhileStatement_Reports_CannotConvert()
+        {
+            var text = @"
+                {
+                    var x = 0
+                    while [10]
+                        x = x + 1
                 }
             ";
 

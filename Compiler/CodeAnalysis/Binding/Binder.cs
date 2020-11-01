@@ -46,6 +46,8 @@ namespace Compiler.CodeAnalysis.Binding
                     return BindVariableDeclarationStatement((VariableDeclarationStatementSyntax)statementSyntax);
                 case SyntaxKind.IfStatement:
                     return BindIfStatement((IfStatementSyntax)statementSyntax);
+                case SyntaxKind.WhileStatement:
+                    return BindWhileStatement((WhileStatementSyntax)statementSyntax);
                 default:
                     throw new InvalidOperationException($"Unexpected syntax {statementSyntax.Kind}");
             }
@@ -93,6 +95,13 @@ namespace Compiler.CodeAnalysis.Binding
             var thenStatement = BindStatement(syntax.ThenStatement);
             var elseStatement = syntax.ElseClause == null ? null : BindStatement(syntax.ElseClause.ElseStatement);
             return new BoundIfStatement(condition, thenStatement, elseStatement);
+        }
+
+        private BoundStatement BindWhileStatement(WhileStatementSyntax syntax)
+        {
+            var condition = BindExpression(syntax.Condition, TypeSymbol.Bool);
+            var thenStatement = BindStatement(syntax.Body);
+            return new BoundWhileStatement(condition, thenStatement);
         }
 
         private static BoundScope CreateParentScope(BoundGlobalScope previous)

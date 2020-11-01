@@ -67,6 +67,8 @@ namespace Compiler.CodeAnalysis.Syntax
                     return SyntaxKind.IfKeyword;
                 case "else":
                     return SyntaxKind.ElseKeyword;
+                case "while":
+                    return SyntaxKind.WhileKeyword;
                 default:
                     return SyntaxKind.IdentifierToken;
             }
@@ -94,6 +96,8 @@ namespace Compiler.CodeAnalysis.Syntax
                     return "var";
                 case SyntaxKind.IfKeyword:
                     return "if";
+                case SyntaxKind.WhileKeyword:
+                    return "while";
                 case SyntaxKind.ElseKeyword:
                     return "else";
                 case SyntaxKind.PlusToken: 

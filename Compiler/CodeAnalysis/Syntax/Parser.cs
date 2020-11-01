@@ -85,6 +85,8 @@ namespace Compiler.CodeAnalysis.Syntax
                     return ParseVariableDeclarationStatement();
                 case SyntaxKind.IfKeyword:
                     return ParseIfStatement();
+                case SyntaxKind.WhileKeyword:
+                    return ParseWhileStatement();
                 default:
                     return ParseExpressionStatement();
             }
@@ -124,6 +126,14 @@ namespace Compiler.CodeAnalysis.Syntax
             var thenStatement = ParseStatement();
             var elseClause = ParseElseClause();
             return new IfStatementSyntax(keyword, condition, thenStatement, elseClause);
+        }
+
+        private StatementSyntax ParseWhileStatement()
+        {
+            var keyword = MatchToken(SyntaxKind.WhileKeyword);
+            var condition = ParseExpression();
+            var body = ParseStatement();
+            return new WhileStatementSyntax(keyword, condition, body);
         }
 
         private ElseClauseSyntax ParseElseClause()

@@ -7,6 +7,7 @@
         ExpressionStatement,
         VariableDeclarationStatement,
         IfStatement,
+        WhileStatement,
 
         LiteralExpression,
         UnaryExpression,

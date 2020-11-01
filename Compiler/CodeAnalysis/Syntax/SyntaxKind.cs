@@ -19,6 +19,7 @@
         VarKeyword,
         IfKeyword,
         ElseKeyword,
+        WhileKeyword,
 
         // Literals
         NumberToken,
@@ -48,6 +49,7 @@
         ExpressionStatement,
         VariableDeclarationStatement,
         IfStatement,
+        WhileStatement,
 
         // Expressions
         LiteralExpression,
