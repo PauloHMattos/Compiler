@@ -266,6 +266,23 @@ namespace Compiler.Tests.CodeAnalysis
             AssertHasDiagnostics(text, diagnostics);
         }
 
+        [Fact]
+        public void Evaluator_BlockStatement_NoInfiniteLoop()
+        {
+            var text = @"
+                {
+                [)][]
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.CloseParenthesisToken, SyntaxKind.IdentifierToken),
+                DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.EndOfFileToken, SyntaxKind.CloseBraceToken)
+            };
+            
+            AssertHasDiagnostics(text, diagnostics);
+        }
+
         private static void AssertValue(string text, object expectedValue)
         {
             var syntaxTree = SyntaxTree.Parse(text);
