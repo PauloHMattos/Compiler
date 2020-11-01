@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Data;
 using Compiler.CodeAnalysis.Diagnostic;
@@ -6,25 +7,6 @@ using Compiler.CodeAnalysis.Syntax;
 
 namespace Compiler.CodeAnalysis.Binding
 {
-    internal sealed class BoundGlobalScope
-    {
-        public BoundGlobalScope Previous { get; }
-        public ImmutableArray<Diagnostic.Diagnostic> Diagnostics { get; }
-        public ImmutableArray<VariableSymbol> Variables { get; }
-        public BoundExpression Expression { get; }
-
-        public BoundGlobalScope(BoundGlobalScope previous,
-            ImmutableArray<Diagnostic.Diagnostic> diagnostics,
-            ImmutableArray<VariableSymbol> variables,
-            BoundExpression expression)
-        {
-            Previous = previous;
-            Diagnostics = diagnostics;
-            Variables = variables;
-            Expression = expression;
-        }
-    }
-
     internal sealed class Binder
     {
         private BoundScope _scope;
@@ -40,7 +22,7 @@ namespace Compiler.CodeAnalysis.Binding
         {
             var parentScope = CreateParentScope(previous);
             var binder = new Binder(parentScope);
-            var expression = binder.BindExpression(compilationUnit.Expression);
+            var statement = binder.BindStatement(compilationUnit.Statement);
             var variables = binder._scope.GetDeclaredVariables();
             var diagnostics = binder.Diagnostics.ToImmutableArray();
 
@@ -49,7 +31,41 @@ namespace Compiler.CodeAnalysis.Binding
                 diagnostics = diagnostics.InsertRange(0, previous.Diagnostics);
             }
 
-            return new BoundGlobalScope(previous, diagnostics, variables, expression);
+            return new BoundGlobalScope(previous, diagnostics, variables, statement);
+        }
+
+        private BoundStatement BindStatement(StatementSyntax statementSyntax)
+        {
+            switch (statementSyntax.Kind)
+            {
+                case SyntaxKind.BlockStatement:
+                    return BindBlockStatement((BlockStatementSyntax) statementSyntax);
+                case SyntaxKind.ExpressionStatement:
+                    return BindExpressionStatement((ExpressionStatementSyntax)statementSyntax);
+                default:
+                    throw new InvalidOperationException($"Unexpected syntax {statementSyntax.Kind}");
+            }
+        }
+
+        private BoundStatement BindBlockStatement(BlockStatementSyntax syntax)
+        {
+            var statements = ImmutableArray.CreateBuilder<BoundStatement>();
+            _scope = new BoundScope(_scope);
+
+            foreach (var statementSyntax in syntax.Statements)
+            {
+                var statement = BindStatement(statementSyntax);
+                statements.Add(statement);
+            }
+
+            _scope = _scope.Parent;
+            return new BoundBlockStatement(statements.ToImmutable());
+        }
+
+        private BoundStatement BindExpressionStatement(ExpressionStatementSyntax syntax)
+        {
+            var boundExpression = BindExpression(syntax.Expression);
+            return new BoundExpressionStatement(boundExpression);
         }
 
         private static BoundScope CreateParentScope(BoundGlobalScope previous)

@@ -71,6 +71,14 @@ namespace Compiler.CodeAnalysis.Syntax
                     _position++;
                     _kind = SyntaxKind.CloseParenthesisToken;
                     break;
+                case '{':
+                    _position++;
+                    _kind = SyntaxKind.OpenBraceToken;
+                    break;
+                case '}':
+                    _position++;
+                    _kind = SyntaxKind.CloseBraceToken;
+                    break;
                 case '!':
                     _position++;
                     if (Current == '=')

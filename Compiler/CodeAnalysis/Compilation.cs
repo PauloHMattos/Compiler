@@ -45,7 +45,7 @@ namespace Compiler.CodeAnalysis
 
         public EvaluationResult Evaluate(Dictionary<VariableSymbol, object> variables)
         {
-            var boundExpression = GlobalScope.Expression;
+            var boundExpression = GlobalScope.Statement;
 
             var evaluator = new Evaluator(boundExpression, variables);
 
