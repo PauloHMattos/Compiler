@@ -8,11 +8,15 @@
         WhitespaceToken,
         OpenParenthesisToken,
         CloseParenthesisToken,
+        OpenBraceToken,
+        CloseBraceToken,
         IdentifierToken,
 
         // Keywords
         FalseKeyword,
         TrueKeyword,
+        ConstKeyword,
+        VarKeyword,
 
         // Literals
         NumberToken,
@@ -28,6 +32,14 @@
         EqualsToken,
         BangEqualsToken,
         EqualsEqualsToken,
+
+        // Nodes
+        CompilationUnit,
+
+        // Statements
+        BlockStatement,
+        ExpressionStatement,
+        VariableDeclarationStatement,
 
         // Expressions
         LiteralExpression,

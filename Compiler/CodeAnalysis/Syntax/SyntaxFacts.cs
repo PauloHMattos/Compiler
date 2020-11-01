@@ -55,6 +55,10 @@ namespace Compiler.CodeAnalysis.Syntax
                     return SyntaxKind.TrueKeyword;
                 case "false":
                     return SyntaxKind.FalseKeyword;
+                case "const":
+                    return SyntaxKind.ConstKeyword;
+                case "var":
+                    return SyntaxKind.VarKeyword;
                 default:
                     return SyntaxKind.IdentifierToken;
             }
@@ -64,14 +68,22 @@ namespace Compiler.CodeAnalysis.Syntax
         {
             switch (kind)
             {
-                case SyntaxKind.OpenParenthesisToken: 
+                case SyntaxKind.OpenParenthesisToken:
                     return "(";
-                case SyntaxKind.CloseParenthesisToken: 
+                case SyntaxKind.CloseParenthesisToken:
                     return ")";
-                case SyntaxKind.FalseKeyword: 
+                case SyntaxKind.OpenBraceToken:
+                    return "{";
+                case SyntaxKind.CloseBraceToken:
+                    return "}";
+                case SyntaxKind.FalseKeyword:
                     return "false";
-                case SyntaxKind.TrueKeyword: 
+                case SyntaxKind.TrueKeyword:
                     return "true";
+                case SyntaxKind.ConstKeyword:
+                    return "const";
+                case SyntaxKind.VarKeyword:
+                    return "var";
                 case SyntaxKind.PlusToken: 
                     return "+";
                 case SyntaxKind.MinusToken: 

@@ -1,15 +1,16 @@
-﻿using System.Collections.Generic;
-using System.Data;
+﻿using System;
+using System.Collections.Generic;
 using Compiler.CodeAnalysis.Binding;
 
 namespace Compiler.CodeAnalysis
 {
     internal class Evaluator
     {
-        private readonly BoundExpression _root;
+        private readonly BoundStatement _root;
         private readonly Dictionary<VariableSymbol, object> _variables;
+        private object _lastValue;
 
-        public Evaluator(BoundExpression root, Dictionary<VariableSymbol, object> variables)
+        public Evaluator(BoundStatement root, Dictionary<VariableSymbol, object> variables)
         {
             _root = root;
             _variables = variables;
@@ -17,37 +18,79 @@ namespace Compiler.CodeAnalysis
 
         public object Evaluate()
         {
-            return EvaluateExpression(_root);
+            EvaluateStatement(_root);
+            return _lastValue;
         }
 
-        private object EvaluateExpression(BoundExpression root)
+        private void EvaluateStatement(BoundStatement statement)
         {
-            switch (root.Kind)
+            switch (statement.Kind)
+            {
+                case BoundNodeKind.BlockStatement:
+                    EvaluateBlockStatement((BoundBlockStatement)statement);
+                    break;
+
+                case BoundNodeKind.ExpressionStatement:
+                    EvaluateExpressionStatement((BoundExpressionStatement)statement);
+                    break;
+
+                case BoundNodeKind.VariableDeclarationStatement:
+                    EvaluateVariableDeclarationStatement((BoundVariableDeclarationStatement)statement);
+                    break;
+
+                default:
+                    throw new InvalidOperationException($"Unexpected expression {statement.Kind}");
+            }
+        }
+
+        private void EvaluateVariableDeclarationStatement(BoundVariableDeclarationStatement statement)
+        {
+            var value = EvaluateExpression(statement.Initializer);
+            _variables[statement.Variable] = value;
+            _lastValue = value;
+        }
+
+        private void EvaluateBlockStatement(BoundBlockStatement blockStatement)
+        {
+            foreach (var statement in blockStatement.Statements)
+            {
+                EvaluateStatement(statement);
+            }
+        }
+
+        private void EvaluateExpressionStatement(BoundExpressionStatement expressionStatement)
+        {
+            _lastValue = EvaluateExpression(expressionStatement.Expression);
+        }
+
+        private object EvaluateExpression(BoundExpression expression)
+        {
+            switch (expression.Kind)
             {
                 case BoundNodeKind.LiteralExpression:
-                    var boundLiteralExpression = (BoundLiteralExpression)root;
+                    var boundLiteralExpression = (BoundLiteralExpression)expression;
                     return boundLiteralExpression.Value;
 
                 case BoundNodeKind.VariableExpression:
-                    var boundVariableExpression = (BoundVariableExpression)root;
+                    var boundVariableExpression = (BoundVariableExpression)expression;
                     return _variables[boundVariableExpression.VariableSymbol];
 
                 case BoundNodeKind.AssignmentExpression:
-                    var assignmentExpression = (BoundAssignmentExpression)root;
+                    var assignmentExpression = (BoundAssignmentExpression)expression;
                     var value = EvaluateExpression(assignmentExpression.Expression);
                     _variables[assignmentExpression.VariableSymbol] = value;
                     return value;
 
                 case BoundNodeKind.UnaryExpression:
-                    var boundUnaryExpression = (BoundUnaryExpression)root;
+                    var boundUnaryExpression = (BoundUnaryExpression)expression;
                     return EvaluateUnaryExpression(boundUnaryExpression);
 
                 case BoundNodeKind.BinaryExpression:
-                    var boundBinaryExpression = (BoundBinaryExpression)root;
+                    var boundBinaryExpression = (BoundBinaryExpression)expression;
                     return EvaluateBinaryExpression(boundBinaryExpression);
 
                 default:
-                    throw new InvalidExpressionException($"Unexpected node {root.Kind}");
+                    throw new InvalidOperationException($"Unexpected expression {expression.Kind}");
             }
         }
 
@@ -65,7 +108,7 @@ namespace Compiler.CodeAnalysis
                     return !(bool)operand;
 
                 default:
-                    throw new InvalidExpressionException($"Unexpected unary operator {unaryExpression.Operator.Kind}");
+                    throw new InvalidOperationException($"Unexpected unary operator {unaryExpression.Operator.Kind}");
             }
         }
 
@@ -96,7 +139,7 @@ namespace Compiler.CodeAnalysis
                     return !left.Equals(right);
 
                 default:
-                    throw new InvalidExpressionException($"Unexpected binary operator {binaryExpression.Operator.Kind}");
+                    throw new InvalidOperationException($"Unexpected binary operator {binaryExpression.Operator.Kind}");
             }
         }
     }

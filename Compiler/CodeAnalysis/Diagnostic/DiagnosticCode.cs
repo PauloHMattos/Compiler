@@ -7,6 +7,9 @@
         UnexpectedToken,
         UndefinedUnaryOperator,
         UndefinedBinaryOperator,
-        UndefinedName
+        UndefinedName,
+        CannotConvert,
+        VariableAlreadyDeclared,
+        VariableCannotReassigned
     }
 }

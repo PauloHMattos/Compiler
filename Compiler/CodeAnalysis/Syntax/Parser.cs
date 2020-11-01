@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using Compiler.CodeAnalysis.Diagnostic;
 using Compiler.CodeAnalysis.Text;
@@ -9,13 +10,11 @@ namespace Compiler.CodeAnalysis.Syntax
     {
         private int _currentTokenId;
         private readonly ImmutableArray<SyntaxToken> _tokens;
-        private readonly SourceText _text;
 
         public DiagnosticBag Diagnostics { get; }
 
         public Parser(SourceText text)
         {
-            _text = text;
             Diagnostics = new DiagnosticBag();
             var lexer = new Lexer(text);
             
@@ -67,12 +66,62 @@ namespace Compiler.CodeAnalysis.Syntax
             return new SyntaxToken(kind, Current.Position, null, null);
         }
 
-        public SyntaxTree Parse()
+        public CompilationUnitSyntax ParseCompilationUnit()
+        {
+            var statement = ParseStatement();
+            var endOfFileToken = MatchToken(SyntaxKind.EndOfFileToken);
+            return new CompilationUnitSyntax(statement, endOfFileToken);
+        }
+
+
+        public StatementSyntax ParseStatement()
+        {
+            if (Current.Kind == SyntaxKind.OpenBraceToken)
+            {
+                return ParseBlockStatement();
+            }
+            
+            if (Current.Kind == SyntaxKind.ConstKeyword || Current.Kind == SyntaxKind.VarKeyword)
+            {
+                return ParseVariableDeclarationStatement();
+            }
+
+            return ParseExpressionStatement();
+        }
+
+        private StatementSyntax ParseVariableDeclarationStatement()
+        {
+            var expectedToken = Current.Kind == SyntaxKind.VarKeyword ?
+                                            SyntaxKind.VarKeyword : 
+                                            SyntaxKind.ConstKeyword;
+            var keyword = MatchToken(expectedToken);
+            var identifier = MatchToken(SyntaxKind.IdentifierToken);
+            var equals = MatchToken(SyntaxKind.EqualsToken);
+            var initializer = ParseExpression();
+            return new VariableDeclarationStatementSyntax(keyword, identifier, equals, initializer);
+        }
+
+        private StatementSyntax ParseBlockStatement()
+        {
+            var statements = ImmutableArray.CreateBuilder<StatementSyntax>();
+            var openBraceToken = MatchToken(SyntaxKind.OpenBraceToken);
+
+            while (Current.Kind != SyntaxKind.EndOfFileToken && Current.Kind != SyntaxKind.CloseBraceToken)
+            {
+                var statement = ParseStatement();
+                statements.Add(statement);
+            }
+
+            var closeBraceToken = MatchToken(SyntaxKind.CloseBraceToken);
+            return new BlockStatementSyntax(openBraceToken, statements.ToImmutable(), closeBraceToken);
+        }
+
+        private StatementSyntax ParseExpressionStatement()
         {
             var expression = ParseExpression();
-            var endOfFileToken = MatchToken(SyntaxKind.EndOfFileToken);
-            return new SyntaxTree(_text, Diagnostics.ToImmutableArray(), expression, endOfFileToken);
+            return new ExpressionStatementSyntax(expression);
         }
+
 
         private ExpressionSyntax ParseExpression()
         {

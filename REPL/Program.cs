@@ -13,31 +13,33 @@ namespace Compiler.REPL
     internal static class Program
     {
         private static bool _showTree;
+        private static Compilation _previous;
+        private static StringBuilder _textBuilder;
+        private static Dictionary<VariableSymbol, object> _variables;
 
         private static void Main()
         {
-            var variables = new Dictionary<VariableSymbol, object>();
-            var textBuilder = new StringBuilder();
-
+            _textBuilder = new StringBuilder();
+            _variables = new Dictionary<VariableSymbol, object>();
             while (true)
             {
-                if (!Loop(textBuilder, variables))
+                if (!Loop())
                 {
                     break;
                 }
             }
         }
 
-        private static bool Loop(StringBuilder textBuilder, Dictionary<VariableSymbol, object> variables)
+        private static bool Loop()
         {
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.Write(textBuilder.Length == 0 ? "» " : "· ");
+            Console.Write(_textBuilder.Length == 0 ? "» " : "· ");
             Console.ResetColor();
 
             var input = Console.ReadLine();
             var isBlank = string.IsNullOrWhiteSpace(input);
 
-            if (textBuilder.Length == 0)
+            if (_textBuilder.Length == 0)
             {
                 if (isBlank)
                 {
@@ -50,8 +52,8 @@ namespace Compiler.REPL
                 }
             }
 
-            textBuilder.AppendLine(input);
-            var text = textBuilder.ToString();
+            _textBuilder.AppendLine(input);
+            var text = _textBuilder.ToString();
 
             var syntaxTree = SyntaxTree.Parse(text);
 
@@ -60,9 +62,11 @@ namespace Compiler.REPL
                 return true;
             }
 
-            var compilation = new Compilation(syntaxTree);
-            var compilationResult = compilation.Evaluate(variables);
+            var compilation = _previous == null ?
+                                    new Compilation(syntaxTree) :
+                                    _previous.ContinueWith(syntaxTree);
 
+            var compilationResult = compilation.Evaluate(_variables);
 
             if (_showTree)
             {
@@ -77,13 +81,14 @@ namespace Compiler.REPL
                 Console.ForegroundColor = ConsoleColor.DarkMagenta;
                 Console.WriteLine(compilationResult.Value);
                 Console.ResetColor();
+                _previous = compilation;
             }
             else
             {
                 PrintDiagnostics(syntaxTree.Text, diagnostics);
             }
 
-            textBuilder.Clear();
+            _textBuilder.Clear();
             return true;
         }
 
@@ -119,6 +124,7 @@ namespace Compiler.REPL
 
                 Console.WriteLine(suffix);
             }
+            Console.WriteLine();
         }
 
         private static bool CheckCommands(string line)
@@ -132,6 +138,10 @@ namespace Compiler.REPL
 
                 case "#cls":
                     Console.Clear();
+                    return true;
+
+                case "#reset":
+                    _previous = null;
                     return true;
 
                 default:
