@@ -61,64 +61,6 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_VariableDeclaration_Reports_Redeclaration()
-        {
-            var text = @"
-                {
-                    var x = 10
-                    var y = 100
-                    {
-                        var x = 10
-                    }
-                    var [x] = 5
-                }
-            ";
-
-            var diagnostics = new List<string>()
-            {
-                DiagnosticCode.VariableAlreadyDeclared.GetDiagnostic("x")
-            };
-            AssertHasDiagnostics(text, diagnostics);
-        }
-
-        [Fact]
-        public void Evaluator_Assignment_Reports_CannotReassign()
-        {
-            var text = @"
-                {
-                    const x = 10
-                    {
-                        var x = 10
-                    }
-                    x [=] 5
-                }
-            ";
-
-            var diagnostics = new List<string>()
-            {
-                DiagnosticCode.VariableCannotReassigned.GetDiagnostic("x")
-            };
-            AssertHasDiagnostics(text, diagnostics);
-        }
-
-        [Fact]
-        public void Evaluator_Assignment_Reports_CannotConvert()
-        {
-            var text = @"
-                {
-                    var x = 10
-                    x = [false]
-                }
-            ";
-
-            var diagnostics = new List<string>()
-            {
-                DiagnosticCode.CannotConvert.GetDiagnostic(TypeSymbol.Bool, TypeSymbol.Int)
-            };
-            AssertHasDiagnostics(text, diagnostics);
-        }
-
-        [Fact]
         public void Evaluator_IfStatement_Reports_CannotConvert()
         {
             var text = @"
@@ -209,7 +151,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_Assignment_Reports_Undefined()
+        public void Evaluator_AssignmentExpression_Reports_Undefined()
         {
             var text = "[x] = 1";
 
@@ -221,7 +163,44 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_Name_Reports_Undefined()
+        public void Evaluator_AssignmentExpression_Reports_CannotReassign()
+        {
+            var text = @"
+                {
+                    const x = 10
+                    {
+                        var x = 10
+                    }
+                    x [=] 5
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.VariableCannotReassigned.GetDiagnostic("x")
+            };
+            AssertHasDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_AssignmentExpression_Reports_CannotConvert()
+        {
+            var text = @"
+                {
+                    var x = 10
+                    x = [false]
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.CannotConvert.GetDiagnostic(TypeSymbol.Bool, TypeSymbol.Int)
+            };
+            AssertHasDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_NameExpression_Reports_Undefined()
         {
             var text = "[x] * 1";
             var diagnostics = new List<string>()
@@ -232,7 +211,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_Unary_Reports_UndefinedOperator()
+        public void Evaluator_UnaryExpression_Reports_UndefinedOperator()
         {
             var text = "[+]false";
             var diagnostics = new List<string>()
@@ -243,12 +222,33 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_Binary_Reports_UndefinedOperator()
+        public void Evaluator_BinaryExpression_Reports_UndefinedOperator()
         {
             var text = "10 [+] false";
             var diagnostics = new List<string>()
             {
                 DiagnosticCode.UndefinedBinaryOperator.GetDiagnostic("+", TypeSymbol.Int, TypeSymbol.Bool)
+            };
+            AssertHasDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_VariableDeclaration_Reports_Redeclaration()
+        {
+            var text = @"
+                {
+                    var x = 10
+                    var y = 100
+                    {
+                        var x = 10
+                    }
+                    var [x] = 5
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.VariableAlreadyDeclared.GetDiagnostic("x")
             };
             AssertHasDiagnostics(text, diagnostics);
         }
