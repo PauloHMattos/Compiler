@@ -119,20 +119,20 @@ namespace Compiler.REPL
 
         private static bool CheckCommands(string line)
         {
-            if (line == "#tree")
+            switch (line)
             {
-                _showTree = !_showTree;
-                Console.WriteLine(_showTree ? "Showing parse trees" : "Not showing parse trees");
-                return true;
-            }
+                case "#tree":
+                    _showTree = !_showTree;
+                    Console.WriteLine(_showTree ? "Showing parse trees" : "Not showing parse trees");
+                    return true;
 
-            if (line == "#cls")
-            {
-                Console.Clear();
-                return true;
-            }
+                case "#cls":
+                    Console.Clear();
+                    return true;
 
-            return false;
+                default:
+                    return false;
+            }
         }
     }
 }
