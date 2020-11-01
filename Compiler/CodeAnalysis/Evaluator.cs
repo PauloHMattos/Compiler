@@ -46,10 +46,6 @@ namespace Compiler.CodeAnalysis
                     EvaluateWhileStatement((BoundWhileStatement)statement);
                     break;
 
-                case BoundNodeKind.ForStatement:
-                    EvaluateForStatement((BoundForStatement)statement);
-                    break;
-
                 default:
                     throw new InvalidOperationException($"Unexpected expression {statement.Kind}");
             }
@@ -79,28 +75,6 @@ namespace Compiler.CodeAnalysis
         {
             while ((bool)EvaluateExpression(statement.Condition))
             {
-                EvaluateStatement(statement.Body);
-            }
-        }
-
-        private void EvaluateForStatement(BoundForStatement statement)
-        {
-            var lowerBound = (int)EvaluateExpression(statement.LowerBound);
-            var upperBound = (int)EvaluateExpression(statement.UpperBound);
-            var step = (int)EvaluateExpression(statement.Step);
-
-            if (step < 0)
-            {
-                step = -step;
-                var aux = lowerBound;
-                lowerBound = upperBound;
-                upperBound = aux;
-            }
-
-            _variables[statement.Variable] = lowerBound;
-            for (var i = lowerBound; i <= upperBound; i += step)
-            {
-                _variables[statement.Variable] = i;
                 EvaluateStatement(statement.Body);
             }
         }
