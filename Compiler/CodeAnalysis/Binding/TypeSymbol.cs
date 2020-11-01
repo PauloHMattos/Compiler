@@ -2,7 +2,7 @@
 
 namespace Compiler.CodeAnalysis.Binding
 {
-    internal sealed class TypeSymbol
+    internal static class TypeSymbol
     {
         public static Type Bool => typeof(bool);
         public static Type Int => typeof(int);

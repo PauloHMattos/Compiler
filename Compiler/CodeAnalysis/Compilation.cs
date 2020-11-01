@@ -3,7 +3,6 @@ using System.Collections.Immutable;
 using System.Linq;
 using Compiler.CodeAnalysis.Binding;
 using Compiler.CodeAnalysis.Syntax;
-using Compiler.CodeAnalysis.Text;
 
 namespace Compiler.CodeAnalysis
 {

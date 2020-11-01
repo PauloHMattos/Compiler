@@ -21,56 +21,66 @@ namespace Compiler.REPL
 
             while (true)
             {
-                Console.Write(textBuilder.Length == 0 ? "> " : "| ");
-
-                var input = Console.ReadLine();
-                var isBlank = string.IsNullOrWhiteSpace(input);
-
-                if (textBuilder.Length == 0)
+                if (!Loop(textBuilder, variables))
                 {
-                    if (isBlank)
-                    {
-                        break;
-                    }
-                    if (CheckCommands(input))
-                    {
-                        continue;
-                    }
+                    break;
                 }
-
-                textBuilder.AppendLine(input);
-                var text = textBuilder.ToString();
-
-                var syntaxTree = SyntaxTree.Parse(text);
-
-                if (!isBlank && syntaxTree.Diagnostics.Any())
-                {
-                    continue;
-                }
-
-                var compilation = new Compilation(syntaxTree);
-                var compilationResult = compilation.Evaluate(variables);
-
-                var diagnostics = compilationResult.Diagnostics;
-
-                if (_showTree)
-                {
-                    Console.ForegroundColor = ConsoleColor.DarkGray;
-                    syntaxTree.Root.WriteTo(Console.Out);
-                    Console.ResetColor();
-                }
-
-                if (!diagnostics.Any())
-                {
-                    Console.WriteLine(compilationResult.Value);
-                }
-                else
-                {
-                    PrintDiagnostics(syntaxTree.Text, diagnostics);
-                }
-
-                textBuilder.Clear();
             }
+        }
+
+        private static bool Loop(StringBuilder textBuilder, Dictionary<VariableSymbol, object> variables)
+        {
+            Console.Write(textBuilder.Length == 0 ? "> " : "| ");
+
+            var input = Console.ReadLine();
+            var isBlank = string.IsNullOrWhiteSpace(input);
+
+            if (textBuilder.Length == 0)
+            {
+                if (isBlank)
+                {
+                    return false;
+                }
+
+                if (CheckCommands(input))
+                {
+                    return true;
+                }
+            }
+
+            textBuilder.AppendLine(input);
+            var text = textBuilder.ToString();
+
+            var syntaxTree = SyntaxTree.Parse(text);
+
+            if (!isBlank && syntaxTree.Diagnostics.Any())
+            {
+                return true;
+            }
+
+            var compilation = new Compilation(syntaxTree);
+            var compilationResult = compilation.Evaluate(variables);
+
+
+            if (_showTree)
+            {
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                syntaxTree.Root.WriteTo(Console.Out);
+                Console.ResetColor();
+            }
+
+            var diagnostics = compilationResult.Diagnostics;
+            if (!diagnostics.Any())
+            {
+                Console.WriteLine(compilationResult.Value);
+            }
+            else
+            {
+                PrintDiagnostics(syntaxTree.Text, diagnostics);
+            }
+
+            textBuilder.Clear();
+            return true;
         }
 
         private static void PrintDiagnostics(SourceText textSource, ImmutableArray<Diagnostic> diagnostics)

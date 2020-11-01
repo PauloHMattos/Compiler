@@ -1,5 +1,4 @@
 ﻿using System.Collections.Immutable;
-using Compiler.CodeAnalysis.Text;
 
 namespace Compiler.CodeAnalysis
 {
