@@ -161,7 +161,8 @@ namespace Compiler.CodeAnalysis
                     return -(int)operand;
                 case BoundUnaryOperatorKind.LogicalNegation:
                     return !(bool)operand;
-
+                case BoundUnaryOperatorKind.OnesComplement:
+                    return ~(int)operand;
                 default:
                     throw new InvalidOperationException($"Unexpected unary operator {unaryExpression.Operator.Kind}");
             }
@@ -198,7 +199,21 @@ namespace Compiler.CodeAnalysis
                     return (int)left > (int)right;
                 case BoundBinaryOperatorKind.GreaterOrEquals:
                     return (int)left >= (int)right;
-
+                case BoundBinaryOperatorKind.BitwiseAnd:
+                    if (binaryExpression.Type == (typeof(int)))
+                        return (int)left & (int)right;
+                    else
+                        return (bool)left & (bool)right;
+                case BoundBinaryOperatorKind.BitwiseOr:
+                    if (binaryExpression.Type == (typeof(int)))
+                        return (int)left | (int)right;
+                    else
+                        return (bool)left | (bool)right;
+                case BoundBinaryOperatorKind.BitwiseXor:
+                    if (binaryExpression.Type == (typeof(int)))
+                        return (int)left ^ (int)right;
+                    else
+                        return (bool)left ^ (bool)right;
                 default:
                     throw new InvalidOperationException($"Unexpected binary operator {binaryExpression.Operator.Kind}");
             }

@@ -79,6 +79,14 @@ namespace Compiler.CodeAnalysis.Syntax
                     _position++;
                     _kind = SyntaxKind.CloseBraceToken;
                     break;
+                case '~':
+                    _position++;
+                    _kind = SyntaxKind.TildeToken;
+                    break;
+                case '^':
+                    _position++;
+                    _kind = SyntaxKind.HatToken;
+                    break;
                 case '!':
                     _position++;
                     if (Current == '=')
@@ -98,6 +106,10 @@ namespace Compiler.CodeAnalysis.Syntax
                         _position++;
                         _kind = SyntaxKind.AmpersandAmpersandToken;
                     }
+                    else
+                    {
+                        _kind = SyntaxKind.AmpersandToken;
+                    }
                     break;
                 case '|':
                     _position++;
@@ -105,6 +117,10 @@ namespace Compiler.CodeAnalysis.Syntax
                     {
                         _position++;
                         _kind = SyntaxKind.PipePipeToken;
+                    }
+                    else
+                    {
+                        _kind = SyntaxKind.PipeToken;
                     }
                     break;
                 case '=':
@@ -119,7 +135,6 @@ namespace Compiler.CodeAnalysis.Syntax
                         _kind = SyntaxKind.EqualsToken;
                     }
                     break;
-
                 case '<':
                     _position++;
                     if (Current == '=')
@@ -144,7 +159,6 @@ namespace Compiler.CodeAnalysis.Syntax
                         _kind = SyntaxKind.GreaterToken;
                     }
                     break;
-
                 case '0': case '1': case '2': case '3': case '4':
                 case '5': case '6': case '7': case '8': case '9':
                     LexDigit();

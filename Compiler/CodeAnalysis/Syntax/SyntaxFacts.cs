@@ -9,6 +9,7 @@ namespace Compiler.CodeAnalysis.Syntax
         {
             switch (kind)
             {
+                case SyntaxKind.TildeToken:
                 case SyntaxKind.PlusToken:
                 case SyntaxKind.MinusToken:
                 case SyntaxKind.BangToken:
@@ -39,9 +40,12 @@ namespace Compiler.CodeAnalysis.Syntax
                 case SyntaxKind.GreaterOrEqualsToken:
                     return 3;
                     
+                case SyntaxKind.AmpersandToken:
                 case SyntaxKind.AmpersandAmpersandToken:
                     return 2;
 
+                case SyntaxKind.HatToken:
+                case SyntaxKind.PipeToken:
                 case SyntaxKind.PipePipeToken:
                     return 1;
 
@@ -120,11 +124,19 @@ namespace Compiler.CodeAnalysis.Syntax
                     return "*";
                 case SyntaxKind.SlashToken: 
                     return "/";
+                case SyntaxKind.TildeToken:
+                    return "~";
+                case SyntaxKind.HatToken:
+                    return "^";
                 case SyntaxKind.BangToken: 
                     return "!";
+                case SyntaxKind.AmpersandToken:
+                    return "&";
                 case SyntaxKind.AmpersandAmpersandToken:
                     return "&&";
-                case SyntaxKind.PipePipeToken: 
+                case SyntaxKind.PipeToken:
+                    return "|";
+                case SyntaxKind.PipePipeToken:
                     return "||";
                 case SyntaxKind.EqualsToken: 
                     return "=";
