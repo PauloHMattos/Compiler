@@ -48,6 +48,8 @@ namespace Compiler.CodeAnalysis.Binding
                     return BindIfStatement((IfStatementSyntax)statementSyntax);
                 case SyntaxKind.WhileStatement:
                     return BindWhileStatement((WhileStatementSyntax)statementSyntax);
+                case SyntaxKind.ForStatement:
+                    return BindForStatement((ForStatementSyntax)statementSyntax);
                 default:
                     throw new InvalidOperationException($"Unexpected syntax {statementSyntax.Kind}");
             }
@@ -102,6 +104,31 @@ namespace Compiler.CodeAnalysis.Binding
             var condition = BindExpression(syntax.Condition, TypeSymbol.Bool);
             var thenStatement = BindStatement(syntax.Body);
             return new BoundWhileStatement(condition, thenStatement);
+        }
+
+        private BoundStatement BindForStatement(ForStatementSyntax syntax)
+        {
+            _scope = new BoundScope(_scope);
+
+            var name = syntax.Identifier.Text;
+            var variable = new VariableSymbol(name, false, TypeSymbol.Int);
+            if (!_scope.TryDeclare(variable))
+            {
+                Diagnostics.ReportVariableAlreadyDeclared(syntax.Identifier.Span, name);
+            }
+
+            var lowerBound = BindExpression(syntax.LowerBound, TypeSymbol.Int);
+            var upperBound = BindExpression(syntax.UpperBound, TypeSymbol.Int);
+
+            var step = syntax.StepClause != null ? 
+                BindExpression(syntax.StepClause.Expression, TypeSymbol.Int) : 
+                new BoundLiteralExpression(1);
+
+            var body = BindStatement(syntax.Body);
+
+            _scope = _scope.Parent;
+
+            return new BoundForStatement(variable, lowerBound, upperBound, step, body);
         }
 
         private static BoundScope CreateParentScope(BoundGlobalScope previous)

@@ -52,6 +52,9 @@ namespace Compiler.Tests.CodeAnalysis
         [InlineData("{ var a = 5 if a == 0 a = 10 else a = 20}", 20)]
         [InlineData("{ var a = 5 while a > 0 a = a - 1 a}", 0)]
         [InlineData("{ var a = 5 while a == 0 a = a - 1 a}", 5)]
+        [InlineData("{ var a = 0  for i = 0 to 10 a = a + i a}", 55)]
+        [InlineData("{ var a = 0  for i = 0 to 10 step 2 a = a + i a}", 30)]
+        [InlineData("{ var a = 0  for i = 0 to -10 step -1 a = a + i a}", -55)]
         public void Evaluator_Compute_CorrectValues(string text, object expectedValue)
         {
             AssertValue(text, expectedValue);
@@ -147,6 +150,60 @@ namespace Compiler.Tests.CodeAnalysis
             var diagnostics = new List<string>()
             {
                 DiagnosticCode.CannotConvert.GetDiagnostic(TypeSymbol.Int, TypeSymbol.Bool)
+            };
+            AssertHasDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_ForStatement_Reports_CannotConvert_LowerBound()
+        {
+            var text = @"
+                {
+                    var result = 0
+                    for i = [false] to 10
+                        result = i + 1
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.CannotConvert.GetDiagnostic(TypeSymbol.Bool, TypeSymbol.Int)
+            };
+            AssertHasDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_ForStatement_Reports_CannotConvert_UpperBound()
+        {
+            var text = @"
+                {
+                    var result = 0
+                    for i = 0 to [false]
+                        result = i + 1
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.CannotConvert.GetDiagnostic(TypeSymbol.Bool, TypeSymbol.Int)
+            };
+            AssertHasDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_ForStatement_Reports_CannotConvert_Step()
+        {
+            var text = @"
+                {
+                    var result = 0
+                    for i = 0 to 10 step [false]
+                        result = i + 1
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.CannotConvert.GetDiagnostic(TypeSymbol.Bool, TypeSymbol.Int)
             };
             AssertHasDiagnostics(text, diagnostics);
         }

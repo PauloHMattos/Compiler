@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.Immutable;
 using Compiler.CodeAnalysis.Diagnostic;
 using Compiler.CodeAnalysis.Text;
@@ -87,6 +86,8 @@ namespace Compiler.CodeAnalysis.Syntax
                     return ParseIfStatement();
                 case SyntaxKind.WhileKeyword:
                     return ParseWhileStatement();
+                case SyntaxKind.ForKeyword:
+                    return ParseForStatement();
                 default:
                     return ParseExpressionStatement();
             }
@@ -128,14 +129,6 @@ namespace Compiler.CodeAnalysis.Syntax
             return new IfStatementSyntax(keyword, condition, thenStatement, elseClause);
         }
 
-        private StatementSyntax ParseWhileStatement()
-        {
-            var keyword = MatchToken(SyntaxKind.WhileKeyword);
-            var condition = ParseExpression();
-            var body = ParseStatement();
-            return new WhileStatementSyntax(keyword, condition, body);
-        }
-
         private ElseClauseSyntax ParseElseClause()
         {
             if (Current.Kind != SyntaxKind.ElseKeyword)
@@ -146,6 +139,39 @@ namespace Compiler.CodeAnalysis.Syntax
             var keyword = NextToken();
             var elseStatement = ParseStatement();
             return new ElseClauseSyntax(keyword, elseStatement);
+        }
+
+        private StatementSyntax ParseWhileStatement()
+        {
+            var keyword = MatchToken(SyntaxKind.WhileKeyword);
+            var condition = ParseExpression();
+            var body = ParseStatement();
+            return new WhileStatementSyntax(keyword, condition, body);
+        }
+
+        private StatementSyntax ParseForStatement()
+        {
+            var keyword = MatchToken(SyntaxKind.ForKeyword);
+            var identifier = MatchToken(SyntaxKind.IdentifierToken);
+            var equalsToken = MatchToken(SyntaxKind.EqualsToken);
+            var lowerBound = ParseExpression();
+            var toKeyword = MatchToken(SyntaxKind.ToKeyword);
+            var upperBound = ParseExpression();
+            var stepClause = ParseStepClause();
+            var body = ParseStatement();
+            return new ForStatementSyntax(keyword, identifier, equalsToken, lowerBound, toKeyword, upperBound, body, stepClause);
+        }
+
+        private StepClauseSyntax ParseStepClause()
+        {
+            if (Current.Kind != SyntaxKind.StepKeyword)
+            {
+                return null;
+            }
+
+            var keyword = NextToken();
+            var expression = ParseExpression();
+            return new StepClauseSyntax(keyword, expression);
         }
 
         private StatementSyntax ParseExpressionStatement()

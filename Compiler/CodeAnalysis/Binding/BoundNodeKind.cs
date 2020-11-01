@@ -8,6 +8,7 @@
         VariableDeclarationStatement,
         IfStatement,
         WhileStatement,
+        ForStatement,
 
         LiteralExpression,
         UnaryExpression,

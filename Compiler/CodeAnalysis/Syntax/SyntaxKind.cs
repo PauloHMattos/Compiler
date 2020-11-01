@@ -20,6 +20,9 @@
         IfKeyword,
         ElseKeyword,
         WhileKeyword,
+        ForKeyword,
+        ToKeyword,
+        StepKeyword,
 
         // Literals
         NumberToken,
@@ -43,6 +46,7 @@
         // Nodes
         CompilationUnit,
         ElseClause,
+        StepClause,
 
         // Statements
         BlockStatement,
@@ -50,6 +54,7 @@
         VariableDeclarationStatement,
         IfStatement,
         WhileStatement,
+        ForStatement,
 
         // Expressions
         LiteralExpression,
