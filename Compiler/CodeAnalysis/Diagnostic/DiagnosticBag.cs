@@ -34,78 +34,47 @@ namespace Compiler.CodeAnalysis.Diagnostic
 
         public void ReportBadCharacter(in TextSpan span, in char current)
         {
-            var messageFormat = Messages[DiagnosticCode.BadCharacter];
-            var message = string.Format(messageFormat, current);
-            Report(span, message);
+            Report(span, DiagnosticCode.BadCharacter.GetDiagnostic(current));
         }
 
         public void ReportInvalidLiteralType(in TextSpan span, string text, Type type)
         {
-            var messageFormat = Messages[DiagnosticCode.InvalidLiteralType];
-            var message = string.Format(messageFormat, text, type);
-            Report(span, message);
+            Report(span, DiagnosticCode.InvalidLiteralType.GetDiagnostic(text, type));
         }
 
         public void ReportUnexpectedToken(in TextSpan span, SyntaxKind actualKind, SyntaxKind expectedKind)
         {
-            var messageFormat = Messages[DiagnosticCode.UnexpectedToken];
-            var message = string.Format(messageFormat, actualKind, expectedKind);
-            Report(span, message);
+            Report(span, DiagnosticCode.UnexpectedToken.GetDiagnostic(actualKind, expectedKind));
         }
 
         public void ReportUndefinedUnaryOperator(in TextSpan span, string operatorText, Type operandType)
         {
-            var messageFormat = Messages[DiagnosticCode.UndefinedUnaryOperator];
-            var message = string.Format(messageFormat, operatorText, operandType);
-            Report(span, message);
+            Report(span, DiagnosticCode.UndefinedUnaryOperator.GetDiagnostic(operatorText, operandType));
         }
 
         public void ReportUndefinedBinaryOperator(in TextSpan span, string operatorText, Type leftType, Type rightType)
         {
-            var messageFormat = Messages[DiagnosticCode.UndefinedBinaryOperator];
-            var message = string.Format(messageFormat, operatorText, leftType, rightType);
-            Report(span, message);
+            Report(span, DiagnosticCode.UndefinedBinaryOperator.GetDiagnostic(operatorText, leftType, rightType));
         }
 
         public void ReportUndefinedName(in TextSpan span, string name)
         {
-            var messageFormat = Messages[DiagnosticCode.UndefinedName];
-            var message = string.Format(messageFormat, name);
-            Report(span, message);
+            Report(span, DiagnosticCode.UndefinedName.GetDiagnostic(name));
         }
         
         public void ReportCannotConvert(in TextSpan span, Type fromType, Type toType)
         {
-            var messageFormat = Messages[DiagnosticCode.CannotConvert];
-            var message = string.Format(messageFormat, fromType, toType);
-            Report(span, message);
+            Report(span, DiagnosticCode.CannotConvert.GetDiagnostic(fromType, toType));
         }
 
         public void ReportVariableAlreadyDeclared(in TextSpan span, string name)
         {
-            var messageFormat = Messages[DiagnosticCode.VariableAlreadyDeclared];
-            var message = string.Format(messageFormat, name);
-            Report(span, message);
+            Report(span, DiagnosticCode.VariableAlreadyDeclared.GetDiagnostic(name));
         }
 
         public void ReportCannotReassigned(in TextSpan span, string name)
         {
-            var messageFormat = Messages[DiagnosticCode.VariableCannotReassigned];
-            var message = string.Format(messageFormat, name);
-            Report(span, message);
+            Report(span, DiagnosticCode.VariableCannotReassigned.GetDiagnostic(name));
         }
-
-        private static readonly Dictionary<DiagnosticCode, string> Messages = new Dictionary<DiagnosticCode, string>
-        {
-            {DiagnosticCode.BadCharacter, "Bad character in input: '{0}'."},
-            {DiagnosticCode.InvalidLiteralType, "The literal {0} isn't a valid {1}."},
-            {DiagnosticCode.UnexpectedToken, "Unexpected token <{0}>, expected <{1}>."},
-            {DiagnosticCode.UndefinedUnaryOperator, "Unary operator '{0}' is not defined for type '{1}'."},
-            {DiagnosticCode.UndefinedBinaryOperator, "Binary operator '{0}' is not defined for types '{1}' and '{2}'."},
-            {DiagnosticCode.UndefinedName, "Variable '{0}' is not defined."},
-            {DiagnosticCode.CannotConvert, "Cannot convert type '{0}' to {1}."},
-            {DiagnosticCode.VariableAlreadyDeclared, "Variable '{0}' has already been declared."},
-            {DiagnosticCode.VariableCannotReassigned, "Variable '{0}' is const and cannot be reassigned."},
-        };
     }
 }
