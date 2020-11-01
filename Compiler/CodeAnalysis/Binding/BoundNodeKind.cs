@@ -6,7 +6,8 @@
         BlockStatement,
         ExpressionStatement,
         VariableDeclarationStatement,
-        
+        IfStatement,
+
         LiteralExpression,
         UnaryExpression,
         BinaryExpression,

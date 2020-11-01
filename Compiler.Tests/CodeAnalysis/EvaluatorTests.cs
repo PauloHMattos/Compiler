@@ -46,6 +46,10 @@ namespace Compiler.Tests.CodeAnalysis
         [InlineData("const a = 1", 1)]
         [InlineData("const a = true", true)]
         [InlineData("{ var a = 0 (a = 20) * a }", 400)]
+        [InlineData("{ var a = 0 if a == 0 a = 10 }", 10)]
+        [InlineData("{ var a = 5 if a == 0 a = 10 }", 5)]
+        [InlineData("{ var a = 0 if a == 0 a = 10 else a = 20}", 10)]
+        [InlineData("{ var a = 5 if a == 0 a = 10 else a = 20}", 20)]
         public void Evaluator_Compute_CorrectValues(string text, object expectedValue)
         {
             AssertValue(text, expectedValue);
@@ -91,6 +95,7 @@ namespace Compiler.Tests.CodeAnalysis
             };
             AssertHasDiagnostics(text, diagnostics);
         }
+
         [Fact]
         public void Evaluator_Assignment_Reports_CannotConvert()
         {
@@ -104,6 +109,24 @@ namespace Compiler.Tests.CodeAnalysis
             var diagnostics = new List<string>()
             {
                 DiagnosticCode.CannotConvert.GetDiagnostic(TypeSymbol.Bool, TypeSymbol.Int)
+            };
+            AssertHasDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_IfStatement_Reports_CannotConvert()
+        {
+            var text = @"
+                {
+                    var x = 0
+                    if [10]
+                        x = 10
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.CannotConvert.GetDiagnostic(TypeSymbol.Int, TypeSymbol.Bool)
             };
             AssertHasDiagnostics(text, diagnostics);
         }

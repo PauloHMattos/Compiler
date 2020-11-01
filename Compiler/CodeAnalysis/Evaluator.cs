@@ -38,6 +38,10 @@ namespace Compiler.CodeAnalysis
                     EvaluateVariableDeclarationStatement((BoundVariableDeclarationStatement)statement);
                     break;
 
+                case BoundNodeKind.IfStatement:
+                    EvaluateIfStatement((BoundIfStatement)statement);
+                    break;
+
                 default:
                     throw new InvalidOperationException($"Unexpected expression {statement.Kind}");
             }
@@ -48,6 +52,19 @@ namespace Compiler.CodeAnalysis
             var value = EvaluateExpression(statement.Initializer);
             _variables[statement.Variable] = value;
             _lastValue = value;
+        }
+
+        private void EvaluateIfStatement(BoundIfStatement statement)
+        {
+            var condition = (bool)EvaluateExpression(statement.Condition);
+            if (condition)
+            {
+                EvaluateStatement(statement.ThenStatement);
+            }
+            else if (statement.ElseStatement != null)
+            {
+                EvaluateStatement(statement.ElseStatement);
+            }
         }
 
         private void EvaluateBlockStatement(BoundBlockStatement blockStatement)

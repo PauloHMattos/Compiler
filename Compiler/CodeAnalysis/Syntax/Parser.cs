@@ -76,17 +76,18 @@ namespace Compiler.CodeAnalysis.Syntax
 
         public StatementSyntax ParseStatement()
         {
-            if (Current.Kind == SyntaxKind.OpenBraceToken)
+            switch (Current.Kind)
             {
-                return ParseBlockStatement();
+                case SyntaxKind.OpenBraceToken:
+                    return ParseBlockStatement();
+                case SyntaxKind.ConstKeyword:
+                case SyntaxKind.VarKeyword:
+                    return ParseVariableDeclarationStatement();
+                case SyntaxKind.IfKeyword:
+                    return ParseIfStatement();
+                default:
+                    return ParseExpressionStatement();
             }
-            
-            if (Current.Kind == SyntaxKind.ConstKeyword || Current.Kind == SyntaxKind.VarKeyword)
-            {
-                return ParseVariableDeclarationStatement();
-            }
-
-            return ParseExpressionStatement();
         }
 
         private StatementSyntax ParseVariableDeclarationStatement()
@@ -116,12 +117,32 @@ namespace Compiler.CodeAnalysis.Syntax
             return new BlockStatementSyntax(openBraceToken, statements.ToImmutable(), closeBraceToken);
         }
 
+        private StatementSyntax ParseIfStatement()
+        {
+            var keyword = MatchToken(SyntaxKind.IfKeyword);
+            var condition = ParseExpression();
+            var thenStatement = ParseStatement();
+            var elseClause = ParseElseClause();
+            return new IfStatementSyntax(keyword, condition, thenStatement, elseClause);
+        }
+
+        private ElseClauseSyntax ParseElseClause()
+        {
+            if (Current.Kind != SyntaxKind.ElseKeyword)
+            {
+                return null;
+            }
+
+            var keyword = NextToken();
+            var elseStatement = ParseStatement();
+            return new ElseClauseSyntax(keyword, elseStatement);
+        }
+
         private StatementSyntax ParseExpressionStatement()
         {
             var expression = ParseExpression();
             return new ExpressionStatementSyntax(expression);
         }
-
 
         private ExpressionSyntax ParseExpression()
         {

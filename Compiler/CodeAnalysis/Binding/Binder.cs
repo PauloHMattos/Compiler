@@ -44,6 +44,8 @@ namespace Compiler.CodeAnalysis.Binding
                     return BindExpressionStatement((ExpressionStatementSyntax)statementSyntax);
                 case SyntaxKind.VariableDeclarationStatement:
                     return BindVariableDeclarationStatement((VariableDeclarationStatementSyntax)statementSyntax);
+                case SyntaxKind.IfStatement:
+                    return BindIfStatement((IfStatementSyntax)statementSyntax);
                 default:
                     throw new InvalidOperationException($"Unexpected syntax {statementSyntax.Kind}");
             }
@@ -83,6 +85,14 @@ namespace Compiler.CodeAnalysis.Binding
             }
 
             return new BoundVariableDeclarationStatement(variable, initializer);
+        }
+
+        private BoundStatement BindIfStatement(IfStatementSyntax syntax)
+        {
+            var condition = BindExpression(syntax.Condition, TypeSymbol.Bool);
+            var thenStatement = BindStatement(syntax.ThenStatement);
+            var elseStatement = syntax.ElseClause == null ? null : BindStatement(syntax.ElseClause.ElseStatement);
+            return new BoundIfStatement(condition, thenStatement, elseStatement);
         }
 
         private static BoundScope CreateParentScope(BoundGlobalScope previous)
@@ -128,6 +138,16 @@ namespace Compiler.CodeAnalysis.Binding
                 default:
                     throw new InvalidExpressionException($"Unexpected expression syntax {syntax.Kind}");
             }
+        }
+
+        public BoundExpression BindExpression(ExpressionSyntax expression, Type type)
+        {
+            var boundExpression = BindExpression(expression);
+            if (boundExpression.Type != type)
+            {
+                Diagnostics.ReportCannotConvert(expression.Span, boundExpression.Type, type);
+            }
+            return boundExpression;
         }
 
         private BoundExpression BindLiteralExpression(LiteralExpressionSyntax syntax)

@@ -63,6 +63,10 @@ namespace Compiler.CodeAnalysis.Syntax
                     return SyntaxKind.ConstKeyword;
                 case "var":
                     return SyntaxKind.VarKeyword;
+                case "if":
+                    return SyntaxKind.IfKeyword;
+                case "else":
+                    return SyntaxKind.ElseKeyword;
                 default:
                     return SyntaxKind.IdentifierToken;
             }
@@ -88,6 +92,10 @@ namespace Compiler.CodeAnalysis.Syntax
                     return "const";
                 case SyntaxKind.VarKeyword:
                     return "var";
+                case SyntaxKind.IfKeyword:
+                    return "if";
+                case SyntaxKind.ElseKeyword:
+                    return "else";
                 case SyntaxKind.PlusToken: 
                     return "+";
                 case SyntaxKind.MinusToken: 

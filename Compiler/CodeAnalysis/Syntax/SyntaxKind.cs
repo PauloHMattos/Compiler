@@ -17,6 +17,8 @@
         TrueKeyword,
         ConstKeyword,
         VarKeyword,
+        IfKeyword,
+        ElseKeyword,
 
         // Literals
         NumberToken,
@@ -39,11 +41,13 @@
 
         // Nodes
         CompilationUnit,
+        ElseClause,
 
         // Statements
         BlockStatement,
         ExpressionStatement,
         VariableDeclarationStatement,
+        IfStatement,
 
         // Expressions
         LiteralExpression,
