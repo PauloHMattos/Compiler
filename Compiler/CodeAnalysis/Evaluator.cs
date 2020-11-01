@@ -133,7 +133,7 @@ namespace Compiler.CodeAnalysis
                 case BoundNodeKind.AssignmentExpression:
                     var assignmentExpression = (BoundAssignmentExpression)expression;
                     var value = EvaluateExpression(assignmentExpression.Expression);
-                    _variables[assignmentExpression.VariableSymbol] = value;
+                    _variables[assignmentExpression.Variable] = value;
                     return value;
 
                 case BoundNodeKind.UnaryExpression:

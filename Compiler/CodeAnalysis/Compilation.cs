@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using Compiler.CodeAnalysis.Binding;
+using Compiler.CodeAnalysis.Lowering;
 using Compiler.CodeAnalysis.Syntax;
 
 namespace Compiler.CodeAnalysis
@@ -46,23 +47,27 @@ namespace Compiler.CodeAnalysis
 
         public EvaluationResult Evaluate(Dictionary<VariableSymbol, object> variables)
         {
-            var boundExpression = GlobalScope.Statement;
-
-            var evaluator = new Evaluator(boundExpression, variables);
-
             var diagnostics = SyntaxTree.Diagnostics.Concat(GlobalScope.Diagnostics).ToImmutableArray();
             if (diagnostics.Any())
             {
                 return new EvaluationResult(diagnostics, null);
             }
 
+            var statement = GetStatement();
+            var evaluator = new Evaluator(statement, variables);
             var value = evaluator.Evaluate();
             return new EvaluationResult(ImmutableArray<Diagnostic.Diagnostic>.Empty, value);
         }
 
         public void EmitTree(TextWriter writer)
         {
-            GlobalScope.Statement.WriteTo(writer);
+            GetStatement().WriteTo(writer);
+        }
+
+        private BoundStatement GetStatement()
+        {
+            var result = GlobalScope.Statement;
+            return Lowerer.Lower(result);
         }
     }
 }
