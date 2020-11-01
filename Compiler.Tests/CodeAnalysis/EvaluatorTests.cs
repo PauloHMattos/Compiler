@@ -31,9 +31,11 @@ namespace Compiler.Tests.CodeAnalysis
         [InlineData("true || false", true)]
         [InlineData("true && false", false)]
         [InlineData("false == false", true)]
-        [InlineData("a = 1", 1)]
-        [InlineData("a = true", true)]
-        [InlineData("(a = 20) * 10", 200)]
+        [InlineData("var a = 1", 1)]
+        [InlineData("var a = true", true)]
+        [InlineData("const a = 1", 1)]
+        [InlineData("const a = true", true)]
+        [InlineData("{ var a = 0 (a = 20) * a }", 400)]
         public void Evaluator_Evaluate_RoundTrips(string text, object expectedValue)
         {
             var syntaxTree = SyntaxTree.Parse(text);

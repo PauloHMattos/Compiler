@@ -81,6 +81,20 @@ namespace Compiler.CodeAnalysis.Diagnostic
             Report(span, message);
         }
 
+        public void ReportVariableAlreadyDeclared(in TextSpan span, string name)
+        {
+            var messageFormat = Messages[DiagnosticCode.VariableAlreadyDeclared];
+            var message = string.Format(messageFormat, name);
+            Report(span, message);
+        }
+
+        public void ReportCannotReassigned(in TextSpan span, string name)
+        {
+            var messageFormat = Messages[DiagnosticCode.VariableCannotReassigned];
+            var message = string.Format(messageFormat, name);
+            Report(span, message);
+        }
+
         private static readonly Dictionary<DiagnosticCode, string> Messages = new Dictionary<DiagnosticCode, string>
         {
             {DiagnosticCode.BadCharacter, "Bad character in input: '{0}'."},
@@ -90,6 +104,8 @@ namespace Compiler.CodeAnalysis.Diagnostic
             {DiagnosticCode.UndefinedBinaryOperator, "Binary operator '{0}' is not defined for types '{1}' and '{2}'."},
             {DiagnosticCode.UndefinedName, "Variable '{0}' is not defined."},
             {DiagnosticCode.CannotConvert, "Cannot convert type '{0}' to {1}."},
+            {DiagnosticCode.VariableAlreadyDeclared, "Variable '{0}' has already been declared."},
+            {DiagnosticCode.VariableCannotReassigned, "Variable '{0}' is const and cannot be reassigned."},
         };
     }
 }

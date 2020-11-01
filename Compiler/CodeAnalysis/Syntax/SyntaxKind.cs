@@ -15,6 +15,8 @@
         // Keywords
         FalseKeyword,
         TrueKeyword,
+        ConstKeyword,
+        VarKeyword,
 
         // Literals
         NumberToken,
@@ -37,6 +39,7 @@
         // Statements
         BlockStatement,
         ExpressionStatement,
+        VariableDeclarationStatement,
 
         // Expressions
         LiteralExpression,

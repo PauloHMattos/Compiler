@@ -42,6 +42,8 @@ namespace Compiler.CodeAnalysis.Binding
                     return BindBlockStatement((BlockStatementSyntax) statementSyntax);
                 case SyntaxKind.ExpressionStatement:
                     return BindExpressionStatement((ExpressionStatementSyntax)statementSyntax);
+                case SyntaxKind.VariableDeclarationStatement:
+                    return BindVariableDeclarationStatement((VariableDeclarationStatementSyntax)statementSyntax);
                 default:
                     throw new InvalidOperationException($"Unexpected syntax {statementSyntax.Kind}");
             }
@@ -66,6 +68,21 @@ namespace Compiler.CodeAnalysis.Binding
         {
             var boundExpression = BindExpression(syntax.Expression);
             return new BoundExpressionStatement(boundExpression);
+        }
+
+        private BoundStatement BindVariableDeclarationStatement(VariableDeclarationStatementSyntax syntax)
+        {
+            var name = syntax.Identifier.Text;
+            var isReadOnly = syntax.Keyword.Kind == SyntaxKind.ConstKeyword;
+            var initializer = BindExpression(syntax.Initializer);
+            var variable = new VariableSymbol(name, isReadOnly, initializer.Type);
+
+            if (!_scope.TryDeclare(variable))
+            {
+                Diagnostics.ReportVariableAlreadyDeclared(syntax.Identifier.Span, name);
+            }
+
+            return new BoundVariableDeclarationStatement(variable, initializer);
         }
 
         private static BoundScope CreateParentScope(BoundGlobalScope previous)
@@ -167,8 +184,14 @@ namespace Compiler.CodeAnalysis.Binding
 
             if (!_scope.TryLookup(name, out var variable))
             {
-                variable = new VariableSymbol(name, boundExpression.Type);
-                _scope.TryDeclare(variable);
+                Diagnostics.ReportUndefinedName(syntax.Expression.Span, name);
+                return boundExpression;
+            }
+
+            if (variable.IsReadOnly)
+            {
+                Diagnostics.ReportCannotReassigned(syntax.EqualsToken.Span, name);
+                return boundExpression;
             }
 
             if (boundExpression.Type != variable.Type)

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using Compiler.CodeAnalysis.Diagnostic;
 using Compiler.CodeAnalysis.Text;
@@ -79,8 +80,25 @@ namespace Compiler.CodeAnalysis.Syntax
             {
                 return ParseBlockStatement();
             }
+            
+            if (Current.Kind == SyntaxKind.ConstKeyword || Current.Kind == SyntaxKind.VarKeyword)
+            {
+                return ParseVariableDeclarationStatement();
+            }
 
             return ParseExpressionStatement();
+        }
+
+        private StatementSyntax ParseVariableDeclarationStatement()
+        {
+            var expectedToken = Current.Kind == SyntaxKind.VarKeyword ?
+                                            SyntaxKind.VarKeyword : 
+                                            SyntaxKind.ConstKeyword;
+            var keyword = MatchToken(expectedToken);
+            var identifier = MatchToken(SyntaxKind.IdentifierToken);
+            var equals = MatchToken(SyntaxKind.EqualsToken);
+            var initializer = ParseExpression();
+            return new VariableDeclarationStatementSyntax(keyword, identifier, equals, initializer);
         }
 
         private StatementSyntax ParseBlockStatement()

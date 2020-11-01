@@ -8,6 +8,8 @@
         UndefinedUnaryOperator,
         UndefinedBinaryOperator,
         UndefinedName,
-        CannotConvert
+        CannotConvert,
+        VariableAlreadyDeclared,
+        VariableCannotReassigned
     }
 }

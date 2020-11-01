@@ -28,15 +28,26 @@ namespace Compiler.CodeAnalysis
             {
                 case BoundNodeKind.BlockStatement:
                     EvaluateBlockStatement((BoundBlockStatement)statement);
-                    
                     break;
+
                 case BoundNodeKind.ExpressionStatement:
                     EvaluateExpressionStatement((BoundExpressionStatement)statement);
+                    break;
+
+                case BoundNodeKind.VariableDeclarationStatement:
+                    EvaluateVariableDeclarationStatement((BoundVariableDeclarationStatement)statement);
                     break;
 
                 default:
                     throw new InvalidOperationException($"Unexpected expression {statement.Kind}");
             }
+        }
+
+        private void EvaluateVariableDeclarationStatement(BoundVariableDeclarationStatement statement)
+        {
+            var value = EvaluateExpression(statement.Initializer);
+            _variables[statement.Variable] = value;
+            _lastValue = value;
         }
 
         private void EvaluateBlockStatement(BoundBlockStatement blockStatement)
