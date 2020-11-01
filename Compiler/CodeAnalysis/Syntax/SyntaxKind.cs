@@ -29,6 +29,9 @@
         BangEqualsToken,
         EqualsEqualsToken,
 
+        // Nodes
+        CompilationUnit,
+
         // Expressions
         LiteralExpression,
         NameExpression,
