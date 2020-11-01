@@ -98,6 +98,7 @@ namespace Compiler.CodeAnalysis.Binding
             }
 
             variable = new VariableSymbol(name, boundExpression.Type);
+            _variables.Add(variable, name);
             return new BoundAssignmentExpression(variable, boundExpression);
         }
     }
