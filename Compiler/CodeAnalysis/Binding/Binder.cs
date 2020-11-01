@@ -184,7 +184,7 @@ namespace Compiler.CodeAnalysis.Binding
 
             if (!_scope.TryLookup(name, out var variable))
             {
-                Diagnostics.ReportUndefinedName(syntax.Expression.Span, name);
+                Diagnostics.ReportUndefinedName(syntax.IdentifierToken.Span, name);
                 return boundExpression;
             }
 
