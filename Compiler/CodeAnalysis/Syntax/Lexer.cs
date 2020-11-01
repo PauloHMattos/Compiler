@@ -119,6 +119,32 @@ namespace Compiler.CodeAnalysis.Syntax
                         _kind = SyntaxKind.EqualsToken;
                     }
                     break;
+
+                case '<':
+                    _position++;
+                    if (Current == '=')
+                    {
+                        _position++;
+                        _kind = SyntaxKind.LessOrEqualsToken;
+                    }
+                    else
+                    {
+                        _kind = SyntaxKind.LessToken;
+                    }
+                    break;
+                case '>':
+                    _position++;
+                    if (Current == '=')
+                    {
+                        _position++;
+                        _kind = SyntaxKind.GreaterOrEqualsToken;
+                    }
+                    else
+                    {
+                        _kind = SyntaxKind.GreaterToken;
+                    }
+                    break;
+
                 case '0': case '1': case '2': case '3': case '4':
                 case '5': case '6': case '7': case '8': case '9':
                     LexDigit();

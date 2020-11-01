@@ -32,6 +32,10 @@
         EqualsToken,
         BangEqualsToken,
         EqualsEqualsToken,
+        LessToken,
+        LessOrEqualsToken,
+        GreaterToken,
+        GreaterOrEqualsToken,
 
         // Nodes
         CompilationUnit,

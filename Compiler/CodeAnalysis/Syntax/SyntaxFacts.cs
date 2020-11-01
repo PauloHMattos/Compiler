@@ -33,8 +33,12 @@ namespace Compiler.CodeAnalysis.Syntax
 
                 case SyntaxKind.EqualsEqualsToken:
                 case SyntaxKind.BangEqualsToken:
+                case SyntaxKind.LessToken:
+                case SyntaxKind.LessOrEqualsToken:
+                case SyntaxKind.GreaterToken:
+                case SyntaxKind.GreaterOrEqualsToken:
                     return 3;
-
+                    
                 case SyntaxKind.AmpersandAmpersandToken:
                     return 2;
 
@@ -100,10 +104,18 @@ namespace Compiler.CodeAnalysis.Syntax
                     return "||";
                 case SyntaxKind.EqualsToken: 
                     return "=";
-                case SyntaxKind.BangEqualsToken: 
+                case SyntaxKind.BangEqualsToken:
                     return "!=";
-                case SyntaxKind.EqualsEqualsToken: 
+                case SyntaxKind.EqualsEqualsToken:
                     return "==";
+                case SyntaxKind.LessToken:
+                    return "<";
+                case SyntaxKind.LessOrEqualsToken:
+                    return "<=";
+                case SyntaxKind.GreaterToken:
+                    return ">";
+                case SyntaxKind.GreaterOrEqualsToken:
+                    return ">=";
                 default:
                     return null;
             }
