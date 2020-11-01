@@ -38,6 +38,18 @@ namespace Compiler.CodeAnalysis
                     EvaluateVariableDeclarationStatement((BoundVariableDeclarationStatement)statement);
                     break;
 
+                case BoundNodeKind.IfStatement:
+                    EvaluateIfStatement((BoundIfStatement)statement);
+                    break;
+
+                case BoundNodeKind.WhileStatement:
+                    EvaluateWhileStatement((BoundWhileStatement)statement);
+                    break;
+
+                case BoundNodeKind.ForStatement:
+                    EvaluateForStatement((BoundForStatement)statement);
+                    break;
+
                 default:
                     throw new InvalidOperationException($"Unexpected expression {statement.Kind}");
             }
@@ -48,6 +60,49 @@ namespace Compiler.CodeAnalysis
             var value = EvaluateExpression(statement.Initializer);
             _variables[statement.Variable] = value;
             _lastValue = value;
+        }
+
+        private void EvaluateIfStatement(BoundIfStatement statement)
+        {
+            var condition = (bool)EvaluateExpression(statement.Condition);
+            if (condition)
+            {
+                EvaluateStatement(statement.ThenStatement);
+            }
+            else if (statement.ElseStatement != null)
+            {
+                EvaluateStatement(statement.ElseStatement);
+            }
+        }
+
+        private void EvaluateWhileStatement(BoundWhileStatement statement)
+        {
+            while ((bool)EvaluateExpression(statement.Condition))
+            {
+                EvaluateStatement(statement.Body);
+            }
+        }
+
+        private void EvaluateForStatement(BoundForStatement statement)
+        {
+            var lowerBound = (int)EvaluateExpression(statement.LowerBound);
+            var upperBound = (int)EvaluateExpression(statement.UpperBound);
+            var step = (int)EvaluateExpression(statement.Step);
+
+            if (step < 0)
+            {
+                step = -step;
+                var aux = lowerBound;
+                lowerBound = upperBound;
+                upperBound = aux;
+            }
+
+            _variables[statement.Variable] = lowerBound;
+            for (var i = lowerBound; i <= upperBound; i += step)
+            {
+                _variables[statement.Variable] = i;
+                EvaluateStatement(statement.Body);
+            }
         }
 
         private void EvaluateBlockStatement(BoundBlockStatement blockStatement)
@@ -127,16 +182,22 @@ namespace Compiler.CodeAnalysis
                     return (int)left * (int)right;
                 case BoundBinaryOperatorKind.Division:
                     return (int)left / (int)right;
-
                 case BoundBinaryOperatorKind.LogicalAnd:
                     return (bool)left && (bool)right;
                 case BoundBinaryOperatorKind.LogicalOr:
                     return (bool)left || (bool)right;
-
                 case BoundBinaryOperatorKind.Equals:
                     return left.Equals(right);
                 case BoundBinaryOperatorKind.NotEquals:
                     return !left.Equals(right);
+                case BoundBinaryOperatorKind.Less:
+                    return (int)left < (int)right;
+                case BoundBinaryOperatorKind.LessOrEquals:
+                    return (int)left <= (int)right;
+                case BoundBinaryOperatorKind.Greater:
+                    return (int)left > (int)right;
+                case BoundBinaryOperatorKind.GreaterOrEquals:
+                    return (int)left >= (int)right;
 
                 default:
                     throw new InvalidOperationException($"Unexpected binary operator {binaryExpression.Operator.Kind}");

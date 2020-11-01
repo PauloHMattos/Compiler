@@ -33,8 +33,12 @@ namespace Compiler.CodeAnalysis.Syntax
 
                 case SyntaxKind.EqualsEqualsToken:
                 case SyntaxKind.BangEqualsToken:
+                case SyntaxKind.LessToken:
+                case SyntaxKind.LessOrEqualsToken:
+                case SyntaxKind.GreaterToken:
+                case SyntaxKind.GreaterOrEqualsToken:
                     return 3;
-
+                    
                 case SyntaxKind.AmpersandAmpersandToken:
                     return 2;
 
@@ -59,6 +63,18 @@ namespace Compiler.CodeAnalysis.Syntax
                     return SyntaxKind.ConstKeyword;
                 case "var":
                     return SyntaxKind.VarKeyword;
+                case "if":
+                    return SyntaxKind.IfKeyword;
+                case "else":
+                    return SyntaxKind.ElseKeyword;
+                case "while":
+                    return SyntaxKind.WhileKeyword;
+                case "for":
+                    return SyntaxKind.ForKeyword;
+                case "to":
+                    return SyntaxKind.ToKeyword;
+                case "step":
+                    return SyntaxKind.StepKeyword;
                 default:
                     return SyntaxKind.IdentifierToken;
             }
@@ -84,6 +100,18 @@ namespace Compiler.CodeAnalysis.Syntax
                     return "const";
                 case SyntaxKind.VarKeyword:
                     return "var";
+                case SyntaxKind.IfKeyword:
+                    return "if";
+                case SyntaxKind.ElseKeyword:
+                    return "else";
+                case SyntaxKind.WhileKeyword:
+                    return "while";
+                case SyntaxKind.ForKeyword:
+                    return "for";
+                case SyntaxKind.ToKeyword:
+                    return "to";
+                case SyntaxKind.StepKeyword:
+                    return "step";
                 case SyntaxKind.PlusToken: 
                     return "+";
                 case SyntaxKind.MinusToken: 
@@ -100,10 +128,18 @@ namespace Compiler.CodeAnalysis.Syntax
                     return "||";
                 case SyntaxKind.EqualsToken: 
                     return "=";
-                case SyntaxKind.BangEqualsToken: 
+                case SyntaxKind.BangEqualsToken:
                     return "!=";
-                case SyntaxKind.EqualsEqualsToken: 
+                case SyntaxKind.EqualsEqualsToken:
                     return "==";
+                case SyntaxKind.LessToken:
+                    return "<";
+                case SyntaxKind.LessOrEqualsToken:
+                    return "<=";
+                case SyntaxKind.GreaterToken:
+                    return ">";
+                case SyntaxKind.GreaterOrEqualsToken:
+                    return ">=";
                 default:
                     return null;
             }

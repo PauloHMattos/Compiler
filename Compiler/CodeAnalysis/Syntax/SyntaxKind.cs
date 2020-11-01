@@ -17,6 +17,12 @@
         TrueKeyword,
         ConstKeyword,
         VarKeyword,
+        IfKeyword,
+        ElseKeyword,
+        WhileKeyword,
+        ForKeyword,
+        ToKeyword,
+        StepKeyword,
 
         // Literals
         NumberToken,
@@ -32,14 +38,23 @@
         EqualsToken,
         BangEqualsToken,
         EqualsEqualsToken,
+        LessToken,
+        LessOrEqualsToken,
+        GreaterToken,
+        GreaterOrEqualsToken,
 
         // Nodes
         CompilationUnit,
+        ElseClause,
+        StepClause,
 
         // Statements
         BlockStatement,
         ExpressionStatement,
         VariableDeclarationStatement,
+        IfStatement,
+        WhileStatement,
+        ForStatement,
 
         // Expressions
         LiteralExpression,
