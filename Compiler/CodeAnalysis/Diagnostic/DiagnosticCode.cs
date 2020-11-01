@@ -7,6 +7,7 @@
         UnexpectedToken,
         UndefinedUnaryOperator,
         UndefinedBinaryOperator,
-        UndefinedName
+        UndefinedName,
+        CannotConvert
     }
 }

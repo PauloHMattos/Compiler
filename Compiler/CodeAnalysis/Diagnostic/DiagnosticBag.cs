@@ -73,6 +73,13 @@ namespace Compiler.CodeAnalysis.Diagnostic
             var message = string.Format(messageFormat, name);
             Report(span, message);
         }
+        
+        public void ReportCannotConvert(in TextSpan span, Type fromType, Type toType)
+        {
+            var messageFormat = Messages[DiagnosticCode.CannotConvert];
+            var message = string.Format(messageFormat, fromType, toType);
+            Report(span, message);
+        }
 
         private static readonly Dictionary<DiagnosticCode, string> Messages = new Dictionary<DiagnosticCode, string>
         {
@@ -82,6 +89,7 @@ namespace Compiler.CodeAnalysis.Diagnostic
             {DiagnosticCode.UndefinedUnaryOperator, "Unary operator '{0}' is not defined for type '{1}'."},
             {DiagnosticCode.UndefinedBinaryOperator, "Binary operator '{0}' is not defined for types '{1}' and '{2}'."},
             {DiagnosticCode.UndefinedName, "Variable '{0}' is not defined."},
+            {DiagnosticCode.CannotConvert, "Cannot convert type '{0}' to {1}."},
         };
     }
 }

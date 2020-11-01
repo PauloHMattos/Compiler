@@ -1,20 +1,79 @@
 ﻿using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Data;
-using System.Linq;
 using Compiler.CodeAnalysis.Diagnostic;
 using Compiler.CodeAnalysis.Syntax;
 
 namespace Compiler.CodeAnalysis.Binding
 {
+    internal sealed class BoundGlobalScope
+    {
+        public BoundGlobalScope Previous { get; }
+        public ImmutableArray<Diagnostic.Diagnostic> Diagnostics { get; }
+        public ImmutableArray<VariableSymbol> Variables { get; }
+        public BoundExpression Expression { get; }
+
+        public BoundGlobalScope(BoundGlobalScope previous,
+            ImmutableArray<Diagnostic.Diagnostic> diagnostics,
+            ImmutableArray<VariableSymbol> variables,
+            BoundExpression expression)
+        {
+            Previous = previous;
+            Diagnostics = diagnostics;
+            Variables = variables;
+            Expression = expression;
+        }
+    }
+
     internal sealed class Binder
     {
-        private readonly Dictionary<VariableSymbol, object> _variables;
+        private BoundScope _scope;
         public DiagnosticBag Diagnostics { get; }
 
-        public Binder(Dictionary<VariableSymbol, object> variables)
+        private Binder(BoundScope parent)
         {
-            _variables = variables;
+            _scope = new BoundScope(parent);
             Diagnostics = new DiagnosticBag();
+        }
+
+        public static BoundGlobalScope BindGlobalScope(BoundGlobalScope previous, CompilationUnitSyntax compilationUnit)
+        {
+            var parentScope = CreateParentScope(previous);
+            var binder = new Binder(parentScope);
+            var expression = binder.BindExpression(compilationUnit.Expression);
+            var variables = binder._scope.GetDeclaredVariables();
+            var diagnostics = binder.Diagnostics.ToImmutableArray();
+
+            if (previous != null)
+            {
+                diagnostics = diagnostics.InsertRange(0, previous.Diagnostics);
+            }
+
+            return new BoundGlobalScope(previous, diagnostics, variables, expression);
+        }
+
+        private static BoundScope CreateParentScope(BoundGlobalScope previous)
+        {
+            var stack = new Stack<BoundGlobalScope>();
+            
+            while (previous != null)
+            {
+                stack.Push(previous);
+                previous = previous.Previous;
+            }
+
+            BoundScope parent = null;
+            while (stack.Count > 0)
+            {
+                previous = stack.Pop();
+                var scope = new BoundScope(parent);
+                foreach (var variable in previous.Variables)
+                {
+                    scope.TryDeclare(variable);
+                }
+                parent = scope;
+            }
+            return parent;
         }
 
         public BoundExpression BindExpression(ExpressionSyntax syntax)
@@ -77,8 +136,7 @@ namespace Compiler.CodeAnalysis.Binding
         private BoundExpression BindNameExpression(NameExpressionSyntax syntax)
         {
             var name = syntax.IdentifierToken.Text;
-            var variable = _variables.Keys.FirstOrDefault(e => e.Name == name);
-            if (variable == null)
+            if (!_scope.TryLookup(name, out var variable))
             {
                 Diagnostics.ReportUndefinedName(syntax.IdentifierToken.Span, name);
                 return new BoundLiteralExpression(0);
@@ -91,14 +149,18 @@ namespace Compiler.CodeAnalysis.Binding
             var name = syntax.IdentifierToken.Text;
             var boundExpression = BindExpression(syntax.Expression);
 
-            var variable = _variables.Keys.FirstOrDefault(e => e.Name == name);
-            if (variable != null)
+            if (!_scope.TryLookup(name, out var variable))
             {
-                _variables.Remove(variable);
+                variable = new VariableSymbol(name, boundExpression.Type);
+                _scope.TryDeclare(variable);
             }
 
-            variable = new VariableSymbol(name, boundExpression.Type);
-            _variables.Add(variable, name);
+            if (boundExpression.Type != variable.Type)
+            {
+                Diagnostics.ReportCannotConvert(syntax.Expression.Span, boundExpression.Type, variable.Type);
+                return boundExpression;
+            }
+
             return new BoundAssignmentExpression(variable, boundExpression);
         }
     }
