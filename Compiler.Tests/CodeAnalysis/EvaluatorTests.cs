@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Compiler.CodeAnalysis;
 using Compiler.CodeAnalysis.Binding;
 using Compiler.CodeAnalysis.Diagnostics;
+using Compiler.CodeAnalysis.Symbols;
 using Compiler.CodeAnalysis.Syntax;
 using Xunit;
 
