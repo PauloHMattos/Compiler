@@ -140,6 +140,8 @@ namespace Compiler.CodeAnalysis.Binding
         {
             switch (expression.Kind)
             {
+                case BoundNodeKind.ErrorExpression:
+                    return RewriteErrorExpression((BoundErrorExpression)expression);
                 case BoundNodeKind.LiteralExpression:
                     return RewriteLiteralExpression((BoundLiteralExpression)expression);
                 case BoundNodeKind.VariableExpression:
@@ -154,6 +156,11 @@ namespace Compiler.CodeAnalysis.Binding
                 default:
                     throw new InvalidOperationException($"Unexpected expression {expression.Kind}.");
             }
+        }
+
+        protected virtual BoundExpression RewriteErrorExpression(BoundErrorExpression node)
+        {
+            return node;
         }
 
         protected virtual BoundExpression RewriteLiteralExpression(BoundLiteralExpression node)
