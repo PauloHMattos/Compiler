@@ -26,6 +26,7 @@
 
         // Literals
         NumberToken,
+        StringToken,
 
         // Operators
         PlusToken,

@@ -1,15 +1,33 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Compiler.CodeAnalysis.Diagnostics;
 using Compiler.CodeAnalysis.Syntax;
+using Compiler.CodeAnalysis.Text;
 using Xunit;
 
 namespace Compiler.Tests.CodeAnalysis.Syntax
 {
     public class LexerTests
     {
+
         [Fact]
-        public void Lexer_Tests_AllTokenKinds()
+        public void Lexer_Lexes_UnterminateString()
+        {
+            const string text = "\"text";
+            var tokens = SyntaxTree.ParseTokens(text, out var diagnostics);
+
+            var token = Assert.Single(tokens);
+            Assert.Equal(SyntaxKind.StringToken, token.Kind);
+            Assert.Equal(text, token.Text);
+
+            var diagnostic = Assert.Single(diagnostics);
+            Assert.Equal(new TextSpan(0, 1), diagnostic.Span);
+            Assert.Equal(DiagnosticCode.UnterminatedString.GetDiagnostic(), diagnostic.Message);
+        }
+
+        [Fact]
+        public void Lexer_Cover_AllTokenKinds()
         {
             var tokenKinds = Enum.GetValues(typeof(SyntaxKind))
                 .Cast<SyntaxKind>()
@@ -115,6 +133,8 @@ namespace Compiler.Tests.CodeAnalysis.Syntax
                 (SyntaxKind.IdentifierToken, "abc"),
                 (SyntaxKind.NumberToken, "1"),
                 (SyntaxKind.NumberToken, "123"),
+                (SyntaxKind.StringToken, "\"Test\""),
+                (SyntaxKind.StringToken, "\"Te\"\"st\""),
             };
 
             return fixedTokens.Concat(dynamicTokens);
@@ -188,6 +208,10 @@ namespace Compiler.Tests.CodeAnalysis.Syntax
 
             if (kind1 == SyntaxKind.PipeToken && kind2 == SyntaxKind.PipePipeToken)
                 return true;
+
+            if (kind1 == SyntaxKind.StringToken && kind2 == SyntaxKind.StringToken)
+                return true;
+
             return false;
         }
 
