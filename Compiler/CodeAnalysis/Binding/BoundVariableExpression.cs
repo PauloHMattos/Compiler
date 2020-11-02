@@ -1,5 +1,4 @@
-﻿using System;
-using Compiler.CodeAnalysis.Symbols;
+﻿using Compiler.CodeAnalysis.Symbols;
 
 namespace Compiler.CodeAnalysis.Binding
 {
@@ -8,7 +7,7 @@ namespace Compiler.CodeAnalysis.Binding
         public VariableSymbol VariableSymbol { get; }
         public override BoundNodeKind Kind => BoundNodeKind.VariableExpression;
 
-        public override Type Type => VariableSymbol.Type;
+        public override TypeSymbol Type => VariableSymbol.Type;
 
         public BoundVariableExpression(VariableSymbol variableSymbol)
         {

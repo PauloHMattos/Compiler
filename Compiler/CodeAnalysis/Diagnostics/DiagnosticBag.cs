@@ -1,6 +1,6 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
+using Compiler.CodeAnalysis.Symbols;
 using Compiler.CodeAnalysis.Syntax;
 using Compiler.CodeAnalysis.Text;
 
@@ -37,7 +37,7 @@ namespace Compiler.CodeAnalysis.Diagnostics
             Report(span, DiagnosticCode.BadCharacter.GetDiagnostic(current));
         }
 
-        public void ReportInvalidLiteralType(in TextSpan span, string text, Type type)
+        public void ReportInvalidLiteralType(in TextSpan span, string text, TypeSymbol type)
         {
             Report(span, DiagnosticCode.InvalidLiteralType.GetDiagnostic(text, type));
         }
@@ -52,12 +52,12 @@ namespace Compiler.CodeAnalysis.Diagnostics
             Report(span, DiagnosticCode.UnexpectedToken.GetDiagnostic(actualKind, expectedKind));
         }
 
-        public void ReportUndefinedUnaryOperator(in TextSpan span, string operatorText, Type operandType)
+        public void ReportUndefinedUnaryOperator(in TextSpan span, string operatorText, TypeSymbol operandType)
         {
             Report(span, DiagnosticCode.UndefinedUnaryOperator.GetDiagnostic(operatorText, operandType));
         }
 
-        public void ReportUndefinedBinaryOperator(in TextSpan span, string operatorText, Type leftType, Type rightType)
+        public void ReportUndefinedBinaryOperator(in TextSpan span, string operatorText, TypeSymbol leftType, TypeSymbol rightType)
         {
             Report(span, DiagnosticCode.UndefinedBinaryOperator.GetDiagnostic(operatorText, leftType, rightType));
         }
@@ -67,7 +67,7 @@ namespace Compiler.CodeAnalysis.Diagnostics
             Report(span, DiagnosticCode.UndefinedName.GetDiagnostic(name));
         }
         
-        public void ReportCannotConvert(in TextSpan span, Type fromType, Type toType)
+        public void ReportCannotConvert(in TextSpan span, TypeSymbol fromType, TypeSymbol toType)
         {
             Report(span, DiagnosticCode.CannotConvert.GetDiagnostic(fromType, toType));
         }

@@ -2,14 +2,33 @@
 
 namespace Compiler.CodeAnalysis.Symbols
 {
-    public static class TypeSymbol
+    public class TypeSymbol : Symbol
     {
-        public static Type Bool => typeof(bool);
-        public static Type Int => typeof(int);
+        public static readonly TypeSymbol Bool = new TypeSymbol("bool");
+        public static readonly TypeSymbol Int = new TypeSymbol("int");
+        public static readonly TypeSymbol String = new TypeSymbol("string");
 
-        public static object DefaultValue(Type type)
+        public override SymbolKind Kind => SymbolKind.Type;
+
+
+        private TypeSymbol(string name) : base(name)
         {
-            return Activator.CreateInstance(type);
+
+        }
+
+        public static TypeSymbol GetSymbolFrom(object value)
+        {
+            switch (value)
+            {
+                case bool _:
+                    return Bool;
+                case int _:
+                    return Int;
+                case string _:
+                    return String;
+                default:
+                    throw new InvalidOperationException($"Unexpected literal '{value}' of type '{value.GetType()}'");
+            }
         }
     }
 }

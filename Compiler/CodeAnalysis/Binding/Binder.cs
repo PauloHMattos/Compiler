@@ -177,7 +177,7 @@ namespace Compiler.CodeAnalysis.Binding
             }
         }
 
-        public BoundExpression BindExpression(ExpressionSyntax expression, Type type)
+        public BoundExpression BindExpression(ExpressionSyntax expression, TypeSymbol type)
         {
             var boundExpression = BindExpression(expression);
             if (boundExpression.Type != type)
