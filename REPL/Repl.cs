@@ -65,9 +65,13 @@ namespace Compiler.REPL
                     Console.ForegroundColor = ConsoleColor.Green;
 
                     if (lineCount == 0)
+                    {
                         Console.Write("» ");
+                    }
                     else
+                    {
                         Console.Write("· ");
+                    }
 
                     Console.ResetColor();
                     _lineRenderer(line);
@@ -149,7 +153,7 @@ namespace Compiler.REPL
 
         private void HandleKey(ConsoleKeyInfo key, ObservableCollection<string> document, SubmissionView view)
         {
-            if (key.Modifiers == default(ConsoleModifiers))
+            if (key.Modifiers == default)
             {
                 switch (key.Key)
                 {
@@ -205,7 +209,9 @@ namespace Compiler.REPL
             }
 
             if (key.KeyChar >= ' ')
+            {
                 HandleTyping(document, view, key.KeyChar.ToString());
+            }
         }
 
         private void HandleEscape(ObservableCollection<string> document, SubmissionView view)
@@ -245,26 +251,34 @@ namespace Compiler.REPL
         private void HandleLeftArrow(ObservableCollection<string> document, SubmissionView view)
         {
             if (view.CurrentCharacter > 0)
+            {
                 view.CurrentCharacter--;
+            }
         }
 
         private void HandleRightArrow(ObservableCollection<string> document, SubmissionView view)
         {
             var line = document[view.CurrentLine];
             if (view.CurrentCharacter <= line.Length - 1)
+            {
                 view.CurrentCharacter++;
+            }
         }
 
         private void HandleUpArrow(ObservableCollection<string> document, SubmissionView view)
         {
             if (view.CurrentLine > 0)
+            {
                 view.CurrentLine--;
+            }
         }
 
         private void HandleDownArrow(ObservableCollection<string> document, SubmissionView view)
         {
             if (view.CurrentLine < document.Count - 1)
+            {
                 view.CurrentLine++;
+            }
         }
 
         private void HandleBackspace(ObservableCollection<string> document, SubmissionView view)
@@ -273,7 +287,9 @@ namespace Compiler.REPL
             if (start == 0)
             {
                 if (view.CurrentLine == 0)
+                {
                     return;
+                }
 
                 var currentLine = document[view.CurrentLine];
                 var previousLine = document[view.CurrentLine - 1];
@@ -283,15 +299,12 @@ namespace Compiler.REPL
                 view.CurrentCharacter = previousLine.Length;
                 return;
             }
-            else
-            {
-                var lineIndex = view.CurrentLine;
-                var line = document[lineIndex];
-                var before = line.Substring(0, start - 1);
-                var after = line.Substring(start);
-                document[lineIndex] = before + after;
-                view.CurrentCharacter--;
-            }
+            var lineIndex = view.CurrentLine;
+            var line = document[lineIndex];
+            var before = line.Substring(0, start - 1);
+            var after = line.Substring(start);
+            document[lineIndex] = before + after;
+            view.CurrentCharacter--;
         }
 
         private void HandleDelete(ObservableCollection<string> document, SubmissionView view)
@@ -300,7 +313,17 @@ namespace Compiler.REPL
             var line = document[lineIndex];
             var start = view.CurrentCharacter;
             if (start >= line.Length)
+            {
+                if (view.CurrentLine == document.Count - 1)
+                {
+                    return;
+                }
+
+                var nextLine = document[view.CurrentLine + 1];
+                document[view.CurrentLine] += nextLine;
+                document.RemoveAt(view.CurrentLine + 1);
                 return;
+            }
 
             var before = line.Substring(0, start);
             var after = line.Substring(start + 1);
@@ -319,9 +342,9 @@ namespace Compiler.REPL
 
         private void HandleTab(ObservableCollection<string> document, SubmissionView view)
         {
-            const int TabWidth = 4;
+            const int tabWidth = 4;
             var start = view.CurrentCharacter;
-            var remainingSpaces = TabWidth - start % TabWidth;
+            var remainingSpaces = tabWidth - start % tabWidth;
             var line = document[view.CurrentLine];
             document[view.CurrentLine] = line.Insert(start, new string(' ', remainingSpaces));
             view.CurrentCharacter += remainingSpaces;
@@ -331,7 +354,9 @@ namespace Compiler.REPL
         {
             _submissionHistoryIndex--;
             if (_submissionHistoryIndex < 0)
+            {
                 _submissionHistoryIndex = _submissionHistory.Count - 1;
+            }
             UpdateDocumentFromHistory(document, view);
         }
 
@@ -339,18 +364,26 @@ namespace Compiler.REPL
         {
             _submissionHistoryIndex++;
             if (_submissionHistoryIndex > _submissionHistory.Count - 1)
+            {
                 _submissionHistoryIndex = 0;
+            }
             UpdateDocumentFromHistory(document, view);
         }
 
         private void UpdateDocumentFromHistory(ObservableCollection<string> document, SubmissionView view)
         {
+            if (_submissionHistory.Count == 0)
+            {
+                return;
+            }
             document.Clear();
 
             var historyItem = _submissionHistory[_submissionHistoryIndex];
             var lines = historyItem.Split(Environment.NewLine);
             foreach (var line in lines)
+            {
                 document.Add(line);
+            }
 
             view.CurrentLine = document.Count - 1;
             view.CurrentCharacter = document[view.CurrentLine].Length;
