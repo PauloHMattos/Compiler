@@ -20,12 +20,25 @@ namespace Compiler.REPL
             foreach (var token in tokens)
             {
                 var isKeyword = token.Kind.ToString().EndsWith("Keyword");
+                var isIdentifier = token.Kind == SyntaxKind.IdentifierToken;
                 var isNumber = token.Kind == SyntaxKind.NumberToken;
 
                 if (isKeyword)
+                {
                     Console.ForegroundColor = ConsoleColor.Blue;
-                else if (!isNumber)
+                }
+                else if (isIdentifier)
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkYellow;
+                }
+                else if (isNumber)
+                {
+                    Console.ForegroundColor = ConsoleColor.Cyan;
+                }
+                else
+                {
                     Console.ForegroundColor = ConsoleColor.DarkGray;
+                }
 
                 Console.Write(token.Text);
 
@@ -61,7 +74,20 @@ namespace Compiler.REPL
         protected override bool IsCompleteSubmission(string text)
         {
             if (string.IsNullOrEmpty(text))
+            {
                 return true;
+            }
+
+            var lastTwoLinesAreBlank = text.Split(Environment.NewLine)
+                .Reverse()
+                .TakeWhile(string.IsNullOrEmpty)
+                .Take(2)
+                .Count() == 2;
+
+            if (lastTwoLinesAreBlank)
+            {
+                return true;
+            }
 
             var syntaxTree = SyntaxTree.Parse(text);
 
