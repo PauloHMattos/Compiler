@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using Compiler.CodeAnalysis.Binding;
+using Compiler.CodeAnalysis.Diagnostics;
 using Compiler.CodeAnalysis.Lowering;
 using Compiler.CodeAnalysis.Syntax;
 
@@ -56,7 +57,7 @@ namespace Compiler.CodeAnalysis
             var statement = GetStatement();
             var evaluator = new Evaluator(statement, variables);
             var value = evaluator.Evaluate();
-            return new EvaluationResult(ImmutableArray<Diagnostic.Diagnostic>.Empty, value);
+            return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, value);
         }
 
         public void EmitTree(TextWriter writer)

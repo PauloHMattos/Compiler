@@ -1,6 +1,6 @@
 ﻿using Compiler.CodeAnalysis.Text;
 
-namespace Compiler.CodeAnalysis.Diagnostic
+namespace Compiler.CodeAnalysis.Diagnostics
 {
     public sealed class Diagnostic
     {

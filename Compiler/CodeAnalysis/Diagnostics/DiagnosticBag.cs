@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using Compiler.CodeAnalysis.Syntax;
 using Compiler.CodeAnalysis.Text;
 
-namespace Compiler.CodeAnalysis.Diagnostic
+namespace Compiler.CodeAnalysis.Diagnostics
 {
     internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
     {
@@ -40,6 +40,11 @@ namespace Compiler.CodeAnalysis.Diagnostic
         public void ReportInvalidLiteralType(in TextSpan span, string text, Type type)
         {
             Report(span, DiagnosticCode.InvalidLiteralType.GetDiagnostic(text, type));
+        }
+
+        public void ReportUnterminatedString(TextSpan textSpan)
+        {
+            Report(textSpan, DiagnosticCode.UnterminatedString.GetDiagnostic());
         }
 
         public void ReportUnexpectedToken(in TextSpan span, SyntaxKind actualKind, SyntaxKind expectedKind)

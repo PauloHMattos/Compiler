@@ -1,6 +1,7 @@
 ﻿using System;
+using System.Text;
 using Compiler.CodeAnalysis.Binding;
-using Compiler.CodeAnalysis.Diagnostic;
+using Compiler.CodeAnalysis.Diagnostics;
 using Compiler.CodeAnalysis.Text;
 
 namespace Compiler.CodeAnalysis.Syntax
@@ -163,6 +164,9 @@ namespace Compiler.CodeAnalysis.Syntax
                 case '5': case '6': case '7': case '8': case '9':
                     LexDigit();
                     break;
+                case '"':
+                    LexString();
+                    break;
                 case ' ':
                 case '\t':
                 case '\n':
@@ -194,6 +198,45 @@ namespace Compiler.CodeAnalysis.Syntax
                 _tokenText = _text.ToString(_start, length);
             }
             return new SyntaxToken(_kind, _start, _tokenText, _value);
+        }
+
+        private void LexString()
+        {
+            _position++;
+            var builder = new StringBuilder();
+
+            var done = false;
+            while (!done)
+            {
+                switch (Current)
+                {
+                    case '\0':
+                    case '\n':
+                    case '\r':
+                        done = true;
+                        Diagnostics.ReportUnterminatedString(new TextSpan(_start, 1));
+                        break;
+                    case '"':
+                        _position++;
+                        if (Current == '"')
+                        {
+                            builder.Append(Current);
+                            _position++;
+                        }
+                        else
+                        {
+                            done = true;
+                        }
+                        break;
+                    default:
+                        builder.Append(Current);
+                        _position++;
+                        break;
+                }
+            }
+
+            _kind = SyntaxKind.StringToken;
+            _value = builder.ToString();
         }
 
         private void LexDigit()
