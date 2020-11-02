@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Compiler.CodeAnalysis.Binding
+namespace Compiler.CodeAnalysis.Symbols
 {
     public static class TypeSymbol
     {

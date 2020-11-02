@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Text;
-using Compiler.CodeAnalysis.Binding;
 using Compiler.CodeAnalysis.Diagnostics;
+using Compiler.CodeAnalysis.Symbols;
 using Compiler.CodeAnalysis.Text;
 
 namespace Compiler.CodeAnalysis.Syntax

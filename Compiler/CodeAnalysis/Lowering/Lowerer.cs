@@ -2,6 +2,7 @@
 using System.Collections.Immutable;
 using System.Linq;
 using Compiler.CodeAnalysis.Binding;
+using Compiler.CodeAnalysis.Symbols;
 using Compiler.CodeAnalysis.Syntax;
 
 namespace Compiler.CodeAnalysis.Lowering
