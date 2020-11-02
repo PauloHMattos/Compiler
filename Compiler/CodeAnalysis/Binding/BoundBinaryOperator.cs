@@ -39,7 +39,7 @@ namespace Compiler.CodeAnalysis.Binding
             ResultType = resultType;
         }
 
-        private static BoundBinaryOperator[] _operators =
+        private static readonly BoundBinaryOperator[] Operators =
         {
             new BoundBinaryOperator(SyntaxKind.PlusToken, BoundBinaryOperatorKind.Addition, TypeSymbol.Int),
             new BoundBinaryOperator(SyntaxKind.MinusToken, BoundBinaryOperatorKind.Subtraction, TypeSymbol.Int),
@@ -67,7 +67,7 @@ namespace Compiler.CodeAnalysis.Binding
 
         public static BoundBinaryOperator Bind(SyntaxKind syntaxKind, Type leftType, Type rightType)
         {
-            foreach (var boundBinaryOperator in _operators)
+            foreach (var boundBinaryOperator in Operators)
             {
                 if (boundBinaryOperator.SyntaxKind == syntaxKind &&
                     boundBinaryOperator.LeftType == leftType &&

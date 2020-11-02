@@ -29,7 +29,7 @@ namespace Compiler.CodeAnalysis.Binding
             ResultType = resultType;
         }
 
-        private static BoundUnaryOperator[] _operators =
+        private static readonly BoundUnaryOperator[] Operators =
         {
             new BoundUnaryOperator(SyntaxKind.BangToken, BoundUnaryOperatorKind.LogicalNegation, TypeSymbol.Bool),
             new BoundUnaryOperator(SyntaxKind.PlusToken, BoundUnaryOperatorKind.Identity, TypeSymbol.Int),
@@ -39,7 +39,7 @@ namespace Compiler.CodeAnalysis.Binding
 
         public static BoundUnaryOperator Bind(SyntaxKind syntaxKind, Type operandType)
         {
-            foreach (var boundUnaryOperator in _operators)
+            foreach (var boundUnaryOperator in Operators)
             {
                 if (boundUnaryOperator.SyntaxKind == syntaxKind && boundUnaryOperator.OperandType == operandType)
                 {

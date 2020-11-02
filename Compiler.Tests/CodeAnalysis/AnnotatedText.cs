@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
-using System.Net.Http.Headers;
 using System.Text;
 using Compiler.CodeAnalysis.Text;
 
