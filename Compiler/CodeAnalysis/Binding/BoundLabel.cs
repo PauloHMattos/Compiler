@@ -1,10 +1,10 @@
-﻿namespace Compiler.CodeAnalysis
+﻿namespace Compiler.CodeAnalysis.Binding
 {
-    public sealed class LabelSymbol
+    public sealed class BoundLabel
     {
         public string Name { get; }
 
-        internal LabelSymbol(string name)
+        internal BoundLabel(string name)
         {
             Name = name;
         }
