@@ -9,5 +9,10 @@
   <ItemGroup>
     <ProjectReference Include="..\Compiler\Compiler.csproj" />
   </ItemGroup>
+  
+  <PropertyGroup>
+    <!-- Exclude the project from analysis -->
+    <SonarQubeExclude>true</SonarQubeExclude>
+  </PropertyGroup>
 
 </Project>
