@@ -9,7 +9,11 @@
         IfStatement,
         WhileStatement,
         ForStatement,
+        LabelStatement,
+        GotoStatement,
+        ConditionalGotoStatement,
 
+        // Expressions
         LiteralExpression,
         UnaryExpression,
         BinaryExpression,

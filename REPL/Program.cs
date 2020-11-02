@@ -67,8 +67,6 @@ namespace Compiler.REPL
                                     new Compilation(syntaxTree) :
                                     _previous.ContinueWith(syntaxTree);
 
-            var compilationResult = compilation.Evaluate(_variables);
-
             if (_showTree)
             {
                 Console.ForegroundColor = ConsoleColor.DarkGray;
@@ -80,6 +78,8 @@ namespace Compiler.REPL
             {
                 compilation.EmitTree(Console.Out);
             }
+
+            var compilationResult = compilation.Evaluate(_variables);
 
             var diagnostics = compilationResult.Diagnostics;
             if (!diagnostics.Any())

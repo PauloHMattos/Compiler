@@ -21,6 +21,12 @@ namespace Compiler.CodeAnalysis.Binding
                     return RewriteWhileStatement((BoundWhileStatement)statement);
                 case BoundNodeKind.ForStatement:
                     return RewriteForStatement((BoundForStatement)statement);
+                case BoundNodeKind.LabelStatement:
+                    return RewriteLabelStatement((BoundLabelStatement)statement);
+                case BoundNodeKind.GotoStatement:
+                    return RewriteGotoStatement((BoundGotoStatement)statement);
+                case BoundNodeKind.ConditionalGotoStatement:
+                    return RewriteConditionalGotoStatement((BoundConditionalGotoStatement)statement);
                 default:
                     throw new InvalidOperationException($"Unexpected statement {statement.Kind}.");
             }
@@ -34,13 +40,10 @@ namespace Compiler.CodeAnalysis.Binding
             {
                 var oldStatement = node.Statements[i];
                 var newStatement = RewriteStatement(oldStatement);
-                if (newStatement != oldStatement)
+                if (newStatement != oldStatement && builder == null)
                 {
-                    if (builder == null)
-                    {
-                        builder = ImmutableArray.CreateBuilder<BoundStatement>(node.Statements.Length);
-                        builder.AddRange(node.Statements, i);
-                    }
+                    builder = ImmutableArray.CreateBuilder<BoundStatement>(node.Statements.Length);
+                    builder.AddRange(node.Statements, i);
                 }
                 builder?.Add(newStatement);
             }
@@ -111,6 +114,26 @@ namespace Compiler.CodeAnalysis.Binding
                 return node;
             }
             return new BoundForStatement(node.Variable, lowerBound, upperBound, step, body);
+        }
+
+        protected virtual BoundStatement RewriteLabelStatement(BoundLabelStatement node)
+        {
+            return node;
+        }
+
+        protected virtual BoundStatement RewriteGotoStatement(BoundGotoStatement node)
+        {
+            return node;
+        }
+
+        protected virtual BoundStatement RewriteConditionalGotoStatement(BoundConditionalGotoStatement node)
+        {
+            var condition = RewriteExpression(node.Condition);
+            if (condition == node.Condition)
+            {
+                return node;
+            }
+            return new BoundConditionalGotoStatement(node.Label, condition, node.JumpIfTrue);
         }
 
         public BoundExpression RewriteExpression(BoundExpression expression)

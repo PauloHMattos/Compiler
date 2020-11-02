@@ -6,11 +6,11 @@ namespace Compiler.CodeAnalysis
 {
     internal class Evaluator
     {
-        private readonly BoundStatement _root;
+        private readonly BoundBlockStatement _root;
         private readonly Dictionary<VariableSymbol, object> _variables;
         private object _lastValue;
 
-        public Evaluator(BoundStatement root, Dictionary<VariableSymbol, object> variables)
+        public Evaluator(BoundBlockStatement root, Dictionary<VariableSymbol, object> variables)
         {
             _root = root;
             _variables = variables;
@@ -18,37 +18,62 @@ namespace Compiler.CodeAnalysis
 
         public object Evaluate()
         {
-            EvaluateStatement(_root);
-            return _lastValue;
-        }
-
-        private void EvaluateStatement(BoundStatement statement)
-        {
-            switch (statement.Kind)
+            var labelToIndex = new Dictionary<LabelSymbol, int>();
+            for (var i = 0; i < _root.Statements.Length; i++)
             {
-                case BoundNodeKind.BlockStatement:
-                    EvaluateBlockStatement((BoundBlockStatement)statement);
-                    break;
+                var statement = _root.Statements[i];
+                if (statement.Kind != BoundNodeKind.LabelStatement)
+                {
+                    continue;
+                }
 
-                case BoundNodeKind.ExpressionStatement:
-                    EvaluateExpressionStatement((BoundExpressionStatement)statement);
-                    break;
-
-                case BoundNodeKind.VariableDeclarationStatement:
-                    EvaluateVariableDeclarationStatement((BoundVariableDeclarationStatement)statement);
-                    break;
-
-                case BoundNodeKind.IfStatement:
-                    EvaluateIfStatement((BoundIfStatement)statement);
-                    break;
-
-                case BoundNodeKind.WhileStatement:
-                    EvaluateWhileStatement((BoundWhileStatement)statement);
-                    break;
-
-                default:
-                    throw new InvalidOperationException($"Unexpected expression {statement.Kind}");
+                var labelStatement = (BoundLabelStatement) statement;
+                labelToIndex.Add(labelStatement.Label, i + 1);
             }
+
+            var index = 0;
+            while(index < _root.Statements.Length)
+            {
+                var statement = _root.Statements[index];
+                switch (statement.Kind)
+                {
+                    case BoundNodeKind.ExpressionStatement:
+                        EvaluateExpressionStatement((BoundExpressionStatement) statement);
+                        index++;
+                        break;
+
+                    case BoundNodeKind.VariableDeclarationStatement:
+                        EvaluateVariableDeclarationStatement((BoundVariableDeclarationStatement) statement);
+                        index++;
+                        break;
+
+                    case BoundNodeKind.LabelStatement:
+                        index++;
+                        break;
+
+                    case BoundNodeKind.GotoStatement:
+                        var gotoStatement = (BoundGotoStatement) statement;
+                        index = labelToIndex[gotoStatement.Label];
+                        break;
+
+                    case BoundNodeKind.ConditionalGotoStatement:
+                        var conditionalGotoStatement = (BoundConditionalGotoStatement) statement;
+                        var condition = (bool)EvaluateExpression(conditionalGotoStatement.Condition);
+                        if (condition == conditionalGotoStatement.JumpIfTrue)
+                        {
+                            index = labelToIndex[conditionalGotoStatement.Label];
+                        }
+                        else
+                        {
+                            index++;
+                        }
+                        break;
+
+                    default:
+                        throw new InvalidOperationException($"Unexpected statement {statement.Kind}");
+                }
+            }
+            return _lastValue;
         }
 
         private void EvaluateVariableDeclarationStatement(BoundVariableDeclarationStatement statement)
@@ -57,36 +82,7 @@ namespace Compiler.CodeAnalysis
             _variables[statement.Variable] = value;
             _lastValue = value;
         }
-
-        private void EvaluateIfStatement(BoundIfStatement statement)
-        {
-            var condition = (bool)EvaluateExpression(statement.Condition);
-            if (condition)
-            {
-                EvaluateStatement(statement.ThenStatement);
-            }
-            else if (statement.ElseStatement != null)
-            {
-                EvaluateStatement(statement.ElseStatement);
-            }
-        }
-
-        private void EvaluateWhileStatement(BoundWhileStatement statement)
-        {
-            while ((bool)EvaluateExpression(statement.Condition))
-            {
-                EvaluateStatement(statement.Body);
-            }
-        }
-
-        private void EvaluateBlockStatement(BoundBlockStatement blockStatement)
-        {
-            foreach (var statement in blockStatement.Statements)
-            {
-                EvaluateStatement(statement);
-            }
-        }
-
+        
         private void EvaluateExpressionStatement(BoundExpressionStatement expressionStatement)
         {
             _lastValue = EvaluateExpression(expressionStatement.Expression);
