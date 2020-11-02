@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Immutable;
-using Compiler.CodeAnalysis.Diagnostic;
+using Compiler.CodeAnalysis.Diagnostics;
 using Compiler.CodeAnalysis.Text;
 
 namespace Compiler.CodeAnalysis.Syntax

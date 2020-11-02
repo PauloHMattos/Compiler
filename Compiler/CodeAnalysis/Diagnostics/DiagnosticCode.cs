@@ -1,11 +1,12 @@
 ﻿using System.Collections.Generic;
 
-namespace Compiler.CodeAnalysis.Diagnostic
+namespace Compiler.CodeAnalysis.Diagnostics
 {
     public enum DiagnosticCode
     {
         BadCharacter,
         InvalidLiteralType,
+        UnterminatedString,
         UnexpectedToken,
         UndefinedUnaryOperator,
         UndefinedBinaryOperator,
@@ -22,6 +23,7 @@ namespace Compiler.CodeAnalysis.Diagnostic
         {
             {DiagnosticCode.BadCharacter, "Bad character in input: '{0}'."},
             {DiagnosticCode.InvalidLiteralType, "The literal {0} isn't a valid {1}."},
+            {DiagnosticCode.UnterminatedString, "Unterminated string literal."},
             {DiagnosticCode.UnexpectedToken, "Unexpected token <{0}>, expected <{1}>."},
             {DiagnosticCode.UndefinedUnaryOperator, "Unary operator '{0}' is not defined for type '{1}'."},
             {DiagnosticCode.UndefinedBinaryOperator, "Binary operator '{0}' is not defined for types '{1}' and '{2}'."},

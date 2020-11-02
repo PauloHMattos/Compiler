@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Data;
-using Compiler.CodeAnalysis.Diagnostic;
+using Compiler.CodeAnalysis.Diagnostics;
 using Compiler.CodeAnalysis.Syntax;
 
 namespace Compiler.CodeAnalysis.Binding

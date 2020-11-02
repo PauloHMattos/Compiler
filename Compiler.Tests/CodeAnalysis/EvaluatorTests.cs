@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Compiler.CodeAnalysis;
 using Compiler.CodeAnalysis.Binding;
-using Compiler.CodeAnalysis.Diagnostic;
+using Compiler.CodeAnalysis.Diagnostics;
 using Compiler.CodeAnalysis.Syntax;
 using Xunit;
 

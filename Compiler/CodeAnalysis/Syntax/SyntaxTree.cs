@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Immutable;
+using Compiler.CodeAnalysis.Diagnostics;
 using Compiler.CodeAnalysis.Text;
 
 namespace Compiler.CodeAnalysis.Syntax
@@ -7,7 +8,7 @@ namespace Compiler.CodeAnalysis.Syntax
     public sealed class SyntaxTree
     {
         public SourceText Text { get; }
-        public ImmutableArray<Diagnostic.Diagnostic> Diagnostics { get; }
+        public ImmutableArray<Diagnostic> Diagnostics { get; }
         public CompilationUnitSyntax Root { get; }
 
         private SyntaxTree(SourceText text)
