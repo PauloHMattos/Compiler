@@ -9,12 +9,13 @@ namespace Compiler.CodeAnalysis.Syntax
         public object Value { get; }
         public override SyntaxKind Kind { get; }
         public override TextSpan Span { get; }
+        public bool IsMissing => Span.Length == 0;
 
         public SyntaxToken(SyntaxKind kind, int position, string text, object value)
         {
             Kind = kind;
             Position = position;
-            Text = text ?? string.Empty;
+            Text = text;
             Value = value;
             Span = new TextSpan(position, Text?.Length ?? 0);
         }

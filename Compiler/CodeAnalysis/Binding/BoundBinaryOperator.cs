@@ -1,5 +1,4 @@
-﻿using System;
-using Compiler.CodeAnalysis.Symbols;
+﻿using Compiler.CodeAnalysis.Symbols;
 using Compiler.CodeAnalysis.Syntax;
 
 namespace Compiler.CodeAnalysis.Binding
@@ -8,29 +7,29 @@ namespace Compiler.CodeAnalysis.Binding
     {
         public SyntaxKind SyntaxKind { get; }
         public BoundBinaryOperatorKind Kind { get; }
-        public Type LeftType { get; }
-        public Type RightType { get; }
-        public Type ResultType { get; }
+        public TypeSymbol LeftType { get; }
+        public TypeSymbol RightType { get; }
+        public TypeSymbol ResultType { get; }
 
         private BoundBinaryOperator(SyntaxKind syntaxKind,
             BoundBinaryOperatorKind kind,
-            Type type) :
+            TypeSymbol type) :
             this(syntaxKind, kind, type, type, type)
         {
         }
 
         private BoundBinaryOperator(SyntaxKind syntaxKind,
             BoundBinaryOperatorKind kind,
-            Type operandType, Type resultType) :
+            TypeSymbol operandType, TypeSymbol resultType) :
             this(syntaxKind, kind, operandType, operandType, resultType)
         {
         }
 
         private BoundBinaryOperator(SyntaxKind syntaxKind,
             BoundBinaryOperatorKind kind,
-            Type leftType,
-            Type rightType,
-            Type resultType)
+            TypeSymbol leftType,
+            TypeSymbol rightType,
+            TypeSymbol resultType)
         {
             SyntaxKind = syntaxKind;
             Kind = kind;
@@ -65,7 +64,7 @@ namespace Compiler.CodeAnalysis.Binding
             new BoundBinaryOperator(SyntaxKind.BangEqualsToken, BoundBinaryOperatorKind.NotEquals, TypeSymbol.Bool),
         };
 
-        public static BoundBinaryOperator Bind(SyntaxKind syntaxKind, Type leftType, Type rightType)
+        public static BoundBinaryOperator Bind(SyntaxKind syntaxKind, TypeSymbol leftType, TypeSymbol rightType)
         {
             foreach (var boundBinaryOperator in Operators)
             {

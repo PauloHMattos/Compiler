@@ -14,6 +14,7 @@
         ConditionalGotoStatement,
 
         // Expressions
+        ErrorExpression,
         LiteralExpression,
         UnaryExpression,
         BinaryExpression,

@@ -1,4 +1,4 @@
-﻿using System;
+﻿using Compiler.CodeAnalysis.Symbols;
 
 namespace Compiler.CodeAnalysis.Binding
 {
@@ -6,11 +6,12 @@ namespace Compiler.CodeAnalysis.Binding
     {
         public object Value { get; }
         public override BoundNodeKind Kind => BoundNodeKind.LiteralExpression;
-        public override Type Type => Value.GetType();
+        public override TypeSymbol Type { get; }
 
         public BoundLiteralExpression(object value)
         {
             Value = value;
+            Type = TypeSymbol.GetSymbolFrom(value);
         }
     }
 }

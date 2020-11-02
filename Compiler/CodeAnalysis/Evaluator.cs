@@ -171,20 +171,32 @@ namespace Compiler.CodeAnalysis
                 case BoundBinaryOperatorKind.GreaterOrEquals:
                     return (int)left >= (int)right;
                 case BoundBinaryOperatorKind.BitwiseAnd:
-                    if (binaryExpression.Type == (typeof(int)))
+                    if (binaryExpression.Type == TypeSymbol.Int)
+                    {
                         return (int)left & (int)right;
+                    }
                     else
+                    {
                         return (bool)left & (bool)right;
+                    }
                 case BoundBinaryOperatorKind.BitwiseOr:
-                    if (binaryExpression.Type == (typeof(int)))
+                    if (binaryExpression.Type == TypeSymbol.Int)
+                    {
                         return (int)left | (int)right;
+                    }
                     else
+                    {
                         return (bool)left | (bool)right;
+                    }
                 case BoundBinaryOperatorKind.BitwiseXor:
-                    if (binaryExpression.Type == (typeof(int)))
+                    if (binaryExpression.Type == TypeSymbol.Int)
+                    {
                         return (int)left ^ (int)right;
+                    }
                     else
+                    {
                         return (bool)left ^ (bool)right;
+                    }
                 default:
                     throw new InvalidOperationException($"Unexpected binary operator {binaryExpression.Operator.Kind}");
             }
