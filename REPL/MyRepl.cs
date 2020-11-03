@@ -23,6 +23,7 @@ namespace Compiler.REPL
                 var isKeyword = token.Kind.ToString().EndsWith("Keyword");
                 var isIdentifier = token.Kind == SyntaxKind.IdentifierToken;
                 var isNumber = token.Kind == SyntaxKind.NumberToken;
+                var isString = token.Kind == SyntaxKind.StringToken;
 
                 if (isKeyword)
                 {
@@ -35,6 +36,10 @@ namespace Compiler.REPL
                 else if (isNumber)
                 {
                     Console.ForegroundColor = ConsoleColor.Cyan;
+                }
+                else if (isString)
+                {
+                    Console.ForegroundColor = ConsoleColor.Magenta;
                 }
                 else
                 {
