@@ -427,6 +427,45 @@ namespace Compiler.Tests.CodeAnalysis
             AssertHasDiagnostics(text, diagnostics);
         }
 
+        [Fact]
+        public void Evaluator_InvokeFunctionArguments_NoInfiniteLoop()
+        {
+            var text = @"
+                print(""Hi""[[=]][)]
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.EqualsToken, SyntaxKind.CloseParenthesisToken),
+                DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.EqualsToken, SyntaxKind.IdentifierToken),
+                DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.CloseParenthesisToken, SyntaxKind.IdentifierToken),
+            };
+
+            AssertHasDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_FunctionParameters_NoInfiniteLoop()
+        {
+            var text = @"
+                function hi(name: string[[[=]]][)]
+                {
+                    print(""Hi "" + name + ""!"" )
+                }[]
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.EqualsToken, SyntaxKind.CloseParenthesisToken),
+                DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.EqualsToken, SyntaxKind.OpenBraceToken),
+                DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.EqualsToken, SyntaxKind.IdentifierToken),
+                DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.CloseParenthesisToken, SyntaxKind.IdentifierToken),
+                DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.EndOfFileToken, SyntaxKind.CloseBraceToken),
+            };
+
+            AssertHasDiagnostics(text, diagnostics);
+        }
+
         private static void AssertValue(string text, object expectedValue)
         {
             var syntaxTree = SyntaxTree.Parse(text);
