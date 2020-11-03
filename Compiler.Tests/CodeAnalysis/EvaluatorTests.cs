@@ -82,6 +82,8 @@ namespace Compiler.Tests.CodeAnalysis
         [InlineData("string(10)", "10")]
         [InlineData("string(true)", "True")]
         [InlineData("int(\"100\")", 100)]
+        [InlineData("random(0, 0)", 0)]
+        [InlineData("random(100, 100)", 100)]
         public void Evaluator_Compute_CorrectValues(string text, object expectedValue)
         {
             AssertValue(text, expectedValue);
@@ -184,7 +186,7 @@ namespace Compiler.Tests.CodeAnalysis
 
             var diagnostics = new List<string>()
             {
-                DiagnosticCode.UndefinedName.GetDiagnostic("x")
+                DiagnosticCode.UndefinedVariable.GetDiagnostic("x")
             };
             AssertHasDiagnostics(text, diagnostics);
         }
@@ -227,12 +229,25 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
+        public void Evaluator_AssignmentExpression_Reports_NotAVariable()
+        {
+            var text = @"[print] = 42";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.NotAVariable.GetDiagnostic("print")
+            };
+
+            AssertHasDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
         public void Evaluator_NameExpression_Reports_Undefined()
         {
             var text = "[x] * 1";
             var diagnostics = new List<string>()
             {
-                DiagnosticCode.UndefinedName.GetDiagnostic("x")
+                DiagnosticCode.UndefinedVariable.GetDiagnostic("x")
             };
             AssertHasDiagnostics(text, diagnostics);
         }
@@ -275,7 +290,7 @@ namespace Compiler.Tests.CodeAnalysis
 
             var diagnostics = new List<string>()
             {
-                DiagnosticCode.VariableAlreadyDeclared.GetDiagnostic("x")
+                DiagnosticCode.SymbolAlreadyDeclared.GetDiagnostic("x")
             };
             AssertHasDiagnostics(text, diagnostics);
         }
@@ -354,6 +369,42 @@ namespace Compiler.Tests.CodeAnalysis
             var diagnostics = new List<string>()
             {
                 DiagnosticCode.UndefinedFunction.GetDiagnostic("foo"),
+            };
+
+            AssertHasDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_CallExpression_Reports_NotAFunction()
+        {
+            var text = @"
+                {
+                    var foo = 42
+                    [foo](42)
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.NotAFunction.GetDiagnostic("foo"),
+            };
+
+            AssertHasDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_Variables_Can_Shadow_Functions()
+        {
+            var text = @"
+                {
+                    const print = 42
+                    [print](""test"")
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.NotAFunction.GetDiagnostic("print"),
             };
 
             AssertHasDiagnostics(text, diagnostics);

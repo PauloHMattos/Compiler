@@ -5,6 +5,7 @@ using System.Data;
 using Compiler.CodeAnalysis.Diagnostics;
 using Compiler.CodeAnalysis.Symbols;
 using Compiler.CodeAnalysis.Syntax;
+using Compiler.CodeAnalysis.Text;
 
 namespace Compiler.CodeAnalysis.Binding
 {
@@ -81,12 +82,12 @@ namespace Compiler.CodeAnalysis.Binding
         {
             var isReadOnly = syntax.Keyword.Kind == SyntaxKind.ConstKeyword;
             var initializer = BindExpression(syntax.Initializer);
-            var variable = BindVariable(syntax.Identifier, isReadOnly, initializer.Type);
+            var variable = BindVariableDeclaration(syntax.Identifier, isReadOnly, initializer.Type);
 
             return new BoundVariableDeclarationStatement(variable, initializer);
         }
 
-        private VariableSymbol BindVariable(SyntaxToken identifier, bool isReadOnly, TypeSymbol type)
+        private VariableSymbol BindVariableDeclaration(SyntaxToken identifier, bool isReadOnly, TypeSymbol type)
         {
             var name = identifier.Text ?? "?";
             var declare = !identifier.IsMissing;
@@ -94,10 +95,30 @@ namespace Compiler.CodeAnalysis.Binding
 
             if (declare && !_scope.TryDeclareVariable(variable))
             {
-                Diagnostics.ReportVariableAlreadyDeclared(identifier.Span, name);
+                Diagnostics.ReportSymbolAlreadyDeclared(identifier.Span, name);
             }
 
             return variable;
+        }
+
+        private VariableSymbol BindVariableReference(string name, TextSpan span)
+        {
+            var symbol = _scope.TryLookupSymbol(name);
+            if (symbol == null)
+            {
+                Diagnostics.ReportUndefinedVariable(span, name);
+                return null;
+            }
+
+            switch (symbol.Kind)
+            {
+                case SymbolKind.Variable:
+                    return (VariableSymbol)symbol;
+
+                default:
+                    Diagnostics.ReportNotAVariable(span, name);
+                    return null;
+            }
         }
 
         private BoundStatement BindIfStatement(IfStatementSyntax syntax)
@@ -119,7 +140,7 @@ namespace Compiler.CodeAnalysis.Binding
         {
             _scope = new BoundScope(_scope);
 
-            var variable = BindVariable(syntax.Identifier, false, TypeSymbol.Int);
+            var variable = BindVariableDeclaration(syntax.Identifier, false, TypeSymbol.Int);
 
             var lowerBound = BindExpression(syntax.LowerBound, TypeSymbol.Int);
             var upperBound = BindExpression(syntax.UpperBound, TypeSymbol.Int);
@@ -280,10 +301,17 @@ namespace Compiler.CodeAnalysis.Binding
                 var boundArgument = BindExpression(argument);
                 boundArguments.Add(boundArgument);
             }
-
-            if (!_scope.TryLookupFunction(syntax.Identifier.Text, out var function))
+            var symbol = _scope.TryLookupSymbol(syntax.Identifier.Text);
+            if (symbol == null)
             {
                 Diagnostics.ReportUndefinedFunction(syntax.Identifier.Span, syntax.Identifier.Text);
+                return new BoundErrorExpression();
+            }
+
+            var function = symbol as FunctionSymbol;
+            if (function == null)
+            {
+                Diagnostics.ReportNotAFunction(syntax.Identifier.Span, syntax.Identifier.Text);
                 return new BoundErrorExpression();
             }
 
@@ -331,9 +359,9 @@ namespace Compiler.CodeAnalysis.Binding
             }
                 
             var name = syntax.IdentifierToken.Text;
-            if (!_scope.TryLookupVariable(name, out var variable))
+            var variable = BindVariableReference(name, syntax.IdentifierToken.Span);
+            if (variable == null)
             {
-                Diagnostics.ReportUndefinedName(syntax.IdentifierToken.Span, name);
                 return new BoundErrorExpression();
             }
             return new BoundVariableExpression(variable);
@@ -344,9 +372,9 @@ namespace Compiler.CodeAnalysis.Binding
             var name = syntax.IdentifierToken.Text;
             var boundExpression = BindExpression(syntax.Expression);
 
-            if (!_scope.TryLookupVariable(name, out var variable))
+            var variable = BindVariableReference(name, syntax.IdentifierToken.Span);
+            if(variable == null)
             {
-                Diagnostics.ReportUndefinedName(syntax.IdentifierToken.Span, name);
                 return boundExpression;
             }
 
