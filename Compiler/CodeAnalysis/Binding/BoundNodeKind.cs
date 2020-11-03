@@ -20,5 +20,7 @@
         BinaryExpression,
         VariableExpression,
         AssignmentExpression,
+        CallExpression,
+        ConversionExpression
     }
 }

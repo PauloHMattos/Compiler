@@ -1,6 +1,6 @@
 ﻿namespace Compiler.CodeAnalysis.Symbols
 {
-    public sealed class VariableSymbol : Symbol
+    public class VariableSymbol : Symbol
     {
         public bool IsReadOnly { get; }
         public TypeSymbol Type { get; }
@@ -11,6 +11,5 @@
             IsReadOnly = isReadOnly;
             Type = type;
         }
-
     }
 }

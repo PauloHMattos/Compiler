@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using Compiler.CodeAnalysis.Symbols;
 
 namespace Compiler.CodeAnalysis.Binding
@@ -7,38 +8,45 @@ namespace Compiler.CodeAnalysis.Binding
     internal sealed class BoundScope
     {
         public BoundScope Parent { get; }
-        private readonly Dictionary<string, VariableSymbol> _variables;
+        private readonly Dictionary<string, Symbol> _symbols;
 
         public BoundScope(BoundScope parent)
         {
             Parent = parent;
-            _variables = new Dictionary<string, VariableSymbol>();
+            _symbols = new Dictionary<string, Symbol>();
         }
 
-        public bool TryDeclare(VariableSymbol variable)
+        public Symbol TryLookupSymbol(string name)
         {
-            if (_variables.ContainsKey(variable.Name))
+            if (_symbols.TryGetValue(name, out var symbol))
+            {
+                return symbol;
+            }
+
+            return Parent?.TryLookupSymbol(name);
+        }
+
+        public bool TryDeclareVariable(VariableSymbol variable) => TryDeclareSymbol(variable);
+
+        public bool TryDeclareFunction(FunctionSymbol function) => TryDeclareSymbol(function);
+
+        public ImmutableArray<VariableSymbol> GetDeclaredVariables() => GetDeclaredSymbols<VariableSymbol>();
+
+        public ImmutableArray<FunctionSymbol> GetDeclaredFunction() => GetDeclaredSymbols<FunctionSymbol>();
+
+        private bool TryDeclareSymbol<TSymbol>(TSymbol symbol) where TSymbol : Symbol
+        {
+            if (_symbols.ContainsKey(symbol.Name))
             {
                 return false;
             }
-            _variables.Add(variable.Name, variable);
+            _symbols.Add(symbol.Name, symbol);
             return true;
         }
 
-        public bool TryLookup(string name, out VariableSymbol variable)
+        private ImmutableArray<TSymbol> GetDeclaredSymbols<TSymbol>() where TSymbol : Symbol
         {
-            if (_variables.TryGetValue(name, out variable))
-            {
-                return true;
-            }
-
-            if (Parent == null)
-            {
-                return false;
-            }
-            return Parent.TryLookup(name, out variable);
+            return _symbols.Values.OfType<TSymbol>().ToImmutableArray();
         }
-
-        public ImmutableArray<VariableSymbol> GetDeclaredVariables() => _variables.Values.ToImmutableArray();
     }
 }
