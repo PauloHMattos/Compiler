@@ -52,6 +52,10 @@ namespace Compiler.CodeAnalysis.Syntax
                     _position++;
                     _kind = SyntaxKind.CommaToken;
                     break;
+                case ':':
+                    _kind = SyntaxKind.ColonToken;
+                    _position++;
+                    break;
                 case '+':
                     _position++;
                     _kind = SyntaxKind.PlusToken;

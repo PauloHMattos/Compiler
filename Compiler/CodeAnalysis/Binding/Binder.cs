@@ -81,10 +81,25 @@ namespace Compiler.CodeAnalysis.Binding
         private BoundStatement BindVariableDeclarationStatement(VariableDeclarationStatementSyntax syntax)
         {
             var isReadOnly = syntax.Keyword.Kind == SyntaxKind.ConstKeyword;
+            var type = BindTypeClause(syntax.TypeClause);
             var initializer = BindExpression(syntax.Initializer);
-            var variable = BindVariableDeclaration(syntax.Identifier, isReadOnly, initializer.Type);
+            var variableType = type ?? initializer.Type;
+            var variable = BindVariableDeclaration(syntax.Identifier, isReadOnly, variableType);
+            var convertedInitializer = BindConversion(syntax.Initializer.Span, initializer, variableType, false);
 
-            return new BoundVariableDeclarationStatement(variable, initializer);
+            return new BoundVariableDeclarationStatement(variable, convertedInitializer);
+        }
+
+        private TypeSymbol BindTypeClause(TypeClauseSyntax syntax)
+        {
+            if (syntax == null)
+                return null;
+
+            var type = TypeSymbol.LookupType(syntax.Identifier.Text);
+            if (type == null)
+                Diagnostics.ReportUndefinedType(syntax.Identifier.Span, syntax.Identifier.Text);
+
+            return type;
         }
 
         private VariableSymbol BindVariableDeclaration(SyntaxToken identifier, bool isReadOnly, TypeSymbol type)
@@ -227,7 +242,7 @@ namespace Compiler.CodeAnalysis.Binding
 
         public BoundExpression BindExpression(ExpressionSyntax expression, TypeSymbol targetType)
         {
-            return BindConversion(expression, targetType);
+            return BindConversion(expression, targetType, false);
         }
 
         private BoundExpression BindLiteralExpression(LiteralExpressionSyntax syntax)
@@ -283,7 +298,7 @@ namespace Compiler.CodeAnalysis.Binding
         {
             if (syntax.Arguments.Count == 1 && TypeSymbol.LookupType(syntax.Identifier.Text) is TypeSymbol type)
             {
-                return BindConversion(syntax.Arguments[0], type);
+                return BindConversion(syntax.Arguments[0], type, true);
             }
 
             var boundArguments = ImmutableArray.CreateBuilder<BoundExpression>();
@@ -328,13 +343,13 @@ namespace Compiler.CodeAnalysis.Binding
             return new BoundCallExpression(function, boundArguments.ToImmutable());
         }
 
-        private BoundExpression BindConversion(ExpressionSyntax syntax, TypeSymbol type)
+        private BoundExpression BindConversion(ExpressionSyntax syntax, TypeSymbol type, bool allowExplicit)
         {
             var expression = BindExpression(syntax);
-            return BindConversion(syntax.Span, expression, type);
+            return BindConversion(syntax.Span, expression, type, allowExplicit);
         }
 
-        private BoundExpression BindConversion(TextSpan diagnosticSpan, BoundExpression expression, TypeSymbol type)
+        private BoundExpression BindConversion(TextSpan diagnosticSpan, BoundExpression expression, TypeSymbol type, bool allowExplicit)
         {
             var conversion = Conversion.Classify(expression.Type, type);
 
@@ -345,6 +360,11 @@ namespace Compiler.CodeAnalysis.Binding
                     Diagnostics.ReportCannotConvert(diagnosticSpan, expression.Type, type);
                 }
                 return new BoundErrorExpression();
+            }
+
+            if (!allowExplicit && conversion.IsExplicit)
+            {
+                Diagnostics.ReportCannotConvertImplicitly(diagnosticSpan, expression.Type, type);
             }
 
             if (conversion.IsIdentity)
@@ -389,7 +409,7 @@ namespace Compiler.CodeAnalysis.Binding
                 Diagnostics.ReportCannotReassigned(syntax.EqualsToken.Span, name);
             }
 
-            var convertedExpression = BindConversion(syntax.Expression.Span, boundExpression, variable.Type);
+            var convertedExpression = BindConversion(syntax.Expression.Span, boundExpression, variable.Type, false);
             return new BoundAssignmentExpression(variable, convertedExpression);
         }
     }
