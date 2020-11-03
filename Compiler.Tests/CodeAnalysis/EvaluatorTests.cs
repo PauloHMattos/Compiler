@@ -315,7 +315,7 @@ namespace Compiler.Tests.CodeAnalysis
         [Fact]
         public void Evaluator_NameExpression_Reports_NoErrorForInsertedToken()
         {
-            var text = @"[]";
+            var text = @"1 + []";
 
             var diagnostics = new List<string>()
             {
@@ -347,7 +347,7 @@ namespace Compiler.Tests.CodeAnalysis
         {
             var text = @"
                 {
-                    [print(42)]
+                    print([42])
                 }
             ";
 

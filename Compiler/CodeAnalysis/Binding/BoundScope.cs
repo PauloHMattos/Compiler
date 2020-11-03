@@ -32,7 +32,7 @@ namespace Compiler.CodeAnalysis.Binding
 
         public ImmutableArray<VariableSymbol> GetDeclaredVariables() => GetDeclaredSymbols<VariableSymbol>();
 
-        public ImmutableArray<FunctionSymbol> GetDeclaredFunction() => GetDeclaredSymbols<FunctionSymbol>();
+        public ImmutableArray<FunctionSymbol> GetDeclaredFunctions() => GetDeclaredSymbols<FunctionSymbol>();
 
         private bool TryDeclareSymbol<TSymbol>(TSymbol symbol) where TSymbol : Symbol
         {

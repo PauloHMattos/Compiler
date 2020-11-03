@@ -7,23 +7,31 @@ namespace Compiler.CodeAnalysis
 {
     internal class Evaluator
     {
-        private readonly BoundBlockStatement _root;
-        private readonly Dictionary<VariableSymbol, object> _variables;
+        private readonly BoundProgram _program;
+        private readonly Dictionary<VariableSymbol, object> _globals;
+        private readonly Stack<Dictionary<VariableSymbol, object>> _locals = new Stack<Dictionary<VariableSymbol, object>>();
+
         private Random _random;
         private object _lastValue;
 
-        public Evaluator(BoundBlockStatement root, Dictionary<VariableSymbol, object> variables)
+        public Evaluator(BoundProgram program, Dictionary<VariableSymbol, object> variables)
         {
-            _root = root;
-            _variables = variables;
+            _program = program;
+            _globals = variables;
+            _locals.Push(new Dictionary<VariableSymbol, object>());
         }
 
         public object Evaluate()
         {
+            return EvaluateStatement(_program.Statement);
+        }
+
+        private object EvaluateStatement(BoundBlockStatement body)
+        {
             var labelToIndex = new Dictionary<BoundLabel, int>();
-            for (var i = 0; i < _root.Statements.Length; i++)
+            for (var i = 0; i < body.Statements.Length; i++)
             {
-                var statement = _root.Statements[i];
+                var statement = body.Statements[i];
                 if (statement.Kind != BoundNodeKind.LabelStatement)
                 {
                     continue;
@@ -34,9 +42,9 @@ namespace Compiler.CodeAnalysis
             }
 
             var index = 0;
-            while(index < _root.Statements.Length)
+            while(index < body.Statements.Length)
             {
-                var statement = _root.Statements[index];
+                var statement = body.Statements[index];
                 switch (statement.Kind)
                 {
                     case BoundNodeKind.ExpressionStatement:
@@ -81,8 +89,8 @@ namespace Compiler.CodeAnalysis
         private void EvaluateVariableDeclarationStatement(BoundVariableDeclarationStatement statement)
         {
             var value = EvaluateExpression(statement.Initializer);
-            _variables[statement.Variable] = value;
             _lastValue = value;
+            Assign(statement.Variable, value);
         }
         
         private void EvaluateExpressionStatement(BoundExpressionStatement expressionStatement)
@@ -99,14 +107,10 @@ namespace Compiler.CodeAnalysis
                     return boundLiteralExpression.Value;
 
                 case BoundNodeKind.VariableExpression:
-                    var boundVariableExpression = (BoundVariableExpression)expression;
-                    return _variables[boundVariableExpression.VariableSymbol];
+                    return EvaluateVariableExpression((BoundVariableExpression)expression);
 
                 case BoundNodeKind.AssignmentExpression:
-                    var assignmentExpression = (BoundAssignmentExpression)expression;
-                    var value = EvaluateExpression(assignmentExpression.Expression);
-                    _variables[assignmentExpression.Variable] = value;
-                    return value;
+                    return EvaluateAssignmentExpression((BoundAssignmentExpression)expression);
 
                 case BoundNodeKind.UnaryExpression:
                     var boundUnaryExpression = (BoundUnaryExpression)expression;
@@ -117,8 +121,7 @@ namespace Compiler.CodeAnalysis
                     return EvaluateBinaryExpression(boundBinaryExpression);
 
                 case BoundNodeKind.CallExpression:
-                    var boundCallExpression = (BoundCallExpression)expression;
-                    return EvaluateCallExpression(boundCallExpression);
+                    return EvaluateCallExpression((BoundCallExpression)expression);
 
                 case BoundNodeKind.ConversionExpression:
                     var boundConversionExpression = (BoundConversionExpression)expression;
@@ -127,6 +130,24 @@ namespace Compiler.CodeAnalysis
                 default:
                     throw new InvalidOperationException($"Unexpected expression {expression.Kind}");
             }
+        }
+
+        private object EvaluateVariableExpression(BoundVariableExpression expression)
+        {
+            if (expression.Variable.Kind == SymbolKind.GlobalVariable)
+            {
+                return _globals[expression.Variable];
+            }
+
+            var locals = _locals.Peek();
+            return locals[expression.Variable];
+        }
+
+        private object EvaluateAssignmentExpression(BoundAssignmentExpression assignmentExpression)
+        {
+            var value = EvaluateExpression(assignmentExpression.Expression);
+            Assign(assignmentExpression.Variable, value);
+            return value;
         }
 
         private object EvaluateUnaryExpression(BoundUnaryExpression unaryExpression)
@@ -240,7 +261,35 @@ namespace Compiler.CodeAnalysis
                 return _random.Next(min, max);
             }
 
-            throw new InvalidOperationException($"Unexpected function {callExpression.Function}");
+            var locals = new Dictionary<VariableSymbol, object>();
+            for (int i = 0; i < callExpression.Arguments.Length; i++)
+            {
+                var parameter = callExpression.Function.Parameters[i];
+                var value = EvaluateExpression(callExpression.Arguments[i]);
+                locals.Add(parameter, value);
+            }
+
+            _locals.Push(locals);
+
+            var statement = _program.Functions[callExpression.Function];
+            var result = EvaluateStatement(statement);
+
+            _locals.Pop();
+
+            return result;
+        }
+
+        private void Assign(VariableSymbol variable, object value)
+        {
+            if (variable.Kind == SymbolKind.GlobalVariable)
+            {
+                _globals[variable] = value;
+            }
+            else
+            {
+                var locals = _locals.Peek();
+                locals[variable] = value;
+            }
         }
 
         private object EvaluateConversionExpression(BoundConversionExpression node)

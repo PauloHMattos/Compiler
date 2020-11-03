@@ -21,7 +21,9 @@ namespace Compiler.CodeAnalysis.Diagnostics
         WrongArgumentCount,
         WrongArgumentType,
         UndefinedType,
-        CannotConvertImplicitly
+        CannotConvertImplicitly,
+        ParameterAlreadyDeclared,
+        FunctionsAreUnsupported
     }
 
 
@@ -47,6 +49,8 @@ namespace Compiler.CodeAnalysis.Diagnostics
             {DiagnosticCode.WrongArgumentType, "Parameter '{0}' requires a value of type '{1}' but was given a value of type '{2}'."},
             {DiagnosticCode.UndefinedType, "Type '{0}' doesn't exist."},
             {DiagnosticCode.CannotConvertImplicitly, "Cannot convert type '{0}' to '{1}'. An explicit conversion exists (are you missing a cast?)"},
+            {DiagnosticCode.ParameterAlreadyDeclared, "A parameter with the name '{0}' already exists."},
+            {DiagnosticCode.FunctionsAreUnsupported, "Functions with return values are unsupported."},
         };
 
         public static string GetDiagnostic(this DiagnosticCode code, params object[] arguments)

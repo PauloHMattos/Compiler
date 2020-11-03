@@ -117,9 +117,10 @@ namespace Compiler.Tests.CodeAnalysis.Syntax
         private static ExpressionSyntax ParseExpression(string text)
         {
             var syntaxTree = SyntaxTree.Parse(text);
-            var root = syntaxTree.Root;
-            var statement = root.Statement;
-            return Assert.IsType<ExpressionStatementSyntax>(statement).Expression;
+            var root = syntaxTree.Root; 
+            var member = Assert.Single(root.Members);
+            var globalStatement = Assert.IsType<GlobalStatementSyntax>(member);
+            return Assert.IsType<ExpressionStatementSyntax>(globalStatement.Statement).Expression;
         }
 
         public static IEnumerable<object[]> GetBinaryOperatorsPairsData()
