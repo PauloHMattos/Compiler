@@ -32,5 +32,20 @@ namespace Compiler.CodeAnalysis.Symbols
                     throw new InvalidOperationException($"Unexpected literal '{value}' of type '{value.GetType()}'");
             }
         }
+
+        public static TypeSymbol LookupType(string name)
+        {
+            switch (name)
+            {
+                case "bool":
+                    return TypeSymbol.Bool;
+                case "int":
+                    return TypeSymbol.Int;
+                case "string":
+                    return TypeSymbol.String;
+                default:
+                    return null;
+            }
+        }
     }
 }
