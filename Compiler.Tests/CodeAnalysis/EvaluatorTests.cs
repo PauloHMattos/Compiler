@@ -305,6 +305,55 @@ namespace Compiler.Tests.CodeAnalysis
             AssertHasDiagnostics(text, diagnostics);
         }
 
+        [Fact]
+        public void Evaluator_CallExpression_WrongArgumentType()
+        {
+            var text = @"
+                {
+                    [print(42)]
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.WrongArgumentType.GetDiagnostic("text", TypeSymbol.String, TypeSymbol.Int),
+            };
+
+            AssertHasDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_CallExpression_WrongArgumentCount()
+        {
+            var text = @"
+                {
+                    [random(0)]
+                    [random(0, 100, 100)]
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.WrongArgumentCount.GetDiagnostic("random", 2, 1),
+                DiagnosticCode.WrongArgumentCount.GetDiagnostic("random", 2, 3),
+            };
+
+            AssertHasDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_CallExpression_Reports_Undefined()
+        {
+            var text = @"[foo](42)";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.UndefinedFunction.GetDiagnostic("foo"),
+            };
+
+            AssertHasDiagnostics(text, diagnostics);
+        }
+
         private static void AssertValue(string text, object expectedValue)
         {
             var syntaxTree = SyntaxTree.Parse(text);
