@@ -9,6 +9,7 @@ namespace Compiler.CodeAnalysis
     {
         private readonly BoundBlockStatement _root;
         private readonly Dictionary<VariableSymbol, object> _variables;
+        private Random _random;
         private object _lastValue;
 
         public Evaluator(BoundBlockStatement root, Dictionary<VariableSymbol, object> variables)
@@ -226,7 +227,15 @@ namespace Compiler.CodeAnalysis
                 Console.WriteLine(message);
                 return null;
             }
-            
+
+            if (callExpression.Function == BuiltinFunctions.Random)
+            {
+                var min = (int)EvaluateExpression(callExpression.Arguments[0]);
+                var max = (int)EvaluateExpression(callExpression.Arguments[1]);
+                _random ??= new Random();
+                return _random.Next(min, max);
+            }
+
             throw new InvalidOperationException($"Unexpected function {callExpression.Function}");
         }
     }
