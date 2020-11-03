@@ -20,6 +20,8 @@ namespace Compiler.CodeAnalysis.Diagnostics
         NotAFunction,
         WrongArgumentCount,
         WrongArgumentType,
+        UndefinedType,
+        CannotConvertImplicitly
     }
 
 
@@ -35,7 +37,7 @@ namespace Compiler.CodeAnalysis.Diagnostics
             {DiagnosticCode.UndefinedBinaryOperator, "Binary operator '{0}' is not defined for types '{1}' and '{2}'."},
             {DiagnosticCode.UndefinedVariable, "Variable '{0}' is not defined."},
             {DiagnosticCode.NotAVariable, "'{0}' is not a variable."},
-            {DiagnosticCode.CannotConvert, "Cannot convert type '{0}' to {1}."},
+            {DiagnosticCode.CannotConvert, "Cannot convert type '{0}' to '{1}'."},
             {DiagnosticCode.SymbolAlreadyDeclared, "'{0}' has already been declared."},
             {DiagnosticCode.VariableCannotReassigned, "Variable '{0}' is const and cannot be reassigned."},
             {DiagnosticCode.ExpressionMustHaveValue, "Expression must have a value."},
@@ -43,6 +45,8 @@ namespace Compiler.CodeAnalysis.Diagnostics
             {DiagnosticCode.NotAFunction, "'{0}' is not a function."},
             {DiagnosticCode.WrongArgumentCount, "Function '{0}' requires {1} arguments but was given {2}."},
             {DiagnosticCode.WrongArgumentType, "Parameter '{0}' requires a value of type '{1}' but was given a value of type '{2}'."},
+            {DiagnosticCode.UndefinedType, "Type '{0}' doesn't exist."},
+            {DiagnosticCode.CannotConvertImplicitly, "Cannot convert type '{0}' to '{1}'. An explicit conversion exists (are you missing a cast?)"},
         };
 
         public static string GetDiagnostic(this DiagnosticCode code, params object[] arguments)

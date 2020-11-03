@@ -212,11 +212,28 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_AssignmentExpression_Reports_CannotConvert()
+        public void Evaluator_AssignmentExpression_Reports_CannotConvert_Implicitly()
         {
             var text = @"
                 {
                     var x = 10
+                    x = [false]
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.CannotConvert.GetDiagnostic(TypeSymbol.Bool, TypeSymbol.Int)
+            };
+            AssertHasDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_AssignmentExpression_Reports_CannotConvert_Explicit()
+        {
+            var text = @"
+                {
+                    var x : int = 10
                     x = [false]
                 }
             ";

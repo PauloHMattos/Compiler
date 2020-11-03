@@ -72,9 +72,19 @@ namespace Compiler.CodeAnalysis.Diagnostics
             Report(span, DiagnosticCode.NotAVariable.GetDiagnostic(name));
         }
 
+        public void ReportUndefinedType(TextSpan span, string name)
+        {
+            Report(span, DiagnosticCode.UndefinedType.GetDiagnostic(name, name));
+        }
+
         public void ReportCannotConvert(in TextSpan span, TypeSymbol fromType, TypeSymbol toType)
         {
             Report(span, DiagnosticCode.CannotConvert.GetDiagnostic(fromType, toType));
+        }
+
+        public void ReportCannotConvertImplicitly(TextSpan span, TypeSymbol fromType, TypeSymbol toType)
+        {
+            Report(span, DiagnosticCode.CannotConvertImplicitly.GetDiagnostic(fromType, toType));
         }
 
         public void ReportSymbolAlreadyDeclared(in TextSpan span, string name)
