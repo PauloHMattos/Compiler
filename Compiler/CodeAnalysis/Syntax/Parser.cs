@@ -260,7 +260,7 @@ namespace Compiler.CodeAnalysis.Syntax
                     return ParseStringLiteral();
 
                 default:
-                    return ParseNameExpression();
+                    return ParseNameOrCallExpression();
             }
         }
 
@@ -291,6 +291,43 @@ namespace Compiler.CodeAnalysis.Syntax
                                         MatchToken(SyntaxKind.TrueKeyword) : 
                                         MatchToken(SyntaxKind.FalseKeyword);
             return new LiteralExpressionSyntax(keywordToken, isTrue);
+        }
+
+        private ExpressionSyntax ParseNameOrCallExpression()
+        {
+            if (Peek(0).Kind == SyntaxKind.IdentifierToken && Peek(1).Kind == SyntaxKind.OpenParenthesisToken)
+                return ParseCallExpression();
+
+            return ParseNameExpression();
+        }
+
+        private ExpressionSyntax ParseCallExpression()
+        {
+            var identifier = MatchToken(SyntaxKind.IdentifierToken);
+            var openParenthesisToken = MatchToken(SyntaxKind.OpenParenthesisToken);
+            var arguments = ParseArguments();
+            var closeParenthesisToken = MatchToken(SyntaxKind.CloseParenthesisToken);
+            return new CallExpressionSyntax(identifier, openParenthesisToken, arguments, closeParenthesisToken);
+        }
+
+        private SeparatedSyntaxList<ExpressionSyntax> ParseArguments()
+        {
+            var nodesAndSeparators = ImmutableArray.CreateBuilder<SyntaxNode>();
+
+            while (Current.Kind != SyntaxKind.CloseParenthesisToken &&
+                   Current.Kind != SyntaxKind.EndOfFileToken)
+            {
+                var expression = ParseExpression();
+                nodesAndSeparators.Add(expression);
+
+                if (Current.Kind != SyntaxKind.CloseParenthesisToken)
+                {
+                    var comma = MatchToken(SyntaxKind.CommaToken);
+                    nodesAndSeparators.Add(comma);
+                }
+            }
+
+            return new SeparatedSyntaxList<ExpressionSyntax>(nodesAndSeparators.ToImmutable());
         }
 
         private ExpressionSyntax ParseNameExpression()

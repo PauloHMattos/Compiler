@@ -13,7 +13,11 @@ namespace Compiler.CodeAnalysis.Diagnostics
         UndefinedName,
         CannotConvert,
         VariableAlreadyDeclared,
-        VariableCannotReassigned
+        VariableCannotReassigned,
+        ExpressionMustHaveValue,
+        UndefinedFunction,
+        WrongArgumentCount,
+        WrongArgumentType,
     }
 
 
@@ -31,6 +35,10 @@ namespace Compiler.CodeAnalysis.Diagnostics
             {DiagnosticCode.CannotConvert, "Cannot convert type '{0}' to {1}."},
             {DiagnosticCode.VariableAlreadyDeclared, "Variable '{0}' has already been declared."},
             {DiagnosticCode.VariableCannotReassigned, "Variable '{0}' is const and cannot be reassigned."},
+            {DiagnosticCode.ExpressionMustHaveValue, "Expression must have a value."},
+            {DiagnosticCode.UndefinedFunction, "Function '{0}' doesn't exist."},
+            {DiagnosticCode.WrongArgumentCount, "Function '{0}' requires {1} arguments but was given {2}."},
+            {DiagnosticCode.WrongArgumentType, "Parameter '{0}' requires a value of type '{1}' but was given a value of type '{2}'."},
         };
 
         public static string GetDiagnostic(this DiagnosticCode code, params object[] arguments)

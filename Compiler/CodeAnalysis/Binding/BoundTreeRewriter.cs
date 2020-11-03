@@ -152,6 +152,8 @@ namespace Compiler.CodeAnalysis.Binding
                     return RewriteUnaryExpression((BoundUnaryExpression)expression);
                 case BoundNodeKind.BinaryExpression:
                     return RewriteBinaryExpression((BoundBinaryExpression)expression);
+                case BoundNodeKind.CallExpression:
+                    return RewriteCallExpression((BoundCallExpression)expression);
 
                 default:
                     throw new InvalidOperationException($"Unexpected expression {expression.Kind}.");
@@ -202,6 +204,11 @@ namespace Compiler.CodeAnalysis.Binding
                 return node;
             }
             return new BoundBinaryExpression(left, node.Operator, right);
+        }
+
+        private BoundExpression RewriteCallExpression(BoundCallExpression node)
+        {
+            return node;
         }
     }
 }

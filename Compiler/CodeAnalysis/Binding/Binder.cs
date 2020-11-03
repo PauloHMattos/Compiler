@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Data;
+using System.Linq;
 using Compiler.CodeAnalysis.Diagnostics;
 using Compiler.CodeAnalysis.Symbols;
 using Compiler.CodeAnalysis.Syntax;
@@ -73,7 +74,7 @@ namespace Compiler.CodeAnalysis.Binding
 
         private BoundStatement BindExpressionStatement(ExpressionStatementSyntax syntax)
         {
-            var boundExpression = BindExpression(syntax.Expression);
+            var boundExpression = BindExpression(syntax.Expression, true);
             return new BoundExpressionStatement(boundExpression);
         }
 
@@ -158,8 +159,19 @@ namespace Compiler.CodeAnalysis.Binding
             }
             return parent;
         }
+        private BoundExpression BindExpression(ExpressionSyntax syntax, bool canBeVoid = false)
+        {
+            var result = BindExpressionInternal(syntax);
+            if (!canBeVoid && result.Type == TypeSymbol.Void)
+            {
+                Diagnostics.ReportExpressionMustHaveValue(syntax.Span);
+                return new BoundErrorExpression();
+            }
 
-        public BoundExpression BindExpression(ExpressionSyntax syntax)
+            return result;
+        }
+
+        private BoundExpression BindExpressionInternal(ExpressionSyntax syntax)
         {
             switch (syntax.Kind)
             {
@@ -167,6 +179,8 @@ namespace Compiler.CodeAnalysis.Binding
                     return BindLiteralExpression((LiteralExpressionSyntax)syntax);
                 case SyntaxKind.BinaryExpression:
                     return BindBinaryExpression((BinaryExpressionSyntax)syntax);
+                case SyntaxKind.CallExpression:
+                    return BindCallExpression((CallExpressionSyntax)syntax);
                 case SyntaxKind.ParenthesizedExpression:
                     return BindParenthesizedExpression((ParenthesizedExpressionSyntax)syntax);
                 case SyntaxKind.UnaryExpression:
@@ -241,6 +255,47 @@ namespace Compiler.CodeAnalysis.Binding
             }
             return new BoundBinaryExpression(boundLeft, boundOperatorKind, boundRight);
         }
+
+        private BoundExpression BindCallExpression(CallExpressionSyntax syntax)
+        {
+            var boundArguments = ImmutableArray.CreateBuilder<BoundExpression>();
+
+            foreach (var argument in syntax.Arguments)
+            {
+                var boundArgument = BindExpression(argument);
+                boundArguments.Add(boundArgument);
+            }
+
+            var functions = BuiltinFunctions.GetAll();
+
+            var function = functions.SingleOrDefault(f => f.Name == syntax.Identifier.Text);
+            if (function == null)
+            {
+                Diagnostics.ReportUndefinedFunction(syntax.Identifier.Span, syntax.Identifier.Text);
+                return new BoundErrorExpression();
+            }
+
+            if (syntax.Arguments.Count != function.Parameter.Length)
+            {
+                Diagnostics.ReportWrongArgumentCount(syntax.Span, function.Name, function.Parameter.Length, syntax.Arguments.Count);
+                return new BoundErrorExpression();
+            }
+
+            for (var i = 0; i < syntax.Arguments.Count; i++)
+            {
+                var argument = boundArguments[i];
+                var parameter = function.Parameter[i];
+
+                if (argument.Type != parameter.Type)
+                {
+                    Diagnostics.ReportWrongArgumentType(syntax.Span, parameter.Name, parameter.Type, argument.Type);
+                    return new BoundErrorExpression();
+                }
+            }
+
+            return new BoundCallExpression(function, boundArguments.ToImmutable());
+        }
+
 
         private BoundExpression BindNameExpression(NameExpressionSyntax syntax)
         {

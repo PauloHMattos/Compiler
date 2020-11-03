@@ -88,6 +88,8 @@ namespace Compiler.CodeAnalysis.Syntax
         {
             switch (kind)
             {
+                case SyntaxKind.CommaToken:
+                    return ",";
                 case SyntaxKind.OpenParenthesisToken:
                     return "(";
                 case SyntaxKind.CloseParenthesisToken:

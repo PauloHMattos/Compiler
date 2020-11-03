@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using Compiler.CodeAnalysis.Symbols;
 using Compiler.CodeAnalysis.Syntax;
@@ -80,6 +81,26 @@ namespace Compiler.CodeAnalysis.Diagnostics
         public void ReportCannotReassigned(in TextSpan span, string name)
         {
             Report(span, DiagnosticCode.VariableCannotReassigned.GetDiagnostic(name));
+        }
+
+        public void ReportExpressionMustHaveValue(in TextSpan span)
+        {
+            Report(span, DiagnosticCode.ExpressionMustHaveValue.GetDiagnostic());
+        }
+
+        public void ReportUndefinedFunction(in TextSpan span, string name)
+        {
+            Report(span, DiagnosticCode.UndefinedFunction.GetDiagnostic(name));
+        }
+
+        public void ReportWrongArgumentCount(in TextSpan span, string name, in int expectedCount, in int actualCount)
+        {
+            Report(span, DiagnosticCode.WrongArgumentCount.GetDiagnostic(name, expectedCount, actualCount));
+        }
+
+        public void ReportWrongArgumentType(in TextSpan span, string name, TypeSymbol expectedType, TypeSymbol actualType)
+        {
+            Report(span, DiagnosticCode.WrongArgumentType.GetDiagnostic(name, expectedType, actualType));
         }
     }
 }

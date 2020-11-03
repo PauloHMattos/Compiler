@@ -10,6 +10,7 @@
         CloseParenthesisToken,
         OpenBraceToken,
         CloseBraceToken,
+        CommaToken,
         IdentifierToken,
 
         // Keywords
@@ -68,5 +69,6 @@
         ParenthesizedExpression,
         UnaryExpression,
         AssignmentExpression,
+        CallExpression
     }
 }

@@ -115,6 +115,10 @@ namespace Compiler.CodeAnalysis
                     var boundBinaryExpression = (BoundBinaryExpression)expression;
                     return EvaluateBinaryExpression(boundBinaryExpression);
 
+                case BoundNodeKind.CallExpression:
+                    var boundCallExpression = (BoundCallExpression)expression;
+                    return EvaluateCallExpression(boundCallExpression);
+
                 default:
                     throw new InvalidOperationException($"Unexpected expression {expression.Kind}");
             }
@@ -207,6 +211,23 @@ namespace Compiler.CodeAnalysis
                 default:
                     throw new InvalidOperationException($"Unexpected binary operator {binaryExpression.Operator.Kind}");
             }
+        }
+
+        private object EvaluateCallExpression(BoundCallExpression callExpression)
+        {
+            if (callExpression.Function == BuiltinFunctions.Input)
+            {
+                return Console.ReadLine();
+            }
+            
+            if (callExpression.Function == BuiltinFunctions.Print)
+            {
+                var message = (string)EvaluateExpression(callExpression.Arguments[0]);
+                Console.WriteLine(message);
+                return null;
+            }
+            
+            throw new InvalidOperationException($"Unexpected function {callExpression.Function}");
         }
     }
 }
