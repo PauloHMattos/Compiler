@@ -77,13 +77,6 @@ namespace Compiler.Tests.CodeAnalysis
         [InlineData("{ var a = 0 for i = 0 to 10 a = a + i a }", 55)]
         [InlineData("{ var a = 0 for i = 0 to 10 step 2 a = a + i a }", 30)]
         //[InlineData("{ var a = 0 for i = 0 to -10 step -1 a = a + i a }", -55)] // Currently we don't support reversed loops
-        [InlineData("bool(\"false\")", false)]
-        [InlineData("bool(\"true\")", true)]
-        [InlineData("string(10)", "10")]
-        [InlineData("string(true)", "True")]
-        [InlineData("int(\"100\")", 100)]
-        [InlineData("random(0, 0)", 0)]
-        [InlineData("random(100, 100)", 100)]
         public void Evaluator_Compute_CorrectValues(string text, object expectedValue)
         {
             AssertValue(text, expectedValue);
@@ -186,7 +179,7 @@ namespace Compiler.Tests.CodeAnalysis
 
             var diagnostics = new List<string>()
             {
-                DiagnosticCode.UndefinedVariable.GetDiagnostic("x")
+                DiagnosticCode.UndefinedName.GetDiagnostic("x")
             };
             AssertHasDiagnostics(text, diagnostics);
         }
@@ -212,7 +205,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_AssignmentExpression_Reports_CannotConvert_Implicitly()
+        public void Evaluator_AssignmentExpression_Reports_CannotConvert()
         {
             var text = @"
                 {
@@ -229,42 +222,12 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_AssignmentExpression_Reports_CannotConvert_Explicit()
-        {
-            var text = @"
-                {
-                    var x : int = 10
-                    x = [false]
-                }
-            ";
-
-            var diagnostics = new List<string>()
-            {
-                DiagnosticCode.CannotConvert.GetDiagnostic(TypeSymbol.Bool, TypeSymbol.Int)
-            };
-            AssertHasDiagnostics(text, diagnostics);
-        }
-
-        [Fact]
-        public void Evaluator_AssignmentExpression_Reports_NotAVariable()
-        {
-            var text = @"[print] = 42";
-
-            var diagnostics = new List<string>()
-            {
-                DiagnosticCode.NotAVariable.GetDiagnostic("print")
-            };
-
-            AssertHasDiagnostics(text, diagnostics);
-        }
-
-        [Fact]
         public void Evaluator_NameExpression_Reports_Undefined()
         {
             var text = "[x] * 1";
             var diagnostics = new List<string>()
             {
-                DiagnosticCode.UndefinedVariable.GetDiagnostic("x")
+                DiagnosticCode.UndefinedName.GetDiagnostic("x")
             };
             AssertHasDiagnostics(text, diagnostics);
         }
@@ -307,7 +270,7 @@ namespace Compiler.Tests.CodeAnalysis
 
             var diagnostics = new List<string>()
             {
-                DiagnosticCode.SymbolAlreadyDeclared.GetDiagnostic("x")
+                DiagnosticCode.VariableAlreadyDeclared.GetDiagnostic("x")
             };
             AssertHasDiagnostics(text, diagnostics);
         }
@@ -386,42 +349,6 @@ namespace Compiler.Tests.CodeAnalysis
             var diagnostics = new List<string>()
             {
                 DiagnosticCode.UndefinedFunction.GetDiagnostic("foo"),
-            };
-
-            AssertHasDiagnostics(text, diagnostics);
-        }
-
-        [Fact]
-        public void Evaluator_CallExpression_Reports_NotAFunction()
-        {
-            var text = @"
-                {
-                    var foo = 42
-                    [foo](42)
-                }
-            ";
-
-            var diagnostics = new List<string>()
-            {
-                DiagnosticCode.NotAFunction.GetDiagnostic("foo"),
-            };
-
-            AssertHasDiagnostics(text, diagnostics);
-        }
-
-        [Fact]
-        public void Evaluator_Variables_Can_Shadow_Functions()
-        {
-            var text = @"
-                {
-                    const print = 42
-                    [print](""test"")
-                }
-            ";
-
-            var diagnostics = new List<string>()
-            {
-                DiagnosticCode.NotAFunction.GetDiagnostic("print"),
             };
 
             AssertHasDiagnostics(text, diagnostics);
