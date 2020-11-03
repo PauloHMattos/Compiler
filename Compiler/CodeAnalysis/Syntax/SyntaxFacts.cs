@@ -90,8 +90,6 @@ namespace Compiler.CodeAnalysis.Syntax
             {
                 case SyntaxKind.CommaToken:
                     return ",";
-                case SyntaxKind.ColonToken:
-                    return ":";
                 case SyntaxKind.OpenParenthesisToken:
                     return "(";
                 case SyntaxKind.CloseParenthesisToken:

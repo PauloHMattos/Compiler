@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using Compiler.CodeAnalysis.Symbols;
 using Compiler.CodeAnalysis.Syntax;
@@ -62,34 +63,19 @@ namespace Compiler.CodeAnalysis.Diagnostics
             Report(span, DiagnosticCode.UndefinedBinaryOperator.GetDiagnostic(operatorText, leftType, rightType));
         }
 
-        public void ReportUndefinedVariable(in TextSpan span, string name)
+        public void ReportUndefinedName(in TextSpan span, string name)
         {
-            Report(span, DiagnosticCode.UndefinedVariable.GetDiagnostic(name));
+            Report(span, DiagnosticCode.UndefinedName.GetDiagnostic(name));
         }
-
-        public void ReportNotAVariable(TextSpan span, string name)
-        {
-            Report(span, DiagnosticCode.NotAVariable.GetDiagnostic(name));
-        }
-
-        public void ReportUndefinedType(TextSpan span, string name)
-        {
-            Report(span, DiagnosticCode.UndefinedType.GetDiagnostic(name, name));
-        }
-
+        
         public void ReportCannotConvert(in TextSpan span, TypeSymbol fromType, TypeSymbol toType)
         {
             Report(span, DiagnosticCode.CannotConvert.GetDiagnostic(fromType, toType));
         }
 
-        public void ReportCannotConvertImplicitly(TextSpan span, TypeSymbol fromType, TypeSymbol toType)
+        public void ReportVariableAlreadyDeclared(in TextSpan span, string name)
         {
-            Report(span, DiagnosticCode.CannotConvertImplicitly.GetDiagnostic(fromType, toType));
-        }
-
-        public void ReportSymbolAlreadyDeclared(in TextSpan span, string name)
-        {
-            Report(span, DiagnosticCode.SymbolAlreadyDeclared.GetDiagnostic(name));
+            Report(span, DiagnosticCode.VariableAlreadyDeclared.GetDiagnostic(name));
         }
 
         public void ReportCannotReassigned(in TextSpan span, string name)
@@ -105,11 +91,6 @@ namespace Compiler.CodeAnalysis.Diagnostics
         public void ReportUndefinedFunction(in TextSpan span, string name)
         {
             Report(span, DiagnosticCode.UndefinedFunction.GetDiagnostic(name));
-        }
-
-        public void ReportNotAFunction(TextSpan span, string name)
-        {
-            Report(span, DiagnosticCode.NotAFunction.GetDiagnostic(name));
         }
 
         public void ReportWrongArgumentCount(in TextSpan span, string name, in int expectedCount, in int actualCount)

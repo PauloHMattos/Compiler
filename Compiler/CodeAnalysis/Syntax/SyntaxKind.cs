@@ -11,7 +11,6 @@
         OpenBraceToken,
         CloseBraceToken,
         CommaToken,
-        ColonToken,
         IdentifierToken,
 
         // Keywords
@@ -54,7 +53,6 @@
         CompilationUnit,
         ElseClause,
         StepClause,
-        TypeClause,
 
         // Statements
         BlockStatement,
@@ -71,6 +69,6 @@
         ParenthesizedExpression,
         UnaryExpression,
         AssignmentExpression,
-        CallExpression,
+        CallExpression
     }
 }
