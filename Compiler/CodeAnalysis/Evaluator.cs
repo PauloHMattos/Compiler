@@ -120,6 +120,10 @@ namespace Compiler.CodeAnalysis
                     var boundCallExpression = (BoundCallExpression)expression;
                     return EvaluateCallExpression(boundCallExpression);
 
+                case BoundNodeKind.ConversionExpression:
+                    var boundConversionExpression = (BoundConversionExpression)expression;
+                    return EvaluateConversionExpression(boundConversionExpression);
+
                 default:
                     throw new InvalidOperationException($"Unexpected expression {expression.Kind}");
             }
@@ -237,6 +241,24 @@ namespace Compiler.CodeAnalysis
             }
 
             throw new InvalidOperationException($"Unexpected function {callExpression.Function}");
+        }
+
+        private object EvaluateConversionExpression(BoundConversionExpression node)
+        {
+            var value = EvaluateExpression(node.Expression);
+            if (node.Type == TypeSymbol.Bool)
+            {
+                return Convert.ToBoolean(value);
+            }
+            if (node.Type == TypeSymbol.Int)
+            {
+                return Convert.ToInt32(value);
+            }
+            if (node.Type == TypeSymbol.String)
+            {
+                return Convert.ToString(value);
+            }
+            throw new Exception($"Unexpected type {node.Type}");
         }
     }
 }

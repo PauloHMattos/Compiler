@@ -77,6 +77,11 @@ namespace Compiler.Tests.CodeAnalysis
         [InlineData("{ var a = 0 for i = 0 to 10 a = a + i a }", 55)]
         [InlineData("{ var a = 0 for i = 0 to 10 step 2 a = a + i a }", 30)]
         //[InlineData("{ var a = 0 for i = 0 to -10 step -1 a = a + i a }", -55)] // Currently we don't support reversed loops
+        [InlineData("bool(\"false\")", false)]
+        [InlineData("bool(\"true\")", true)]
+        [InlineData("string(10)", "10")]
+        [InlineData("string(true)", "True")]
+        [InlineData("int(\"100\")", 100)]
         public void Evaluator_Compute_CorrectValues(string text, object expectedValue)
         {
             AssertValue(text, expectedValue);
