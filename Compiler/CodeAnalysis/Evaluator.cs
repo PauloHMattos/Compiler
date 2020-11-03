@@ -258,7 +258,7 @@ namespace Compiler.CodeAnalysis
             {
                 return Convert.ToString(value);
             }
-            throw new Exception($"Unexpected type {node.Type}");
+            throw new InvalidOperationException($"Unexpected type {node.Type}");
         }
     }
 }

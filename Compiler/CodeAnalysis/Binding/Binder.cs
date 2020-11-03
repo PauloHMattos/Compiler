@@ -227,15 +227,7 @@ namespace Compiler.CodeAnalysis.Binding
 
         public BoundExpression BindExpression(ExpressionSyntax expression, TypeSymbol targetType)
         {
-            var result = BindExpression(expression);
-
-            if (targetType != TypeSymbol.Error &&
-                result.Type != TypeSymbol.Error &&
-                result.Type != targetType)
-            {
-                Diagnostics.ReportCannotConvert(expression.Span, result.Type, targetType);
-            }
-            return result;
+            return BindConversion(expression, targetType);
         }
 
         private BoundExpression BindLiteralExpression(LiteralExpressionSyntax syntax)
@@ -291,7 +283,7 @@ namespace Compiler.CodeAnalysis.Binding
         {
             if (syntax.Arguments.Count == 1 && TypeSymbol.LookupType(syntax.Identifier.Text) is TypeSymbol type)
             {
-                return BindConversion(type, syntax.Arguments[0]);
+                return BindConversion(syntax.Arguments[0], type);
             }
 
             var boundArguments = ImmutableArray.CreateBuilder<BoundExpression>();
@@ -336,14 +328,28 @@ namespace Compiler.CodeAnalysis.Binding
             return new BoundCallExpression(function, boundArguments.ToImmutable());
         }
 
-        private BoundExpression BindConversion(TypeSymbol type, ExpressionSyntax syntax)
+        private BoundExpression BindConversion(ExpressionSyntax syntax, TypeSymbol type)
         {
             var expression = BindExpression(syntax);
+            return BindConversion(syntax.Span, expression, type);
+        }
+
+        private BoundExpression BindConversion(TextSpan diagnosticSpan, BoundExpression expression, TypeSymbol type)
+        {
             var conversion = Conversion.Classify(expression.Type, type);
+
             if (!conversion.Exists)
             {
-                Diagnostics.ReportCannotConvert(syntax.Span, expression.Type, type);
+                if (expression.Type != TypeSymbol.Error && type != TypeSymbol.Error)
+                {
+                    Diagnostics.ReportCannotConvert(diagnosticSpan, expression.Type, type);
+                }
                 return new BoundErrorExpression();
+            }
+
+            if (conversion.IsIdentity)
+            {
+                return expression;
             }
 
             return new BoundConversionExpression(type, expression);
@@ -383,13 +389,8 @@ namespace Compiler.CodeAnalysis.Binding
                 Diagnostics.ReportCannotReassigned(syntax.EqualsToken.Span, name);
             }
 
-            if (boundExpression.Type != variable.Type)
-            {
-                Diagnostics.ReportCannotConvert(syntax.Expression.Span, boundExpression.Type, variable.Type);
-                return boundExpression;
-            }
-
-            return new BoundAssignmentExpression(variable, boundExpression);
+            var convertedExpression = BindConversion(syntax.Expression.Span, boundExpression, variable.Type);
+            return new BoundAssignmentExpression(variable, convertedExpression);
         }
     }
 }
