@@ -121,5 +121,15 @@ namespace Compiler.CodeAnalysis.Diagnostics
         {
             Report(span, DiagnosticCode.WrongArgumentType.GetDiagnostic(name, expectedType, actualType));
         }
+
+        public void ReportParameterAlreadyDeclared(TextSpan span, string parameterName)
+        {
+            Report(span, DiagnosticCode.ParameterAlreadyDeclared.GetDiagnostic(parameterName));
+        }
+
+        public void XXX_ReportFunctionsAreUnsupported(TextSpan span)
+        {
+            Report(span, DiagnosticCode.FunctionsAreUnsupported.GetDiagnostic());
+        }
     }
 }

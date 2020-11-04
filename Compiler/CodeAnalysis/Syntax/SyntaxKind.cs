@@ -25,6 +25,7 @@
         ForKeyword,
         ToKeyword,
         StepKeyword,
+        FunctionKeyword,
 
         // Literals
         NumberToken,
@@ -52,9 +53,12 @@
 
         // Nodes
         CompilationUnit,
+        FunctionDeclaration,
+        GlobalStatement,
+        Parameter,
+        TypeClause,
         ElseClause,
         StepClause,
-        TypeClause,
 
         // Statements
         BlockStatement,
