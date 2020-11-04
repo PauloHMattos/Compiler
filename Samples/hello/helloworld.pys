@@ -1,3 +1,0 @@
-print("Type your name: ")
-var name = input()
-print("Hello " + name);

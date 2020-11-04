@@ -11,18 +11,18 @@ namespace Compiler.Application
 {
     internal static class Program
     {
-        private static void Main(string[] args)
+        private static int Main(string[] args)
         {
             if (args.Length == 0)
             {
                 Console.Error.WriteLine("usage: ps <source-paths>");
-                return;
+                return 1;
             }
 
             if (args.Length > 1)
             {
                 Console.Error.WriteLine("error: only one path supported right now");
-                return;
+                return 1;
             }
 
             var paths = GetFilePaths(args);
@@ -33,7 +33,7 @@ namespace Compiler.Application
             {
                 if (!File.Exists(path))
                 {
-                    Console.WriteLine($"error: file '{path}' doesn't exist");
+                    Console.Error.WriteLine($"error: file '{path}' doesn't exist");
                     hasErrors = true;
                     continue;
                 }
@@ -42,7 +42,7 @@ namespace Compiler.Application
             }
 
             if (hasErrors)
-                return;
+                return 1;
 
             var compilation = new Compilation(syntaxTrees.ToArray());
             var result = compilation.Evaluate(new Dictionary<VariableSymbol, object>());
@@ -50,12 +50,15 @@ namespace Compiler.Application
             if (!result.Diagnostics.Any())
             {
                 if (result.Value != null)
+                {
                     Console.WriteLine(result.Value);
+                }
             }
             else
             {
                 Console.Error.WriteDiagnostics(result.Diagnostics);
             }
+            return 0;
         }
 
         private static IEnumerable<string> GetFilePaths(IEnumerable<string> paths)
@@ -66,7 +69,7 @@ namespace Compiler.Application
             {
                 if (Directory.Exists(path))
                 {
-                    result.UnionWith(Directory.EnumerateFiles(path, "*.ps", SearchOption.AllDirectories));
+                    result.UnionWith(Directory.EnumerateFiles(path, "*.pys", SearchOption.AllDirectories));
                 }
                 else
                 {

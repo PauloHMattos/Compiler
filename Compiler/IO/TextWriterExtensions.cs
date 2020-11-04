@@ -11,26 +11,34 @@ namespace Compiler.IO
 {
     public static class TextWriterExtensions
     {
-        private static bool IsConsoleOut(this TextWriter writer)
+        private static bool IsConsole(this TextWriter writer)
         {
             if (writer == Console.Out)
-                return true;
+            {
+                return !Console.IsOutputRedirected;
+            }
 
-            if (writer is IndentedTextWriter iw && iw.InnerWriter.IsConsoleOut())
+            if (writer == Console.Error)
+            {
+                return !Console.IsErrorRedirected && !Console.IsOutputRedirected; // Color codes are always output to Console.Out
+            }
+            if (writer is IndentedTextWriter iw && iw.InnerWriter.IsConsole())
+            {
                 return true;
+            }
 
             return false;
         }
 
         private static void SetForeground(this TextWriter writer, ConsoleColor color)
         {
-            if (writer.IsConsoleOut())
+            if (writer.IsConsole())
                 Console.ForegroundColor = color;
         }
 
         private static void ResetColor(this TextWriter writer)
         {
-            if (writer.IsConsoleOut())
+            if (writer.IsConsole())
                 Console.ResetColor();
         }
 
@@ -102,10 +110,10 @@ namespace Compiler.IO
 
                 writer.WriteLine();
 
-                Console.ForegroundColor = ConsoleColor.DarkRed;
+                writer.SetForeground(ConsoleColor.DarkRed);
                 writer.Write($"{fileName}({startLine},{startCharacter},{endLine},{endCharacter}): ");
                 writer.WriteLine(diagnostic);
-                Console.ResetColor();
+                writer.ResetColor();
 
                 var prefixSpan = TextSpan.FromBounds(line.Start, span.Start);
                 var suffixSpan = TextSpan.FromBounds(span.End, line.End);
@@ -117,9 +125,9 @@ namespace Compiler.IO
                 writer.Write("    ");
                 writer.Write(prefix);
 
-                Console.ForegroundColor = ConsoleColor.DarkRed;
+                writer.SetForeground(ConsoleColor.DarkRed);
                 writer.Write(error);
-                Console.ResetColor();
+                writer.ResetColor();
 
                 writer.Write(suffix);
 
