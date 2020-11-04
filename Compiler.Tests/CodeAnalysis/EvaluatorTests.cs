@@ -411,12 +411,27 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
+        public void Evaluator_InvokeFunctionArguments_Missing()
+        {
+            var text = @"
+                print([)]
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.WrongArgumentCount.GetDiagnostic("print", 1, 0),
+            };
+
+            AssertHasDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
         public void Evaluator_CallExpression_WrongArgumentCount()
         {
             var text = @"
                 {
-                    [random(0)]
-                    [random(0, 100, 100)]
+                    random(0[)]
+                    random(0, 100[, 100])
                 }
             ";
 
