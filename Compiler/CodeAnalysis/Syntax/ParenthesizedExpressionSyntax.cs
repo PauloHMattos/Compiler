@@ -7,7 +7,11 @@
         public SyntaxToken CloseParenthesisToken { get; }
         public override SyntaxKind Kind => SyntaxKind.ParenthesizedExpression;
 
-        public ParenthesizedExpressionSyntax(SyntaxToken openParenthesisToken, ExpressionSyntax expression, SyntaxToken closeParenthesisToken)
+        public ParenthesizedExpressionSyntax(SyntaxTree syntaxTree, 
+            SyntaxToken openParenthesisToken, 
+            ExpressionSyntax expression, 
+            SyntaxToken closeParenthesisToken)
+            : base(syntaxTree)
         {
             OpenParenthesisToken = openParenthesisToken;
             Expression = expression;

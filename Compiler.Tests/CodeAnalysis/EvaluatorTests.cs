@@ -666,7 +666,7 @@ namespace Compiler.Tests.CodeAnalysis
             Assert.Equal(expectedDiagnostics.Count, result.Diagnostics.Length);
             for (var i = 0; i < result.Diagnostics.Length; i++)
             {
-                Assert.Equal(annotatedText.Spans[i], result.Diagnostics[i].Span);
+                Assert.Equal(annotatedText.Spans[i], result.Diagnostics[i].Location.Span);
                 Assert.Equal(expectedDiagnostics[i], result.Diagnostics[i].Message);
             }
         }

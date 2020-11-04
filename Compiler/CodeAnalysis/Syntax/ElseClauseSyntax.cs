@@ -6,7 +6,10 @@
         public StatementSyntax ElseStatement { get; }
         public override SyntaxKind Kind => SyntaxKind.ElseClause;
 
-        public ElseClauseSyntax(SyntaxToken elseKeyword, StatementSyntax elseStatement)
+        public ElseClauseSyntax(SyntaxTree syntaxTree, 
+            SyntaxToken elseKeyword, 
+            StatementSyntax elseStatement)
+            : base(syntaxTree)
         {
             ElseKeyword = elseKeyword;
             ElseStatement = elseStatement;

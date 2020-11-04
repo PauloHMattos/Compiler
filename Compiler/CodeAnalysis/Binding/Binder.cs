@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Data;
+using System.Linq;
 using Compiler.CodeAnalysis.Diagnostics;
 using Compiler.CodeAnalysis.Lowering;
 using Compiler.CodeAnalysis.Symbols;
@@ -34,16 +35,24 @@ namespace Compiler.CodeAnalysis.Binding
             }
         }
 
-        public static BoundGlobalScope BindGlobalScope(BoundGlobalScope previous, CompilationUnitSyntax compilationUnit)
+        public static BoundGlobalScope BindGlobalScope(BoundGlobalScope previous, ImmutableArray<SyntaxTree> syntaxTrees)
         {
             var parentScope = CreateParentScope(previous);
             var binder = new Binder(parentScope, null);
-            foreach (var function in compilationUnit.Members.OfType<FunctionDeclarationSyntax>())
-                binder.BindFunctionDeclaration(function);
 
+            var functionDeclarations = syntaxTrees.SelectMany(st => st.Root.Members)
+                .OfType<FunctionDeclarationSyntax>();
+
+            foreach (var function in functionDeclarations)
+            {
+                binder.BindFunctionDeclaration(function);
+            }
+
+            var globalStatements = syntaxTrees.SelectMany(st => st.Root.Members)
+                .OfType<GlobalStatementSyntax>();
             var statements = ImmutableArray.CreateBuilder<BoundStatement>();
 
-            foreach (var globalStatement in compilationUnit.Members.OfType<GlobalStatementSyntax>())
+            foreach (var globalStatement in globalStatements)
             {
                 var s = binder.BindStatement(globalStatement.Statement);
                 statements.Add(s);
@@ -79,7 +88,7 @@ namespace Compiler.CodeAnalysis.Binding
 
                     if (function.Type != TypeSymbol.Void && !ControlFlowGraph.AllPathsReturn(loweredBody))
                     {
-                        binder.Diagnostics.ReportAllPathsMustReturn(function.Declaration.Identifier.Span);
+                        binder.Diagnostics.ReportAllPathsMustReturn(function.Declaration.Identifier.Location);
                     }
 
                     functionBodies.Add(function, loweredBody);
@@ -105,7 +114,7 @@ namespace Compiler.CodeAnalysis.Binding
                 var parameterType = BindTypeClause(parameterSyntax.Type);
                 if (!seenParameterNames.Add(parameterName))
                 {
-                    Diagnostics.ReportParameterAlreadyDeclared(parameterSyntax.Span, parameterName);
+                    Diagnostics.ReportParameterAlreadyDeclared(parameterSyntax.Location, parameterName);
                 }
                 else
                 {
@@ -120,7 +129,7 @@ namespace Compiler.CodeAnalysis.Binding
             if (function.Declaration.Identifier.Text != null &&
                 !_scope.TryDeclareFunction(function))
             {
-                Diagnostics.ReportSymbolAlreadyDeclared(syntax.Identifier.Span, function.Name);
+                Diagnostics.ReportSymbolAlreadyDeclared(syntax.Identifier.Location, function.Name);
             }
         }
 
@@ -181,7 +190,7 @@ namespace Compiler.CodeAnalysis.Binding
             var initializer = BindExpression(syntax.Initializer);
             var variableType = type ?? initializer.Type;
             var variable = BindVariableDeclaration(syntax.Identifier, isReadOnly, variableType);
-            var convertedInitializer = BindConversion(syntax.Initializer.Span, initializer, variableType, false);
+            var convertedInitializer = BindConversion(syntax.Initializer.Location, initializer, variableType, false);
 
             return new BoundVariableDeclarationStatement(variable, convertedInitializer);
         }
@@ -193,7 +202,7 @@ namespace Compiler.CodeAnalysis.Binding
 
             var type = TypeSymbol.LookupType(syntax.Identifier.Text);
             if (type == null)
-                Diagnostics.ReportUndefinedType(syntax.Identifier.Span, syntax.Identifier.Text);
+                Diagnostics.ReportUndefinedType(syntax.Identifier.Location, syntax.Identifier.Text);
 
             return type;
         }
@@ -208,18 +217,18 @@ namespace Compiler.CodeAnalysis.Binding
 
             if (declare && !_scope.TryDeclareVariable(variable))
             {
-                Diagnostics.ReportSymbolAlreadyDeclared(identifier.Span, name);
+                Diagnostics.ReportSymbolAlreadyDeclared(identifier.Location, name);
             }
 
             return variable;
         }
 
-        private VariableSymbol BindVariableReference(string name, TextSpan span)
+        private VariableSymbol BindVariableReference(string name, TextLocation location)
         {
             var symbol = _scope.TryLookupSymbol(name);
             if (symbol == null)
             {
-                Diagnostics.ReportUndefinedVariable(span, name);
+                Diagnostics.ReportUndefinedVariable(location, name);
                 return null;
             }
 
@@ -231,7 +240,7 @@ namespace Compiler.CodeAnalysis.Binding
                     return (VariableSymbol)symbol;
 
                 default:
-                    Diagnostics.ReportNotAVariable(span, name);
+                    Diagnostics.ReportNotAVariable(location, name);
                     return null;
             }
         }
@@ -294,7 +303,7 @@ namespace Compiler.CodeAnalysis.Binding
         {
             if (_loopStack.Count == 0)
             {
-                Diagnostics.ReportInvalidBreakOrContinue(syntax.Keyword.Span, syntax.Keyword.Text);
+                Diagnostics.ReportInvalidBreakOrContinue(syntax.Keyword.Location, syntax.Keyword.Text);
                 return BindErrorStatement();
             }
 
@@ -306,7 +315,7 @@ namespace Compiler.CodeAnalysis.Binding
         {
             if (_loopStack.Count == 0)
             {
-                Diagnostics.ReportInvalidBreakOrContinue(syntax.Keyword.Span, syntax.Keyword.Text);
+                Diagnostics.ReportInvalidBreakOrContinue(syntax.Keyword.Location, syntax.Keyword.Text);
                 return BindErrorStatement();
             }
 
@@ -320,7 +329,7 @@ namespace Compiler.CodeAnalysis.Binding
 
             if (_function == null)
             {
-                Diagnostics.ReportInvalidReturn(syntax.ReturnKeyword.Span);
+                Diagnostics.ReportInvalidReturn(syntax.ReturnKeyword.Location);
             }
             else
             {
@@ -328,18 +337,18 @@ namespace Compiler.CodeAnalysis.Binding
                 {
                     if (expression != null)
                     {
-                        Diagnostics.ReportInvalidReturnExpression(syntax.Expression.Span, _function.Name);
+                        Diagnostics.ReportInvalidReturnExpression(syntax.Expression.Location, _function.Name);
                     }
                 }
                 else
                 {
                     if (expression == null)
                     {
-                        Diagnostics.ReportMissingReturnExpression(syntax.ReturnKeyword.Span, _function.Type);
+                        Diagnostics.ReportMissingReturnExpression(syntax.ReturnKeyword.Location, _function.Type);
                     }
                     else
                     {
-                        expression = BindConversion(syntax.Expression.Span, expression, _function.Type, false);
+                        expression = BindConversion(syntax.Expression.Location, expression, _function.Type, false);
                     }
                 }
             }
@@ -397,7 +406,7 @@ namespace Compiler.CodeAnalysis.Binding
             var result = BindExpressionInternal(syntax);
             if (!canBeVoid && result.Type == TypeSymbol.Void)
             {
-                Diagnostics.ReportExpressionMustHaveValue(syntax.Span);
+                Diagnostics.ReportExpressionMustHaveValue(syntax.Location);
                 return new BoundErrorExpression();
             }
 
@@ -450,7 +459,7 @@ namespace Compiler.CodeAnalysis.Binding
             var boundOperatorKind = BoundUnaryOperator.Bind(syntax.OperatorToken.Kind, boundOperand.Type);
             if (boundOperatorKind == null)
             {
-                Diagnostics.ReportUndefinedUnaryOperator(syntax.OperatorToken.Span, syntax.OperatorToken.Text, boundOperand.Type);
+                Diagnostics.ReportUndefinedUnaryOperator(syntax.OperatorToken.Location, syntax.OperatorToken.Text, boundOperand.Type);
                 return new BoundErrorExpression();
             }
             return new BoundUnaryExpression(boundOperand, boundOperatorKind);
@@ -475,7 +484,7 @@ namespace Compiler.CodeAnalysis.Binding
             var boundOperatorKind = BoundBinaryOperator.Bind(syntax.OperatorToken.Kind, boundLeft.Type, boundRight.Type);
             if (boundOperatorKind == null)
             {
-                Diagnostics.ReportUndefinedBinaryOperator(syntax.OperatorToken.Span, syntax.OperatorToken.Text, boundLeft.Type, boundRight.Type);
+                Diagnostics.ReportUndefinedBinaryOperator(syntax.OperatorToken.Location, syntax.OperatorToken.Text, boundLeft.Type, boundRight.Type);
                 return new BoundErrorExpression();
             }
             return new BoundBinaryExpression(boundLeft, boundOperatorKind, boundRight);
@@ -498,14 +507,14 @@ namespace Compiler.CodeAnalysis.Binding
             var symbol = _scope.TryLookupSymbol(syntax.Identifier.Text);
             if (symbol == null)
             {
-                Diagnostics.ReportUndefinedFunction(syntax.Identifier.Span, syntax.Identifier.Text);
+                Diagnostics.ReportUndefinedFunction(syntax.Identifier.Location, syntax.Identifier.Text);
                 return new BoundErrorExpression();
             }
 
             var function = symbol as FunctionSymbol;
             if (function == null)
             {
-                Diagnostics.ReportNotAFunction(syntax.Identifier.Span, syntax.Identifier.Text);
+                Diagnostics.ReportNotAFunction(syntax.Identifier.Location, syntax.Identifier.Text);
                 return new BoundErrorExpression();
             }
 
@@ -530,7 +539,8 @@ namespace Compiler.CodeAnalysis.Binding
                 {
                     span = syntax.CloseParenthesisToken.Span;
                 }
-                Diagnostics.ReportWrongArgumentCount(span, function.Name, function.Parameters.Length, syntax.Arguments.Count);
+                var location = new TextLocation(syntax.SyntaxTree.Text, span);
+                Diagnostics.ReportWrongArgumentCount(location, function.Name, function.Parameters.Length, syntax.Arguments.Count);
                 return new BoundErrorExpression();
             }
 
@@ -544,7 +554,7 @@ namespace Compiler.CodeAnalysis.Binding
                 {
                     if (argument.Type != TypeSymbol.Error)
                     {
-                        Diagnostics.ReportWrongArgumentType(syntax.Arguments[i].Span, parameter.Name, parameter.Type, argument.Type);
+                        Diagnostics.ReportWrongArgumentType(syntax.Arguments[i].Location, parameter.Name, parameter.Type, argument.Type);
                     }
                     hasErrors = true;
                 }
@@ -561,10 +571,10 @@ namespace Compiler.CodeAnalysis.Binding
         private BoundExpression BindConversion(ExpressionSyntax syntax, TypeSymbol type, bool allowExplicit)
         {
             var expression = BindExpression(syntax);
-            return BindConversion(syntax.Span, expression, type, allowExplicit);
+            return BindConversion(syntax.Location, expression, type, allowExplicit);
         }
 
-        private BoundExpression BindConversion(TextSpan diagnosticSpan, BoundExpression expression, TypeSymbol type, bool allowExplicit)
+        private BoundExpression BindConversion(TextLocation diagnosticLocation, BoundExpression expression, TypeSymbol type, bool allowExplicit)
         {
             var conversion = Conversion.Classify(expression.Type, type);
 
@@ -572,14 +582,14 @@ namespace Compiler.CodeAnalysis.Binding
             {
                 if (expression.Type != TypeSymbol.Error && type != TypeSymbol.Error)
                 {
-                    Diagnostics.ReportCannotConvert(diagnosticSpan, expression.Type, type);
+                    Diagnostics.ReportCannotConvert(diagnosticLocation, expression.Type, type);
                 }
                 return new BoundErrorExpression();
             }
 
             if (!allowExplicit && conversion.IsExplicit)
             {
-                Diagnostics.ReportCannotConvertImplicitly(diagnosticSpan, expression.Type, type);
+                Diagnostics.ReportCannotConvertImplicitly(diagnosticLocation, expression.Type, type);
             }
 
             if (conversion.IsIdentity)
@@ -600,7 +610,7 @@ namespace Compiler.CodeAnalysis.Binding
             }
                 
             var name = syntax.IdentifierToken.Text;
-            var variable = BindVariableReference(name, syntax.IdentifierToken.Span);
+            var variable = BindVariableReference(name, syntax.IdentifierToken.Location);
             if (variable == null)
             {
                 return new BoundErrorExpression();
@@ -613,7 +623,7 @@ namespace Compiler.CodeAnalysis.Binding
             var name = syntax.IdentifierToken.Text;
             var boundExpression = BindExpression(syntax.Expression);
 
-            var variable = BindVariableReference(name, syntax.IdentifierToken.Span);
+            var variable = BindVariableReference(name, syntax.IdentifierToken.Location);
             if(variable == null)
             {
                 return boundExpression;
@@ -621,10 +631,10 @@ namespace Compiler.CodeAnalysis.Binding
 
             if (variable.IsReadOnly)
             {
-                Diagnostics.ReportCannotReassigned(syntax.EqualsToken.Span, name);
+                Diagnostics.ReportCannotReassigned(syntax.EqualsToken.Location, name);
             }
 
-            var convertedExpression = BindConversion(syntax.Expression.Span, boundExpression, variable.Type, false);
+            var convertedExpression = BindConversion(syntax.Expression.Location, boundExpression, variable.Type, false);
             return new BoundAssignmentExpression(variable, convertedExpression);
         }
     }

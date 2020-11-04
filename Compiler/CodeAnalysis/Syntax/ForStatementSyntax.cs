@@ -12,7 +12,8 @@
         public StepClauseSyntax StepClause { get; }
         public override SyntaxKind Kind => SyntaxKind.ForStatement;
 
-        public ForStatementSyntax(SyntaxToken forKeyword, 
+        public ForStatementSyntax(SyntaxTree syntaxTree, 
+            SyntaxToken forKeyword, 
             SyntaxToken identifier,
             SyntaxToken equalsToken, 
             ExpressionSyntax lowerBound, 
@@ -20,6 +21,7 @@
             ExpressionSyntax upperBound,
             StatementSyntax body,
             StepClauseSyntax stepClause)
+            : base(syntaxTree)
         {
             ForKeyword = forKeyword;
             Identifier = identifier;

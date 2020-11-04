@@ -19,9 +19,9 @@ namespace Compiler.CodeAnalysis.Diagnostics
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        private void Report(in TextSpan span, string message)
+        private void Report(in TextLocation location, string message)
         {
-            _diagnostics.Add(new Diagnostic(span, message));
+            _diagnostics.Add(new Diagnostic(location, message));
         }
 
         public void AddRange(IEnumerable<Diagnostic> diagnostics)
@@ -32,124 +32,124 @@ namespace Compiler.CodeAnalysis.Diagnostics
             }
         }
 
-        public void ReportBadCharacter(in TextSpan span, in char current)
+        public void ReportBadCharacter(in TextLocation location, in char current)
         {
-            Report(span, DiagnosticCode.BadCharacter.GetDiagnostic(current));
+            Report(location, DiagnosticCode.BadCharacter.GetDiagnostic(current));
         }
 
-        public void ReportInvalidLiteralType(in TextSpan span, string text, TypeSymbol type)
+        public void ReportInvalidLiteralType(in TextLocation location, string text, TypeSymbol type)
         {
-            Report(span, DiagnosticCode.InvalidLiteralType.GetDiagnostic(text, type));
+            Report(location, DiagnosticCode.InvalidLiteralType.GetDiagnostic(text, type));
         }
 
-        public void ReportUnterminatedString(TextSpan textSpan)
+        public void ReportUnterminatedString(in TextLocation location)
         {
-            Report(textSpan, DiagnosticCode.UnterminatedString.GetDiagnostic());
+            Report(location, DiagnosticCode.UnterminatedString.GetDiagnostic());
         }
 
-        public void ReportUnexpectedToken(in TextSpan span, SyntaxKind actualKind, SyntaxKind expectedKind)
+        public void ReportUnexpectedToken(in TextLocation location, SyntaxKind actualKind, SyntaxKind expectedKind)
         {
-            Report(span, DiagnosticCode.UnexpectedToken.GetDiagnostic(actualKind, expectedKind));
+            Report(location, DiagnosticCode.UnexpectedToken.GetDiagnostic(actualKind, expectedKind));
         }
 
-        public void ReportUndefinedUnaryOperator(in TextSpan span, string operatorText, TypeSymbol operandType)
+        public void ReportUndefinedUnaryOperator(in TextLocation location, string operatorText, TypeSymbol operandType)
         {
-            Report(span, DiagnosticCode.UndefinedUnaryOperator.GetDiagnostic(operatorText, operandType));
+            Report(location, DiagnosticCode.UndefinedUnaryOperator.GetDiagnostic(operatorText, operandType));
         }
 
-        public void ReportUndefinedBinaryOperator(in TextSpan span, string operatorText, TypeSymbol leftType, TypeSymbol rightType)
+        public void ReportUndefinedBinaryOperator(in TextLocation location, string operatorText, TypeSymbol leftType, TypeSymbol rightType)
         {
-            Report(span, DiagnosticCode.UndefinedBinaryOperator.GetDiagnostic(operatorText, leftType, rightType));
+            Report(location, DiagnosticCode.UndefinedBinaryOperator.GetDiagnostic(operatorText, leftType, rightType));
         }
 
-        public void ReportUndefinedVariable(in TextSpan span, string name)
+        public void ReportUndefinedVariable(in TextLocation location, string name)
         {
-            Report(span, DiagnosticCode.UndefinedVariable.GetDiagnostic(name));
+            Report(location, DiagnosticCode.UndefinedVariable.GetDiagnostic(name));
         }
 
-        public void ReportNotAVariable(TextSpan span, string name)
+        public void ReportNotAVariable(in TextLocation location, string name)
         {
-            Report(span, DiagnosticCode.NotAVariable.GetDiagnostic(name));
+            Report(location, DiagnosticCode.NotAVariable.GetDiagnostic(name));
         }
 
-        public void ReportUndefinedType(TextSpan span, string name)
+        public void ReportUndefinedType(in TextLocation location, string name)
         {
-            Report(span, DiagnosticCode.UndefinedType.GetDiagnostic(name, name));
+            Report(location, DiagnosticCode.UndefinedType.GetDiagnostic(name, name));
         }
 
-        public void ReportCannotConvert(in TextSpan span, TypeSymbol fromType, TypeSymbol toType)
+        public void ReportCannotConvert(in TextLocation location, TypeSymbol fromType, TypeSymbol toType)
         {
-            Report(span, DiagnosticCode.CannotConvert.GetDiagnostic(fromType, toType));
+            Report(location, DiagnosticCode.CannotConvert.GetDiagnostic(fromType, toType));
         }
 
-        public void ReportCannotConvertImplicitly(TextSpan span, TypeSymbol fromType, TypeSymbol toType)
+        public void ReportCannotConvertImplicitly(in TextLocation location, TypeSymbol fromType, TypeSymbol toType)
         {
-            Report(span, DiagnosticCode.CannotConvertImplicitly.GetDiagnostic(fromType, toType));
+            Report(location, DiagnosticCode.CannotConvertImplicitly.GetDiagnostic(fromType, toType));
         }
 
-        public void ReportSymbolAlreadyDeclared(in TextSpan span, string name)
+        public void ReportSymbolAlreadyDeclared(in TextLocation location, string name)
         {
-            Report(span, DiagnosticCode.SymbolAlreadyDeclared.GetDiagnostic(name));
+            Report(location, DiagnosticCode.SymbolAlreadyDeclared.GetDiagnostic(name));
         }
 
-        public void ReportCannotReassigned(in TextSpan span, string name)
+        public void ReportCannotReassigned(in TextLocation location, string name)
         {
-            Report(span, DiagnosticCode.VariableCannotReassigned.GetDiagnostic(name));
+            Report(location, DiagnosticCode.VariableCannotReassigned.GetDiagnostic(name));
         }
 
-        public void ReportExpressionMustHaveValue(in TextSpan span)
+        public void ReportExpressionMustHaveValue(in TextLocation location)
         {
-            Report(span, DiagnosticCode.ExpressionMustHaveValue.GetDiagnostic());
+            Report(location, DiagnosticCode.ExpressionMustHaveValue.GetDiagnostic());
         }
 
-        public void ReportUndefinedFunction(in TextSpan span, string name)
+        public void ReportUndefinedFunction(in TextLocation location, string name)
         {
-            Report(span, DiagnosticCode.UndefinedFunction.GetDiagnostic(name));
+            Report(location, DiagnosticCode.UndefinedFunction.GetDiagnostic(name));
         }
 
-        public void ReportNotAFunction(TextSpan span, string name)
+        public void ReportNotAFunction(TextLocation location, string name)
         {
-            Report(span, DiagnosticCode.NotAFunction.GetDiagnostic(name));
+            Report(location, DiagnosticCode.NotAFunction.GetDiagnostic(name));
         }
 
-        public void ReportWrongArgumentCount(in TextSpan span, string name, in int expectedCount, in int actualCount)
+        public void ReportWrongArgumentCount(in TextLocation location, string name, in int expectedCount, in int actualCount)
         {
-            Report(span, DiagnosticCode.WrongArgumentCount.GetDiagnostic(name, expectedCount, actualCount));
+            Report(location, DiagnosticCode.WrongArgumentCount.GetDiagnostic(name, expectedCount, actualCount));
         }
 
-        public void ReportWrongArgumentType(in TextSpan span, string name, TypeSymbol expectedType, TypeSymbol actualType)
+        public void ReportWrongArgumentType(in TextLocation location, string name, TypeSymbol expectedType, TypeSymbol actualType)
         {
-            Report(span, DiagnosticCode.WrongArgumentType.GetDiagnostic(name, expectedType, actualType));
+            Report(location, DiagnosticCode.WrongArgumentType.GetDiagnostic(name, expectedType, actualType));
         }
 
-        public void ReportParameterAlreadyDeclared(TextSpan span, string parameterName)
+        public void ReportParameterAlreadyDeclared(in TextLocation location, string parameterName)
         {
-            Report(span, DiagnosticCode.ParameterAlreadyDeclared.GetDiagnostic(parameterName));
+            Report(location, DiagnosticCode.ParameterAlreadyDeclared.GetDiagnostic(parameterName));
         }
 
-        public void ReportInvalidBreakOrContinue(TextSpan span, string text)
+        public void ReportInvalidBreakOrContinue(in TextLocation location, string text)
         {
-            Report(span, DiagnosticCode.InvalidBreakOrContinue.GetDiagnostic(text));
+            Report(location, DiagnosticCode.InvalidBreakOrContinue.GetDiagnostic(text));
         }
 
-        public void ReportInvalidReturn(TextSpan span)
+        public void ReportInvalidReturn(in TextLocation location)
         {
-            Report(span, DiagnosticCode.InvalidReturn.GetDiagnostic());
+            Report(location, DiagnosticCode.InvalidReturn.GetDiagnostic());
         }
 
-        public void ReportInvalidReturnExpression(TextSpan span, string functionName)
+        public void ReportInvalidReturnExpression(in TextLocation location, string functionName)
         {
-            Report(span, DiagnosticCode.InvalidReturnExpression.GetDiagnostic(functionName));
+            Report(location, DiagnosticCode.InvalidReturnExpression.GetDiagnostic(functionName));
         }
 
-        public void ReportMissingReturnExpression(TextSpan span, TypeSymbol returnType)
+        public void ReportMissingReturnExpression(in TextLocation location, TypeSymbol returnType)
         {
-            Report(span, DiagnosticCode.MissingReturnExpression.GetDiagnostic(returnType));
+            Report(location, DiagnosticCode.MissingReturnExpression.GetDiagnostic(returnType));
         }
 
-        public void ReportAllPathsMustReturn(TextSpan span)
+        public void ReportAllPathsMustReturn(in TextLocation location)
         {
-            Report(span, DiagnosticCode.AllPathsMustReturn.GetDiagnostic());
+            Report(location, DiagnosticCode.AllPathsMustReturn.GetDiagnostic());
         }
     }
 }

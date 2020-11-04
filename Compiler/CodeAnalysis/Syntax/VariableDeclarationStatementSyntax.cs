@@ -9,7 +9,13 @@
         public ExpressionSyntax Initializer { get; }
         public override SyntaxKind Kind => SyntaxKind.VariableDeclarationStatement;
 
-        public VariableDeclarationStatementSyntax(SyntaxToken keyword, SyntaxToken identifier, TypeClauseSyntax typeClause, SyntaxToken equalsToken, ExpressionSyntax initializer)
+        public VariableDeclarationStatementSyntax(SyntaxTree syntaxTree, 
+            SyntaxToken keyword, 
+            SyntaxToken identifier, 
+            TypeClauseSyntax typeClause, 
+            SyntaxToken equalsToken, 
+            ExpressionSyntax initializer)
+            : base(syntaxTree)
         {
             Keyword = keyword;
             Identifier = identifier;

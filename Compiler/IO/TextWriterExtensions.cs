@@ -1,11 +1,15 @@
 ﻿using System;
 using System.CodeDom.Compiler;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using Compiler.CodeAnalysis.Diagnostics;
 using Compiler.CodeAnalysis.Syntax;
+using Compiler.CodeAnalysis.Text;
 
 namespace Compiler.IO
 {
-    internal static class TextWriterExtensions
+    public static class TextWriterExtensions
     {
         private static bool IsConsoleOut(this TextWriter writer)
         {
@@ -77,6 +81,52 @@ namespace Compiler.IO
             writer.SetForeground(ConsoleColor.DarkGray);
             writer.Write(text);
             writer.ResetColor();
+        }
+
+        public static void WriteDiagnostics(this TextWriter writer, IEnumerable<Diagnostic> diagnostics)
+        {
+            foreach (var diagnostic in diagnostics.OrderBy(d => d.Location.FileName)
+                .ThenBy(d => d.Location.Span.Start)
+                .ThenBy(d => d.Location.Span.Length))
+            {
+                var text = diagnostic.Location.Text;
+                var fileName = diagnostic.Location.FileName;
+                var startLine = diagnostic.Location.StartLine + 1;
+                var startCharacter = diagnostic.Location.StartCharacter + 1;
+                var endLine = diagnostic.Location.EndLine + 1;
+                var endCharacter = diagnostic.Location.EndCharacter + 1;
+
+                var span = diagnostic.Location.Span;
+                var lineIndex = text.GetLineIndex(span.Start);
+                var line = text.Lines[lineIndex];
+
+                writer.WriteLine();
+
+                Console.ForegroundColor = ConsoleColor.DarkRed;
+                writer.Write($"{fileName}({startLine},{startCharacter},{endLine},{endCharacter}): ");
+                writer.WriteLine(diagnostic);
+                Console.ResetColor();
+
+                var prefixSpan = TextSpan.FromBounds(line.Start, span.Start);
+                var suffixSpan = TextSpan.FromBounds(span.End, line.End);
+
+                var prefix = text.ToString(prefixSpan);
+                var error = text.ToString(span);
+                var suffix = text.ToString(suffixSpan);
+
+                writer.Write("    ");
+                writer.Write(prefix);
+
+                Console.ForegroundColor = ConsoleColor.DarkRed;
+                writer.Write(error);
+                Console.ResetColor();
+
+                writer.Write(suffix);
+
+                writer.WriteLine();
+            }
+
+            Console.WriteLine();
         }
     }
 }
