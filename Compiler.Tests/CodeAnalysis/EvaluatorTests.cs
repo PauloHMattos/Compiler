@@ -394,6 +394,41 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
+        public void Evaluator_Parameter_Already_Declared()
+        {
+            var text = @"
+                function sum(a: int, b: int, [a: int])
+                {
+                    return a + b + c
+                }
+            ";
+            
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.ParameterAlreadyDeclared.GetDiagnostic("a"),
+            };
+
+            AssertHasDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_Bad_Type()
+        {
+            var text = @"
+                function test(n: [invalidtype])
+                {
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.UndefinedType.GetDiagnostic("invalidtype"),
+            };
+
+            AssertHasDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
         public void Evaluator_CallExpression_WrongArgumentType()
         {
             var text = @"
