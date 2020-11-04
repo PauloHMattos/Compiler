@@ -14,6 +14,7 @@ namespace Compiler.CodeAnalysis.Text
         private SourceText(string text, string fileName)
         {
             _text = text;
+            FileName = fileName;
             Lines = ParseLines(this, text);
         }
 

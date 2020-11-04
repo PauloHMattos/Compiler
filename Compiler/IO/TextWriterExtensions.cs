@@ -33,13 +33,17 @@ namespace Compiler.IO
         private static void SetForeground(this TextWriter writer, ConsoleColor color)
         {
             if (writer.IsConsole())
+            {
                 Console.ForegroundColor = color;
+            }
         }
 
         private static void ResetColor(this TextWriter writer)
         {
             if (writer.IsConsole())
+            {
                 Console.ResetColor();
+            }
         }
 
         public static void WriteKeyword(this TextWriter writer, SyntaxKind kind)
