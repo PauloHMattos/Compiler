@@ -412,6 +412,24 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
+        public void Evaluator_Function_Must_Have_Name()
+        {
+            var text = @"
+                function [(]a: int, b: int)
+                {
+                    return a + b
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.OpenParenthesisToken, SyntaxKind.IdentifierToken),
+            };
+
+            AssertHasDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
         public void Evaluator_Bad_Type()
         {
             var text = @"
