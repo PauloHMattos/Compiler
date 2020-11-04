@@ -14,6 +14,8 @@ namespace Compiler.CodeAnalysis.Binding
     {
         private BoundScope _scope;
         private readonly FunctionSymbol _function;
+        private Stack<(BoundLabel BreakLabel, BoundLabel ContinueLabel)> _loopStack = new Stack<(BoundLabel BreakLabel, BoundLabel ContinueLabel)>();
+        private int _labelCounter;
 
         public DiagnosticBag Diagnostics { get; }
 
@@ -134,6 +136,10 @@ namespace Compiler.CodeAnalysis.Binding
                     return BindWhileStatement((WhileStatementSyntax)statementSyntax);
                 case SyntaxKind.ForStatement:
                     return BindForStatement((ForStatementSyntax)statementSyntax);
+                case SyntaxKind.ContinueStatement:
+                    return BindContinueStatement((ContinueStatementSyntax)statementSyntax);
+                case SyntaxKind.BreakStatement:
+                    return BindBreakStatement((BreakStatementSyntax)statementSyntax);
                 default:
                     throw new InvalidOperationException($"Unexpected syntax {statementSyntax.Kind}");
             }
@@ -232,16 +238,16 @@ namespace Compiler.CodeAnalysis.Binding
 
         private BoundStatement BindDoWhileStatement(DoWhileStatementSyntax syntax)
         {
+            var body = BindLoopBody(syntax.Body, out var breakLabel, out var continueLabel);
             var condition = BindExpression(syntax.Condition, TypeSymbol.Bool);
-            var body = BindStatement(syntax.Body);
-            return new BoundDoWhileStatement(condition, body);
+            return new BoundDoWhileStatement(condition, body, breakLabel, continueLabel);
         }
 
         private BoundStatement BindWhileStatement(WhileStatementSyntax syntax)
         {
             var condition = BindExpression(syntax.Condition, TypeSymbol.Bool);
-            var body = BindStatement(syntax.Body);
-            return new BoundWhileStatement(condition, body);
+            var body = BindLoopBody(syntax.Body, out var breakLabel, out var continueLabel);
+            return new BoundWhileStatement(condition, body, breakLabel, continueLabel);
         }
 
         private BoundStatement BindForStatement(ForStatementSyntax syntax)
@@ -257,11 +263,52 @@ namespace Compiler.CodeAnalysis.Binding
                 BindExpression(syntax.StepClause.Expression, TypeSymbol.Int) : 
                 new BoundLiteralExpression(1);
 
-            var body = BindStatement(syntax.Body);
-
+            var body = BindLoopBody(syntax.Body, out var breakLabel, out var continueLabel);
             _scope = _scope.Parent;
 
-            return new BoundForStatement(variable, lowerBound, upperBound, step, body);
+            return new BoundForStatement(variable, lowerBound, upperBound, step, body, breakLabel, continueLabel);
+        }
+
+        private BoundStatement BindLoopBody(StatementSyntax body, out BoundLabel breakLabel, out BoundLabel continueLabel)
+        {
+            _labelCounter++;
+            breakLabel = new BoundLabel($"break{_labelCounter}");
+            continueLabel = new BoundLabel($"continue{_labelCounter}");
+
+            _loopStack.Push((breakLabel, continueLabel));
+            var boundBody = BindStatement(body);
+            _loopStack.Pop();
+
+            return boundBody;
+        }
+
+        private BoundStatement BindBreakStatement(BreakStatementSyntax syntax)
+        {
+            if (_loopStack.Count == 0)
+            {
+                Diagnostics.ReportInvalidBreakOrContinue(syntax.Keyword.Span, syntax.Keyword.Text);
+                return BindErrorStatement();
+            }
+
+            var breakLabel = _loopStack.Peek().BreakLabel;
+            return new BoundGotoStatement(breakLabel);
+        }
+
+        private BoundStatement BindContinueStatement(ContinueStatementSyntax syntax)
+        {
+            if (_loopStack.Count == 0)
+            {
+                Diagnostics.ReportInvalidBreakOrContinue(syntax.Keyword.Span, syntax.Keyword.Text);
+                return BindErrorStatement();
+            }
+
+            var continueLabel = _loopStack.Peek().ContinueLabel;
+            return new BoundGotoStatement(continueLabel);
+        }
+
+        private BoundStatement BindErrorStatement()
+        {
+            return new BoundExpressionStatement(new BoundErrorExpression());
         }
 
         private static BoundScope CreateParentScope(BoundGlobalScope previous)

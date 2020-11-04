@@ -2,7 +2,7 @@
 
 namespace Compiler.CodeAnalysis.Binding
 {
-    internal class BoundForStatement : BoundStatement
+    internal class BoundForStatement : BoundLoopStatement
     {
         public VariableSymbol Variable { get; }
         public BoundExpression LowerBound { get; }
@@ -15,7 +15,10 @@ namespace Compiler.CodeAnalysis.Binding
             BoundExpression lowerBound,
             BoundExpression upperBound, 
             BoundExpression step,
-            BoundStatement body)
+            BoundStatement body, 
+            BoundLabel breakLabel, 
+            BoundLabel continueLabel)
+            : base(breakLabel, continueLabel)
         {
             Variable = variable;
             LowerBound = lowerBound;
@@ -23,5 +26,17 @@ namespace Compiler.CodeAnalysis.Binding
             Step = step;
             Body = body;
         }
+    }
+
+    internal abstract class BoundLoopStatement : BoundStatement
+    {
+        protected BoundLoopStatement(BoundLabel breakLabel, BoundLabel continueLabel)
+        {
+            BreakLabel = breakLabel;
+            ContinueLabel = continueLabel;
+        }
+
+        public BoundLabel BreakLabel { get; }
+        public BoundLabel ContinueLabel { get; }
     }
 }

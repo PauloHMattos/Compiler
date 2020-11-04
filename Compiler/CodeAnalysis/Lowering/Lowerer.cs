@@ -123,30 +123,28 @@ namespace Compiler.CodeAnalysis.Lowering
             //
             // ---------------->
             //
-            // continue:
+            // body:
             //      <body>
-            // check:
-            //      gotoTrue <condition> continue
-            // end:
+            // continue:
+            //      gotoTrue <condition> body
+            // break:
 
-            var continueLabel = GenerateNewLabel();
-            var checkLabel = GenerateNewLabel();
-            var endLabel = GenerateNewLabel();
+            var bodyLabel = GenerateNewLabel();
 
 
-            var continueLabelStatement = new BoundLabelStatement(continueLabel);
-            var checkLabelStatement = new BoundLabelStatement(checkLabel);
+            var continueLabelStatement = new BoundLabelStatement(node.ContinueLabel);
+            var bodyLabelStatement = new BoundLabelStatement(bodyLabel);
 
-            var gotoTrue = new BoundConditionalGotoStatement(continueLabel, node.Condition, true);
+            var gotoTrue = new BoundConditionalGotoStatement(bodyLabel, node.Condition, true);
 
-            var endLabelStatement = new BoundLabelStatement(endLabel);
+            var breakLabelStatement = new BoundLabelStatement(node.BreakLabel);
 
             var result = new BoundBlockStatement(ImmutableArray.Create(
-                continueLabelStatement,
+                bodyLabelStatement,
                 node.Body,
-                checkLabelStatement,
+                continueLabelStatement,
                 gotoTrue,
-                endLabelStatement
+                breakLabelStatement
             ));
             return RewriteStatement(result);
         }
@@ -158,33 +156,30 @@ namespace Compiler.CodeAnalysis.Lowering
             //
             // ---------------->
             //
-            // goto check
-            // continue:
+            // goto continue
+            // body:
             //      <body>
-            // check:
+            // continue:
             //      gotoTrue <condition> continue
-            // end:
+            // break:
 
-            var continueLabel = GenerateNewLabel();
-            var checkLabel = GenerateNewLabel();
-            var endLabel = GenerateNewLabel();
+            var bodyLabel = GenerateNewLabel();
 
-            var gotoCheck = new BoundGotoStatement(checkLabel);
+            var gotoContinue = new BoundGotoStatement(node.ContinueLabel);
+            var bodyLabelStatement = new BoundLabelStatement(bodyLabel);
+            var continueLabelStatement = new BoundLabelStatement(node.ContinueLabel);
 
-            var continueLabelStatement = new BoundLabelStatement(continueLabel);
-            var checkLabelStatement = new BoundLabelStatement(checkLabel);
+            var gotoTrue = new BoundConditionalGotoStatement(bodyLabel, node.Condition, true);
 
-            var gotoTrue = new BoundConditionalGotoStatement(continueLabel, node.Condition, true);
-
-            var endLabelStatement = new BoundLabelStatement(endLabel);
+            var breakLabelStatement = new BoundLabelStatement(node.BreakLabel);
 
             var result = new BoundBlockStatement(ImmutableArray.Create(
-                gotoCheck,
-                continueLabelStatement,
+                gotoContinue,
+                bodyLabelStatement,
                 node.Body,
-                checkLabelStatement,
+                continueLabelStatement,
                 gotoTrue,
-                endLabelStatement
+                breakLabelStatement
             ));
             return RewriteStatement(result);
         }
@@ -199,6 +194,7 @@ namespace Compiler.CodeAnalysis.Lowering
             // var <variable> = <lower>
             // while (<var> <= <upper>)
             //      <body>
+            //      continue:
             //      <var> = <var> + <step>
 
             var variableDeclaration = new BoundVariableDeclarationStatement(node.Variable, node.LowerBound);
@@ -210,7 +206,7 @@ namespace Compiler.CodeAnalysis.Lowering
                 BoundBinaryOperator.Bind(SyntaxKind.LessOrEqualsToken, TypeSymbol.Int, TypeSymbol.Int),
                 new BoundVariableExpression(upperBoundSymbol)
             );
-
+            var continueLabelStatement = new BoundLabelStatement(node.ContinueLabel);
             var stepIncrement = new BoundExpressionStatement( 
                 new BoundAssignmentExpression(node.Variable, 
                     new BoundBinaryExpression(variableExpression,
@@ -218,8 +214,11 @@ namespace Compiler.CodeAnalysis.Lowering
                         node.Step))
                 );
 
-            var whileBody = new BoundBlockStatement(ImmutableArray.Create(node.Body, stepIncrement));
-            var whileStatement = new BoundWhileStatement(condition, whileBody);
+            var whileBody = new BoundBlockStatement(ImmutableArray.Create(
+                node.Body,
+                continueLabelStatement,
+                stepIncrement));
+            var whileStatement = new BoundWhileStatement(condition, whileBody, node.BreakLabel, GenerateNewLabel());
 
             var result =
                 new BoundBlockStatement(ImmutableArray.Create<BoundStatement>(variableDeclaration, upperBoundDeclaration, whileStatement));

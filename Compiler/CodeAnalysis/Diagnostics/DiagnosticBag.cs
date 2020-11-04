@@ -127,6 +127,11 @@ namespace Compiler.CodeAnalysis.Diagnostics
             Report(span, DiagnosticCode.ParameterAlreadyDeclared.GetDiagnostic(parameterName));
         }
 
+        public void ReportInvalidBreakOrContinue(TextSpan span, string text)
+        {
+            Report(span, DiagnosticCode.InvalidBreakOrContinue.GetDiagnostic(text));
+        }
+
         public void XXX_ReportFunctionsAreUnsupported(TextSpan span)
         {
             Report(span, DiagnosticCode.FunctionsAreUnsupported.GetDiagnostic());

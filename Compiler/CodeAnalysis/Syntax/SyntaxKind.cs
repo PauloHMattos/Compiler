@@ -26,6 +26,8 @@
         ForKeyword,
         ToKeyword,
         StepKeyword,
+        ContinueKeyword,
+        BreakKeyword,
         FunctionKeyword,
 
         // Literals
@@ -69,6 +71,8 @@
         DoWhileStatement,
         WhileStatement,
         ForStatement,
+        ContinueStatement,
+        BreakStatement,
 
         // Expressions
         LiteralExpression,

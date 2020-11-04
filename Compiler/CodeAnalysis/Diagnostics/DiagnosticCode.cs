@@ -23,7 +23,8 @@ namespace Compiler.CodeAnalysis.Diagnostics
         UndefinedType,
         CannotConvertImplicitly,
         ParameterAlreadyDeclared,
-        FunctionsAreUnsupported
+        FunctionsAreUnsupported,
+        InvalidBreakOrContinue,
     }
 
 
@@ -51,6 +52,7 @@ namespace Compiler.CodeAnalysis.Diagnostics
             {DiagnosticCode.CannotConvertImplicitly, "Cannot convert type '{0}' to '{1}'. An explicit conversion exists (are you missing a cast?)"},
             {DiagnosticCode.ParameterAlreadyDeclared, "A parameter with the name '{0}' already exists."},
             {DiagnosticCode.FunctionsAreUnsupported, "Functions with return values are unsupported."},
+            {DiagnosticCode.InvalidBreakOrContinue, "The keyword '{0}' can only be used inside of loops."},
         };
 
         public static string GetDiagnostic(this DiagnosticCode code, params object[] arguments)

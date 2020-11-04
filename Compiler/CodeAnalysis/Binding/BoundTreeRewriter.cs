@@ -100,7 +100,7 @@ namespace Compiler.CodeAnalysis.Binding
             {
                 return node;
             }
-            return new BoundDoWhileStatement(condition, body);
+            return new BoundDoWhileStatement(condition, body, node.BreakLabel, node.ContinueLabel);
         }
 
         protected virtual BoundStatement RewriteWhileStatement(BoundWhileStatement node)
@@ -111,7 +111,7 @@ namespace Compiler.CodeAnalysis.Binding
             {
                 return node;
             }
-            return new BoundWhileStatement(condition, body);
+            return new BoundWhileStatement(condition, body, node.BreakLabel, node.ContinueLabel);
         }
 
         protected virtual BoundStatement RewriteForStatement(BoundForStatement node)
@@ -126,7 +126,7 @@ namespace Compiler.CodeAnalysis.Binding
             {
                 return node;
             }
-            return new BoundForStatement(node.Variable, lowerBound, upperBound, step, body);
+            return new BoundForStatement(node.Variable, lowerBound, upperBound, step, body, node.BreakLabel, node.ContinueLabel);
         }
 
         protected virtual BoundStatement RewriteLabelStatement(BoundLabelStatement node)

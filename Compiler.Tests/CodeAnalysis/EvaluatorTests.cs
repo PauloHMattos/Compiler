@@ -84,6 +84,11 @@ namespace Compiler.Tests.CodeAnalysis
         [InlineData("{ var a = 5 while a == 0 a = a - 1 a }", 5)]
         [InlineData("{ var a = 0 for i = 0 to 10 a = a + i a }", 55)]
         [InlineData("{ var a = 0 for i = 0 to 10 step 2 a = a + i a }", 30)]
+        [InlineData("{ var a = 0 for i = 0 to 10 break a }", 0)]
+        [InlineData("{ var a = 0 for i = 0 to 10 { a = a + i continue } a }", 55)]
+        [InlineData("{ var a = 0 for i = 0 to 10 { continue a = a + i } a }", 0)]
+        [InlineData("{ var i = 0 while i < 5 { i = i + 1 if i == 5 continue } i }", 5)]
+        [InlineData("{ var i = 0 do { i = i + 1 if i == 5 continue } while i < 5 i }", 5)]
         //[InlineData("{ var a = 0 for i = 0 to -10 step -1 a = a + i a }", -55)] // Currently we don't support reversed loops
         [InlineData("bool(\"false\")", false)]
         [InlineData("bool(\"true\")", true)]
@@ -205,6 +210,25 @@ namespace Compiler.Tests.CodeAnalysis
             };
             AssertHasDiagnostics(text, diagnostics);
         }
+
+        [Fact]
+        public void Evaluator_BreakOrContinueStatement_Reports_InvalidBreakOrContinue()
+        {
+            var text = @"
+                {
+                    [break]
+                    [continue]
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.InvalidBreakOrContinue.GetDiagnostic("break"),
+                DiagnosticCode.InvalidBreakOrContinue.GetDiagnostic("continue")
+            };
+            AssertHasDiagnostics(text, diagnostics);
+        }
+
 
         [Fact]
         public void Evaluator_AssignmentExpression_Reports_Undefined()

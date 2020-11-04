@@ -174,6 +174,10 @@ namespace Compiler.CodeAnalysis.Syntax
                     return ParseWhileStatement();
                 case SyntaxKind.ForKeyword:
                     return ParseForStatement();
+                case SyntaxKind.BreakKeyword:
+                    return ParseBreakStatement();
+                case SyntaxKind.ContinueKeyword:
+                    return ParseContinueStatement();
                 default:
                     return ParseExpressionStatement();
             }
@@ -283,6 +287,18 @@ namespace Compiler.CodeAnalysis.Syntax
             var stepClause = ParseStepClause();
             var body = ParseStatement();
             return new ForStatementSyntax(keyword, identifier, equalsToken, lowerBound, toKeyword, upperBound, body, stepClause);
+        }
+
+        private StatementSyntax ParseBreakStatement()
+        {
+            var keyword = MatchToken(SyntaxKind.BreakKeyword);
+            return new BreakStatementSyntax(keyword);
+        }
+
+        private StatementSyntax ParseContinueStatement()
+        {
+            var keyword = MatchToken(SyntaxKind.ContinueKeyword);
+            return new ContinueStatementSyntax(keyword);
         }
 
         private StepClauseSyntax ParseStepClause()

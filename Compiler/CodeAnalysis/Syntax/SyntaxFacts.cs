@@ -81,6 +81,10 @@ namespace Compiler.CodeAnalysis.Syntax
                     return SyntaxKind.ToKeyword;
                 case "step":
                     return SyntaxKind.StepKeyword;
+                case "continue":
+                    return SyntaxKind.ContinueKeyword;
+                case "break":
+                    return SyntaxKind.BreakKeyword;
                 case "function":
                     return SyntaxKind.FunctionKeyword;
                 default:
@@ -126,6 +130,10 @@ namespace Compiler.CodeAnalysis.Syntax
                     return "to";
                 case SyntaxKind.StepKeyword:
                     return "step";
+                case SyntaxKind.ContinueKeyword:
+                    return "continue";
+                case SyntaxKind.BreakKeyword:
+                    return "break";
                 case SyntaxKind.FunctionKeyword:
                     return "function";
                 case SyntaxKind.PlusToken: 
