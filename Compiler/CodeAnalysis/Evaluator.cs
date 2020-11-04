@@ -79,6 +79,9 @@ namespace Compiler.CodeAnalysis
                         }
                         break;
 
+                    case BoundNodeKind.ReturnStatement:
+                        return EvaluateReturnStatement((BoundReturnStatement)statement);
+
                     default:
                         throw new InvalidOperationException($"Unexpected statement {statement.Kind}");
                 }
@@ -96,6 +99,14 @@ namespace Compiler.CodeAnalysis
         private void EvaluateExpressionStatement(BoundExpressionStatement expressionStatement)
         {
             _lastValue = EvaluateExpression(expressionStatement.Expression);
+        }
+        
+        private object EvaluateReturnStatement(BoundReturnStatement returnStatement)
+        {
+            _lastValue = returnStatement.Expression == null ? 
+                null : 
+                EvaluateExpression(returnStatement.Expression);
+            return _lastValue;
         }
 
         private object EvaluateExpression(BoundExpression expression)
