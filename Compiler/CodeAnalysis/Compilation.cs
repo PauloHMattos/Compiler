@@ -5,7 +5,6 @@ using System.Linq;
 using System.Threading;
 using Compiler.CodeAnalysis.Binding;
 using Compiler.CodeAnalysis.Diagnostics;
-using Compiler.CodeAnalysis.Lowering;
 using Compiler.CodeAnalysis.Symbols;
 using Compiler.CodeAnalysis.Syntax;
 
