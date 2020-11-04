@@ -1,12 +1,13 @@
 ﻿using System;
 using System.CodeDom.Compiler;
 using System.IO;
+using Compiler.CodeAnalysis.Syntax;
 
 namespace Compiler.IO
 {
     internal static class TextWriterExtensions
     {
-        public static bool IsConsoleOut(this TextWriter writer)
+        private static bool IsConsoleOut(this TextWriter writer)
         {
             if (writer == Console.Out)
                 return true;
@@ -17,16 +18,21 @@ namespace Compiler.IO
             return false;
         }
 
-        public static void SetForeground(this TextWriter writer, ConsoleColor color)
+        private static void SetForeground(this TextWriter writer, ConsoleColor color)
         {
             if (writer.IsConsoleOut())
                 Console.ForegroundColor = color;
         }
 
-        public static void ResetColor(this TextWriter writer)
+        private static void ResetColor(this TextWriter writer)
         {
             if (writer.IsConsoleOut())
                 Console.ResetColor();
+        }
+
+        public static void WriteKeyword(this TextWriter writer, SyntaxKind kind)
+        {
+            writer.WriteKeyword(kind.GetText());
         }
 
         public static void WriteKeyword(this TextWriter writer, string text)
@@ -55,6 +61,15 @@ namespace Compiler.IO
             writer.SetForeground(ConsoleColor.Magenta);
             writer.Write(text);
             writer.ResetColor();
+        }
+        public static void WriteSpace(this TextWriter writer)
+        {
+            writer.WritePunctuation(" ");
+        }
+
+        public static void WritePunctuation(this TextWriter writer, SyntaxKind kind)
+        {
+            writer.WritePunctuation(kind.GetText());
         }
 
         public static void WritePunctuation(this TextWriter writer, string text)
