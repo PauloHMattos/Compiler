@@ -128,6 +128,8 @@ namespace Compiler.CodeAnalysis.Binding
                     return BindVariableDeclarationStatement((VariableDeclarationStatementSyntax)statementSyntax);
                 case SyntaxKind.IfStatement:
                     return BindIfStatement((IfStatementSyntax)statementSyntax);
+                case SyntaxKind.DoWhileStatement:
+                    return BindDoWhileStatement((DoWhileStatementSyntax)statementSyntax);
                 case SyntaxKind.WhileStatement:
                     return BindWhileStatement((WhileStatementSyntax)statementSyntax);
                 case SyntaxKind.ForStatement:
@@ -228,11 +230,18 @@ namespace Compiler.CodeAnalysis.Binding
             return new BoundIfStatement(condition, thenStatement, elseStatement);
         }
 
+        private BoundStatement BindDoWhileStatement(DoWhileStatementSyntax syntax)
+        {
+            var condition = BindExpression(syntax.Condition, TypeSymbol.Bool);
+            var body = BindStatement(syntax.Body);
+            return new BoundDoWhileStatement(condition, body);
+        }
+
         private BoundStatement BindWhileStatement(WhileStatementSyntax syntax)
         {
             var condition = BindExpression(syntax.Condition, TypeSymbol.Bool);
-            var thenStatement = BindStatement(syntax.Body);
-            return new BoundWhileStatement(condition, thenStatement);
+            var body = BindStatement(syntax.Body);
+            return new BoundWhileStatement(condition, body);
         }
 
         private BoundStatement BindForStatement(ForStatementSyntax syntax)

@@ -7,6 +7,7 @@
         ExpressionStatement,
         VariableDeclarationStatement,
         IfStatement,
+        DoWhileStatement,
         WhileStatement,
         ForStatement,
         LabelStatement,

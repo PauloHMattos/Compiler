@@ -71,6 +71,8 @@ namespace Compiler.CodeAnalysis.Syntax
                     return SyntaxKind.IfKeyword;
                 case "else":
                     return SyntaxKind.ElseKeyword;
+                case "do":
+                    return SyntaxKind.DoKeyword;
                 case "while":
                     return SyntaxKind.WhileKeyword;
                 case "for":
@@ -114,6 +116,8 @@ namespace Compiler.CodeAnalysis.Syntax
                     return "if";
                 case SyntaxKind.ElseKeyword:
                     return "else";
+                case SyntaxKind.DoKeyword:
+                    return "do";
                 case SyntaxKind.WhileKeyword:
                     return "while";
                 case SyntaxKind.ForKeyword:

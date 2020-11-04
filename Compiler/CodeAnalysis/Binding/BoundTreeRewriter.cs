@@ -17,6 +17,8 @@ namespace Compiler.CodeAnalysis.Binding
                     return RewriteVariableDeclarationStatement((BoundVariableDeclarationStatement)statement);
                 case BoundNodeKind.IfStatement:
                     return RewriteIfStatement((BoundIfStatement)statement);
+                case BoundNodeKind.DoWhileStatement:
+                    return RewriteDoWhileStatement((BoundDoWhileStatement)statement);
                 case BoundNodeKind.WhileStatement:
                     return RewriteWhileStatement((BoundWhileStatement)statement);
                 case BoundNodeKind.ForStatement:
@@ -88,6 +90,17 @@ namespace Compiler.CodeAnalysis.Binding
                 return node;
             }
             return new BoundIfStatement(condition, thenStatement, elseStatement);
+        }
+
+        protected virtual BoundStatement RewriteDoWhileStatement(BoundDoWhileStatement node)
+        {
+            var condition = RewriteExpression(node.Condition);
+            var body = RewriteStatement(node.Body);
+            if (condition == node.Condition && body == node.Body)
+            {
+                return node;
+            }
+            return new BoundDoWhileStatement(condition, body);
         }
 
         protected virtual BoundStatement RewriteWhileStatement(BoundWhileStatement node)

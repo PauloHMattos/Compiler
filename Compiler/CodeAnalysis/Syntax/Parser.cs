@@ -91,7 +91,9 @@ namespace Compiler.CodeAnalysis.Syntax
                 // already tried to parse an expression statement
                 // and reported one.
                 if (Current == startToken)
+                {
                     NextToken();
+                }
             }
 
             return members.ToImmutable();
@@ -166,6 +168,8 @@ namespace Compiler.CodeAnalysis.Syntax
                     return ParseVariableDeclarationStatement();
                 case SyntaxKind.IfKeyword:
                     return ParseIfStatement();
+                case SyntaxKind.DoKeyword:
+                    return ParseDoWhileStatement();
                 case SyntaxKind.WhileKeyword:
                     return ParseWhileStatement();
                 case SyntaxKind.ForKeyword:
@@ -249,6 +253,15 @@ namespace Compiler.CodeAnalysis.Syntax
             var keyword = NextToken();
             var elseStatement = ParseStatement();
             return new ElseClauseSyntax(keyword, elseStatement);
+        }
+
+        private StatementSyntax ParseDoWhileStatement()
+        {
+            var doKeyword = MatchToken(SyntaxKind.DoKeyword);
+            var body = ParseStatement();
+            var whileKeyword = MatchToken(SyntaxKind.WhileKeyword);
+            var condition = ParseExpression();
+            return new DoWhileStatementSyntax(doKeyword, body, whileKeyword, condition);
         }
 
         private StatementSyntax ParseWhileStatement()

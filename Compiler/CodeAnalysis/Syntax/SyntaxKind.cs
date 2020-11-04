@@ -21,6 +21,7 @@
         VarKeyword,
         IfKeyword,
         ElseKeyword,
+        DoKeyword,
         WhileKeyword,
         ForKeyword,
         ToKeyword,
@@ -65,6 +66,7 @@
         ExpressionStatement,
         VariableDeclarationStatement,
         IfStatement,
+        DoWhileStatement,
         WhileStatement,
         ForStatement,
 

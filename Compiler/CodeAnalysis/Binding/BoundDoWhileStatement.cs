@@ -1,12 +1,12 @@
 ﻿namespace Compiler.CodeAnalysis.Binding
 {
-    internal sealed class BoundWhileStatement : BoundStatement
+    internal sealed class BoundDoWhileStatement : BoundStatement
     {
         public BoundExpression Condition { get; }
         public BoundStatement Body { get; }
-        public override BoundNodeKind Kind => BoundNodeKind.WhileStatement;
+        public override BoundNodeKind Kind => BoundNodeKind.DoWhileStatement;
 
-        public BoundWhileStatement(BoundExpression condition, BoundStatement body)
+        public BoundDoWhileStatement(BoundExpression condition, BoundStatement body)
         {
             Condition = condition;
             Body = body;

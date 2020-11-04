@@ -114,6 +114,43 @@ namespace Compiler.CodeAnalysis.Lowering
             return RewriteStatement(result);
         }
 
+
+        protected override BoundStatement RewriteDoWhileStatement(BoundDoWhileStatement node)
+        {
+            // do
+            //      <body>
+            // while <condition>
+            //
+            // ---------------->
+            //
+            // continue:
+            //      <body>
+            // check:
+            //      gotoTrue <condition> continue
+            // end:
+
+            var continueLabel = GenerateNewLabel();
+            var checkLabel = GenerateNewLabel();
+            var endLabel = GenerateNewLabel();
+
+
+            var continueLabelStatement = new BoundLabelStatement(continueLabel);
+            var checkLabelStatement = new BoundLabelStatement(checkLabel);
+
+            var gotoTrue = new BoundConditionalGotoStatement(continueLabel, node.Condition, true);
+
+            var endLabelStatement = new BoundLabelStatement(endLabel);
+
+            var result = new BoundBlockStatement(ImmutableArray.Create(
+                continueLabelStatement,
+                node.Body,
+                checkLabelStatement,
+                gotoTrue,
+                endLabelStatement
+            ));
+            return RewriteStatement(result);
+        }
+
         protected override BoundStatement RewriteWhileStatement(BoundWhileStatement node)
         {
             // while <condition>
