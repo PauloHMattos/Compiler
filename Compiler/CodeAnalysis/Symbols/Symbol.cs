@@ -1,4 +1,6 @@
-﻿namespace Compiler.CodeAnalysis.Symbols
+﻿using System.IO;
+
+namespace Compiler.CodeAnalysis.Symbols
 {
     public abstract class Symbol
     {
@@ -10,6 +12,16 @@
             Name = name;
         }
 
-        public override string ToString() => Name;
+        public void WriteTo(TextWriter writer)
+        {
+            SymbolPrinter.WriteTo(this, writer);
+        }
+
+        public override string ToString()
+        {
+            using var writer = new StringWriter();
+            WriteTo(writer);
+            return writer.ToString();
+        }
     }
 }
