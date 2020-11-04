@@ -29,6 +29,8 @@ namespace Compiler.CodeAnalysis.Binding
                     return RewriteGotoStatement((BoundGotoStatement)statement);
                 case BoundNodeKind.ConditionalGotoStatement:
                     return RewriteConditionalGotoStatement((BoundConditionalGotoStatement)statement);
+                case BoundNodeKind.ReturnStatement:
+                    return RewriteReturnStatement((BoundReturnStatement)statement);
                 default:
                     throw new InvalidOperationException($"Unexpected statement {statement.Kind}.");
             }
@@ -147,6 +149,16 @@ namespace Compiler.CodeAnalysis.Binding
                 return node;
             }
             return new BoundConditionalGotoStatement(node.Label, condition, node.JumpIfTrue);
+        }
+
+        protected virtual BoundStatement RewriteReturnStatement(BoundReturnStatement node)
+        {
+            var expression = node.Expression == null ? null : RewriteExpression(node.Expression);
+            if (expression == node.Expression)
+            {
+                return node;
+            }
+            return new BoundReturnStatement(expression);
         }
 
         public BoundExpression RewriteExpression(BoundExpression expression)

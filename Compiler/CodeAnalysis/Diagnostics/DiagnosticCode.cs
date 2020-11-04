@@ -25,6 +25,9 @@ namespace Compiler.CodeAnalysis.Diagnostics
         ParameterAlreadyDeclared,
         FunctionsAreUnsupported,
         InvalidBreakOrContinue,
+        InvalidReturn,
+        InvalidReturnExpression,
+        MissingReturnExpression
     }
 
 
@@ -53,6 +56,9 @@ namespace Compiler.CodeAnalysis.Diagnostics
             {DiagnosticCode.ParameterAlreadyDeclared, "A parameter with the name '{0}' already exists."},
             {DiagnosticCode.FunctionsAreUnsupported, "Functions with return values are unsupported."},
             {DiagnosticCode.InvalidBreakOrContinue, "The keyword '{0}' can only be used inside of loops."},
+            {DiagnosticCode.InvalidReturn, "The 'return' keyword can only be used inside of functions."},
+            {DiagnosticCode.InvalidReturnExpression, "Since the function '{0}' does not return a value the 'return' keyword cannot be followed by an expression."},
+            {DiagnosticCode.MissingReturnExpression, "An expression of type '{0}' expected."},
         };
 
         public static string GetDiagnostic(this DiagnosticCode code, params object[] arguments)

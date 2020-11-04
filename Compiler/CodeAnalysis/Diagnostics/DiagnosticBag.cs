@@ -132,9 +132,19 @@ namespace Compiler.CodeAnalysis.Diagnostics
             Report(span, DiagnosticCode.InvalidBreakOrContinue.GetDiagnostic(text));
         }
 
-        public void XXX_ReportFunctionsAreUnsupported(TextSpan span)
+        public void ReportInvalidReturn(TextSpan span)
         {
-            Report(span, DiagnosticCode.FunctionsAreUnsupported.GetDiagnostic());
+            Report(span, DiagnosticCode.InvalidReturn.GetDiagnostic());
+        }
+
+        public void ReportInvalidReturnExpression(TextSpan span, string functionName)
+        {
+            Report(span, DiagnosticCode.InvalidReturnExpression.GetDiagnostic(functionName));
+        }
+
+        public void ReportMissingReturnExpression(TextSpan span, TypeSymbol returnType)
+        {
+            Report(span, DiagnosticCode.MissingReturnExpression.GetDiagnostic(returnType));
         }
     }
 }

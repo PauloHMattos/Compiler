@@ -29,6 +29,7 @@
         ContinueKeyword,
         BreakKeyword,
         FunctionKeyword,
+        ReturnKeyword,
 
         // Literals
         NumberToken,
@@ -73,6 +74,7 @@
         ForStatement,
         ContinueStatement,
         BreakStatement,
+        ReturnStatement,
 
         // Expressions
         LiteralExpression,

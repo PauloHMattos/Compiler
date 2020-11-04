@@ -87,6 +87,8 @@ namespace Compiler.CodeAnalysis.Syntax
                     return SyntaxKind.BreakKeyword;
                 case "function":
                     return SyntaxKind.FunctionKeyword;
+                case "return":
+                    return SyntaxKind.ReturnKeyword;
                 default:
                     return SyntaxKind.IdentifierToken;
             }
@@ -136,6 +138,8 @@ namespace Compiler.CodeAnalysis.Syntax
                     return "break";
                 case SyntaxKind.FunctionKeyword:
                     return "function";
+                case SyntaxKind.ReturnKeyword:
+                    return "return";
                 case SyntaxKind.PlusToken: 
                     return "+";
                 case SyntaxKind.MinusToken: 
