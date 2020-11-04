@@ -6,7 +6,11 @@
         public ExpressionSyntax Condition { get; }
         public StatementSyntax Body { get; }
         public override SyntaxKind Kind => SyntaxKind.WhileStatement;
-        public WhileStatementSyntax(SyntaxToken keyword, ExpressionSyntax condition, StatementSyntax body)
+        public WhileStatementSyntax(SyntaxTree syntaxTree, 
+            SyntaxToken keyword, 
+            ExpressionSyntax condition, 
+            StatementSyntax body)
+            : base(syntaxTree)
         {
             Keyword = keyword;
             Condition = condition;

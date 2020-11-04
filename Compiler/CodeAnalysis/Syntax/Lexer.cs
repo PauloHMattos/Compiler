@@ -8,6 +8,7 @@ namespace Compiler.CodeAnalysis.Syntax
 {
     internal sealed class Lexer
     {
+        private readonly SyntaxTree _syntaxTree;
         private readonly SourceText _text;
 
         private int _position;
@@ -30,9 +31,10 @@ namespace Compiler.CodeAnalysis.Syntax
             }    
         }
         
-        public Lexer(SourceText text)
+        public Lexer(SyntaxTree syntaxTree)
         {
-            _text = text;
+            _syntaxTree = syntaxTree;
+            _text = _syntaxTree.Text;
             Diagnostics = new DiagnosticBag();
         }
 
@@ -192,7 +194,9 @@ namespace Compiler.CodeAnalysis.Syntax
                     }
                     else
                     {
-                        Diagnostics.ReportBadCharacter(new TextSpan(_position, 1), Current);
+                        var span = new TextSpan(_position, 1);
+                        var location = new TextLocation(_text, span);
+                        Diagnostics.ReportBadCharacter(location, Current);
                         _kind = SyntaxKind.BadToken;
                         _position++;
                     }
@@ -205,7 +209,7 @@ namespace Compiler.CodeAnalysis.Syntax
                 var length = _position - _start;
                 _tokenText = _text.ToString(_start, length);
             }
-            return new SyntaxToken(_kind, _start, _tokenText, _value);
+            return new SyntaxToken(_syntaxTree, _kind, _start, _tokenText, _value);
         }
 
         private void LexString()
@@ -222,7 +226,9 @@ namespace Compiler.CodeAnalysis.Syntax
                     case '\n':
                     case '\r':
                         done = true;
-                        Diagnostics.ReportUnterminatedString(new TextSpan(_start, 1));
+                        var span = new TextSpan(_start, 1);
+                        var location = new TextLocation(_text, span);
+                        Diagnostics.ReportUnterminatedString(location);
                         break;
                     case '"':
                         _position++;
@@ -254,7 +260,9 @@ namespace Compiler.CodeAnalysis.Syntax
             _tokenText = _text.ToString(_start, length);
             if (!int.TryParse(_tokenText, out var value))
             {
-                Diagnostics.ReportInvalidLiteralType(new TextSpan(_position, length), _tokenText, TypeSymbol.Int);
+                var span = new TextSpan(_position, length);
+                var location = new TextLocation(_text, span);
+                Diagnostics.ReportInvalidLiteralType(location, _tokenText, TypeSymbol.Int);
             }
 
             _value = value;

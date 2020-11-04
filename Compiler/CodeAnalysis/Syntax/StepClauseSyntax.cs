@@ -6,7 +6,10 @@
         public ExpressionSyntax Expression { get; }
         public override SyntaxKind Kind => SyntaxKind.StepClause;
 
-        public StepClauseSyntax(SyntaxToken keyword, ExpressionSyntax expression)
+        public StepClauseSyntax(SyntaxTree syntaxTree, 
+            SyntaxToken keyword, 
+            ExpressionSyntax expression)
+            : base(syntaxTree)
         {
             Keyword = keyword;
             Expression = expression;

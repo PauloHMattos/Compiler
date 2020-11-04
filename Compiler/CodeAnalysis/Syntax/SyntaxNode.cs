@@ -9,7 +9,7 @@ namespace Compiler.CodeAnalysis.Syntax
     public abstract class SyntaxNode
     {
         public abstract SyntaxKind Kind { get; }
-
+        public SyntaxTree SyntaxTree { get; }
         public virtual TextSpan Span
         {
             get
@@ -19,6 +19,13 @@ namespace Compiler.CodeAnalysis.Syntax
                 var last = children.Last().Span;
                 return TextSpan.FromBounds(first.Start, last.End);
             }
+        }
+
+        public TextLocation Location => new TextLocation(SyntaxTree.Text, Span);
+
+        protected SyntaxNode(SyntaxTree syntaxTree)
+        {
+            SyntaxTree = syntaxTree;
         }
 
         public IEnumerable<SyntaxNode> GetChildren()

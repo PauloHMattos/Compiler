@@ -11,7 +11,12 @@ namespace Compiler.CodeAnalysis.Syntax
         public override TextSpan Span { get; }
         public bool IsMissing => Span.Length == 0;
 
-        public SyntaxToken(SyntaxKind kind, int position, string text, object value)
+        public SyntaxToken(SyntaxTree syntaxTree, 
+            SyntaxKind kind, 
+            int position, 
+            string text, 
+            object value) 
+            : base(syntaxTree)
         {
             Kind = kind;
             Position = position;
