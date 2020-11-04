@@ -76,6 +76,12 @@ namespace Compiler.CodeAnalysis.Binding
                     var binder = new Binder(parentScope, function);
                     var body = binder.BindStatement(function.Declaration.Body);
                     var loweredBody = Lowerer.Lower(body);
+
+                    if (function.Type != TypeSymbol.Void && !ControlFlowGraph.AllPathsReturn(loweredBody))
+                    {
+                        binder.Diagnostics.ReportAllPathsMustReturn(function.Declaration.Identifier.Span);
+                    }
+
                     functionBodies.Add(function, loweredBody);
 
                     diagnostics.AddRange(binder.Diagnostics);
@@ -140,8 +146,6 @@ namespace Compiler.CodeAnalysis.Binding
                     return BindContinueStatement((ContinueStatementSyntax)statementSyntax);
                 case SyntaxKind.BreakStatement:
                     return BindBreakStatement((BreakStatementSyntax)statementSyntax);
-                //case SyntaxKind.FunctionDeclaration:
-                //    break;
                 case SyntaxKind.ReturnStatement:
                     return BindReturnStatement((ReturnStatementSyntax)statementSyntax);
                 default:

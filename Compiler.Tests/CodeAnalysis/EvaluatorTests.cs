@@ -430,6 +430,23 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
+        public void Evaluator_FunctionReturn_Missing()
+        {
+            var text = @"
+                function [add](a: int, b: int): int
+                {
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.AllPathsMustReturn.GetDiagnostic(TypeSymbol.Int),
+            };
+
+            AssertHasDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
         public void Evaluator_Parameter_Already_Declared()
         {
             var text = @"

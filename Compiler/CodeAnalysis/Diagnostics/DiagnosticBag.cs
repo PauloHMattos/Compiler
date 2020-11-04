@@ -146,5 +146,10 @@ namespace Compiler.CodeAnalysis.Diagnostics
         {
             Report(span, DiagnosticCode.MissingReturnExpression.GetDiagnostic(returnType));
         }
+
+        public void ReportAllPathsMustReturn(TextSpan span)
+        {
+            Report(span, DiagnosticCode.AllPathsMustReturn.GetDiagnostic());
+        }
     }
 }
