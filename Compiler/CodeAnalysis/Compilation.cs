@@ -68,7 +68,21 @@ namespace Compiler.CodeAnalysis
         public void EmitTree(TextWriter writer)
         {
             var program = Binder.BindProgram(GlobalScope);
-            program.Statement.WriteTo(writer);
+            if (program.Statement.Statements.Any())
+            {
+                program.Statement.WriteTo(writer);
+            }
+            else
+            {
+                foreach (var (function, statement) in program.Functions)
+                {
+                    if (!GlobalScope.Functions.Contains(function))
+                        continue;
+
+                    function.WriteTo(writer);
+                    statement.WriteTo(writer);
+                }
+            }
         }
     }
 }
