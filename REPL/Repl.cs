@@ -33,7 +33,7 @@ namespace Compiler.REPL
                                                BindingFlags.FlattenHierarchy);
             foreach (var method in methods)
             {
-                var attribute = (MetaCommandAttribute)method.GetCustomAttribute(typeof(MetaCommandAttribute));
+                var attribute = method.GetCustomAttribute<MetaCommandAttribute>();
                 if (attribute == null)
                     continue;
 
@@ -520,7 +520,7 @@ namespace Compiler.REPL
 
             if (args.Count != parameters.Length)
             {
-                var parameterNames = string.Join(", ", parameters.Select(p => $"<{p.Name}>"));
+                var parameterNames = string.Join(" ", parameters.Select(p => $"<{p.Name}>"));
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine($"error: invalid number of arguments");
                 Console.WriteLine($"usage: #{command.Name} {parameterNames}");
@@ -528,7 +528,8 @@ namespace Compiler.REPL
                 return;
             }
 
-            command.Method.Invoke(this, args.ToArray());
+            var instance = command.Method.IsStatic ? null : this;
+            command.Method.Invoke(instance, args.ToArray());
         }
 
         protected abstract bool IsCompleteSubmission(string text);
@@ -543,16 +544,45 @@ namespace Compiler.REPL
 
             foreach (var metaCommand in _metaCommands.OrderBy(mc => mc.Name))
             {
-                var paddedName = metaCommand.Name.PadRight(maxNameLength);
+                var metaParams = metaCommand.Method.GetParameters();
+                if (metaParams.Length == 0)
+                {
+                    var paddedName = metaCommand.Name.PadRight(maxNameLength);
 
-                Console.Out.WritePunctuation("#");
-                Console.Out.WriteIdentifier(paddedName);
+                    Console.Out.WritePunctuation("#");
+                    Console.Out.WriteIdentifier(paddedName);
+                }
+                else
+                {
+                    Console.Out.WritePunctuation("#");
+                    Console.Out.WriteIdentifier(metaCommand.Name);
+                    foreach (var pi in metaParams)
+                    {
+                        Console.Out.WriteSpace();
+                        Console.Out.WritePunctuation("<");
+                        Console.Out.WriteIdentifier(pi.Name);
+                        Console.Out.WritePunctuation(">");
+                    }
+                    Console.Out.WriteLine();
+                    Console.Out.WriteSpace();
+                    for (int _ = 0; _ < maxNameLength; _++)
+                    {
+                        Console.Out.WriteSpace();
+                    }
+                }
+                
                 Console.Out.WriteSpace();
                 Console.Out.WriteSpace();
                 Console.Out.WriteSpace();
                 Console.Out.WritePunctuation(metaCommand.Description);
                 Console.Out.WriteLine();
             }
+        }
+
+        [MetaCommand("cls", "Clears the screen")]
+        private void EvaluateCls()
+        {
+            Console.Clear();
         }
     }
 }

@@ -106,13 +106,12 @@ namespace Compiler.CodeAnalysis
         public void EmitTree(FunctionSymbol symbol, TextWriter writer)
         {
             var program = Binder.BindProgram(GlobalScope);
+            symbol.WriteTo(writer);
+            writer.WriteLine();
             if (!program.Functions.TryGetValue(symbol, out var body))
             {
                 return;
             }
-
-            symbol.WriteTo(writer);
-            writer.WriteLine();
             body.WriteTo(writer);
         }
 
