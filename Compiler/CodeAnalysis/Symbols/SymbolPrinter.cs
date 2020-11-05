@@ -27,7 +27,7 @@ namespace Compiler.CodeAnalysis.Symbols
                     WriteTypeTo((TypeSymbol)symbol, writer);
                     break;
                 default:
-                    throw new Exception($"Unexpected symbol: {symbol.Kind}");
+                    throw new InvalidOperationException($"Unexpected symbol: {symbol.Kind}");
             }
         }
 

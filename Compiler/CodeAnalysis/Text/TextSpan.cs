@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Compiler.CodeAnalysis.Text
+﻿namespace Compiler.CodeAnalysis.Text
 {
     public readonly struct TextLocation
     {

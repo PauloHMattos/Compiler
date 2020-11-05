@@ -10,6 +10,11 @@ namespace Compiler.CodeAnalysis.Binding
 {
     internal sealed class ControlFlowGraph
     {
+        public BasicBlock Start { get; }
+        public BasicBlock End { get; }
+        public List<BasicBlock> Blocks { get; }
+        public List<BasicBlockBranch> Branches { get; }
+
         private ControlFlowGraph(BasicBlock start, BasicBlock end, List<BasicBlock> blocks, List<BasicBlockBranch> branches)
         {
             Start = start;
@@ -18,28 +23,28 @@ namespace Compiler.CodeAnalysis.Binding
             Branches = branches;
         }
 
-        public BasicBlock Start { get; }
-        public BasicBlock End { get; }
-        public List<BasicBlock> Blocks { get; }
-        public List<BasicBlockBranch> Branches { get; }
-
         public sealed class BasicBlock
         {
+            public bool IsStart { get; }
+            public bool IsEnd { get; }
+            public List<BoundStatement> Statements { get; }
+            public List<BasicBlockBranch> Incoming { get; }
+            public List<BasicBlockBranch> Outgoing { get; }
+
             public BasicBlock()
             {
+                Statements = new List<BoundStatement>();
+                Incoming = new List<BasicBlockBranch>();
+                Outgoing = new List<BasicBlockBranch>();
             }
 
             public BasicBlock(bool isStart)
+                : this()
             {
                 IsStart = isStart;
                 IsEnd = !isStart;
             }
 
-            public bool IsStart { get; }
-            public bool IsEnd { get; }
-            public List<BoundStatement> Statements { get; } = new List<BoundStatement>();
-            public List<BasicBlockBranch> Incoming { get; } = new List<BasicBlockBranch>();
-            public List<BasicBlockBranch> Outgoing { get; } = new List<BasicBlockBranch>();
 
             public override string ToString()
             {
@@ -53,8 +58,9 @@ namespace Compiler.CodeAnalysis.Binding
                 using (var identedWriter = new IndentedTextWriter(writer))
                 {
                     foreach (var statement in Statements)
+                    {
                         statement.WriteTo(identedWriter);
-
+                    }
                     return writer.ToString();
                 }
             }
@@ -62,16 +68,16 @@ namespace Compiler.CodeAnalysis.Binding
 
         public sealed class BasicBlockBranch
         {
+            public BasicBlock From { get; }
+            public BasicBlock To { get; }
+            public BoundExpression Condition { get; }
+
             public BasicBlockBranch(BasicBlock from, BasicBlock to, BoundExpression condition)
             {
                 From = from;
                 To = to;
                 Condition = condition;
             }
-
-            public BasicBlock From { get; }
-            public BasicBlock To { get; }
-            public BoundExpression Condition { get; }
 
             public override string ToString()
             {
@@ -84,8 +90,14 @@ namespace Compiler.CodeAnalysis.Binding
 
         public sealed class BasicBlockBuilder
         {
-            private List<BoundStatement> _statements = new List<BoundStatement>();
-            private List<BasicBlock> _blocks = new List<BasicBlock>();
+            private readonly List<BoundStatement> _statements;
+            private readonly List<BasicBlock> _blocks;
+
+            public BasicBlockBuilder()
+            {
+                _statements = new List<BoundStatement>();
+                _blocks = new List<BasicBlock>();
+            }
 
             public List<BasicBlock> Build(BoundBlockStatement block)
             {
@@ -108,7 +120,7 @@ namespace Compiler.CodeAnalysis.Binding
                             _statements.Add(statement);
                             break;
                         default:
-                            throw new Exception($"Unexpected statement: {statement.Kind}");
+                            throw new InvalidOperationException($"Unexpected statement: {statement.Kind}");
                     }
                 }
 
@@ -136,18 +148,31 @@ namespace Compiler.CodeAnalysis.Binding
 
         public sealed class GraphBuilder
         {
-            private Dictionary<BoundStatement, BasicBlock> _blockFromStatement = new Dictionary<BoundStatement, BasicBlock>();
-            private Dictionary<BoundLabel, BasicBlock> _blockFromLabel = new Dictionary<BoundLabel, BasicBlock>();
-            private List<BasicBlockBranch> _branches = new List<BasicBlockBranch>();
-            private BasicBlock _start = new BasicBlock(isStart: true);
-            private BasicBlock _end = new BasicBlock(isStart: false);
+            private readonly Dictionary<BoundStatement, BasicBlock> _blockFromStatement;
+            private readonly Dictionary<BoundLabel, BasicBlock> _blockFromLabel;
+            private readonly List<BasicBlockBranch> _branches;
+            private readonly BasicBlock _start;
+            private readonly BasicBlock _end;
+
+            public GraphBuilder()
+            {
+                _blockFromStatement = new Dictionary<BoundStatement, BasicBlock>();
+                _blockFromLabel = new Dictionary<BoundLabel, BasicBlock>();
+                _branches = new List<BasicBlockBranch>();
+                _start = new BasicBlock(true);
+                _end = new BasicBlock(false);
+            }
 
             public ControlFlowGraph Build(List<BasicBlock> blocks)
             {
-                if (!blocks.Any())
-                    Connect(_start, _end);
-                else
+                if (blocks.Any())
+                {
                     Connect(_start, blocks.First());
+                }
+                else
+                {
+                    Connect(_start, _end);
+                }
 
                 foreach (var block in blocks)
                 {
@@ -155,7 +180,9 @@ namespace Compiler.CodeAnalysis.Binding
                     {
                         _blockFromStatement.Add(statement, block);
                         if (statement is BoundLabelStatement labelStatement)
+                        {
                             _blockFromLabel.Add(labelStatement.Label, block);
+                        }
                     }
                 }
 
@@ -191,22 +218,25 @@ namespace Compiler.CodeAnalysis.Binding
                             case BoundNodeKind.LabelStatement:
                             case BoundNodeKind.ExpressionStatement:
                                 if (isLastStatementInBlock)
+                                {
                                     Connect(current, next);
+                                }
                                 break;
                             default:
-                                throw new Exception($"Unexpected statement: {statement.Kind}");
+                                throw new InvalidOperationException($"Unexpected statement: {statement.Kind}");
                         }
                     }
                 }
 
-                ScanAgain:
+            ScanAgain:
                 foreach (var block in blocks)
                 {
-                    if (!block.Incoming.Any())
+                    if (block.Incoming.Any())
                     {
-                        RemoveBlock(blocks, block);
-                        goto ScanAgain;
+                        continue;
                     }
+                    RemoveBlock(blocks, block);
+                    goto ScanAgain;
                 }
 
                 blocks.Insert(0, _start);
@@ -220,10 +250,11 @@ namespace Compiler.CodeAnalysis.Binding
                 if (condition is BoundLiteralExpression l)
                 {
                     var value = (bool)l.Value;
-                    if (value)
-                        condition = null;
-                    else
+                    if (!value)
+                    {
                         return;
+                    }
+                    condition = null;
                 }
 
                 var branch = new BasicBlockBranch(from, to, condition);
@@ -314,7 +345,9 @@ namespace Compiler.CodeAnalysis.Binding
             {
                 var lastStatement = branch.From.Statements.LastOrDefault();
                 if (lastStatement == null || lastStatement.Kind != BoundNodeKind.ReturnStatement)
+                {
                     return false;
+                }
             }
 
             return true;

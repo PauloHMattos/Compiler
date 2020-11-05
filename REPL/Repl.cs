@@ -7,10 +7,15 @@ namespace Compiler.REPL
 {
     internal abstract class Repl
     {
-        private List<string> _submissionHistory = new List<string>();
+        private readonly List<string> _submissionHistory;
         private int _submissionHistoryIndex;
 
         private bool _done;
+
+        protected Repl()
+        {
+            _submissionHistory = new List<string>();
+        }
 
         public void Run()
         {
@@ -18,12 +23,18 @@ namespace Compiler.REPL
             {
                 var text = EditSubmission();
                 if (string.IsNullOrEmpty(text))
+                {    
                     return;
+                }
 
                 if (!text.Contains(Environment.NewLine) && text.StartsWith("#"))
+                {    
                     EvaluateMetaCommand(text);
+                }
                 else
+                {   
                     EvaluateSubmission(text);
+                }
 
                 _submissionHistory.Add(text);
                 _submissionHistoryIndex = 0;

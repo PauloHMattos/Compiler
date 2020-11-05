@@ -7,7 +7,7 @@ namespace Compiler.CodeAnalysis.Symbols
         public string Name { get; }
         public abstract SymbolKind Kind { get; }
 
-        internal Symbol(string name)
+        private protected Symbol(string name)
         {
             Name = name;
         }

@@ -13,10 +13,10 @@ namespace Compiler.CodeAnalysis.Binding
 {
     internal sealed class Binder
     {
+        private int _labelCounter;
         private BoundScope _scope;
         private readonly FunctionSymbol _function;
-        private Stack<(BoundLabel BreakLabel, BoundLabel ContinueLabel)> _loopStack = new Stack<(BoundLabel BreakLabel, BoundLabel ContinueLabel)>();
-        private int _labelCounter;
+        private readonly Stack<(BoundLabel BreakLabel, BoundLabel ContinueLabel)> _loopStack = new Stack<(BoundLabel BreakLabel, BoundLabel ContinueLabel)>();
 
         public DiagnosticBag Diagnostics { get; }
 

@@ -292,7 +292,7 @@ namespace Compiler.CodeAnalysis.Binding
             }
             else
             {
-                throw new Exception($"Unexpected type {node.Type}");
+                throw new InvalidOperationException($"Unexpected type {node.Type}");
             }
         }
 
