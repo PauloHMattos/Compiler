@@ -9,20 +9,21 @@ namespace Compiler.CodeAnalysis.Binding
         public BoundProgram Previous { get; }
         public BoundGlobalScope GlobalScope { get; }
         public ImmutableArray<Diagnostic> Diagnostics { get; }
+        public FunctionSymbol MainFunction { get; }
+        public FunctionSymbol ScriptFunction { get; }
         public ImmutableDictionary<FunctionSymbol, BoundBlockStatement> Functions { get; }
-        public BoundBlockStatement Statement { get; }
 
-        public BoundProgram(BoundProgram previous, 
-            BoundGlobalScope globalScope, 
-            ImmutableArray<Diagnostic> diagnostics, 
-            ImmutableDictionary<FunctionSymbol, BoundBlockStatement> functions,
-            BoundBlockStatement statement)
+        public BoundProgram(BoundProgram previous,
+                            ImmutableArray<Diagnostic> diagnostics,
+                            FunctionSymbol mainFunction,
+                            FunctionSymbol scriptFunction,
+                            ImmutableDictionary<FunctionSymbol, BoundBlockStatement> functions)
         {
             Previous = previous;
-            GlobalScope = globalScope;
             Diagnostics = diagnostics;
+            MainFunction = mainFunction;
+            ScriptFunction = scriptFunction;
             Functions = functions;
-            Statement = statement;
         }
     }
 }

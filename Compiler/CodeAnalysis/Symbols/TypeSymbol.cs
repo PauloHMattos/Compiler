@@ -5,6 +5,7 @@ namespace Compiler.CodeAnalysis.Symbols
     public class TypeSymbol : Symbol
     {
         public static readonly TypeSymbol Error = new TypeSymbol("?");
+        public static readonly TypeSymbol Any = new TypeSymbol("any");
         public static readonly TypeSymbol Void = new TypeSymbol("void");
         public static readonly TypeSymbol Bool = new TypeSymbol("bool");
         public static readonly TypeSymbol Int = new TypeSymbol("int");
@@ -37,6 +38,8 @@ namespace Compiler.CodeAnalysis.Symbols
         {
             switch (name)
             {
+                case "any":
+                    return TypeSymbol.Any;
                 case "bool":
                     return TypeSymbol.Bool;
                 case "int":

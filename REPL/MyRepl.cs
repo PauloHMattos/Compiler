@@ -11,7 +11,7 @@ namespace Compiler.REPL
 {
     internal sealed class MyRepl : Repl
     {
-        private static readonly Compilation emptyCompilation = new Compilation();
+        private static readonly Compilation emptyCompilation = Compilation.CreateScript(null);
         private bool _loadingSubmission;
         private Compilation _previous;
         private bool _showTree;
@@ -91,9 +91,7 @@ namespace Compiler.REPL
         {
             var syntaxTree = SyntaxTree.Parse(text);
 
-            var compilation = _previous == null
-                                ? new Compilation(syntaxTree)
-                                : _previous.ContinueWith(syntaxTree);
+            var compilation = Compilation.CreateScript(_previous, syntaxTree);
 
             if (_showTree)
             {

@@ -63,10 +63,10 @@ namespace Compiler.Tests.CodeAnalysis
         [InlineData("true ^ false", true)]
         [InlineData("false ^ true", true)]
         [InlineData("true ^ true", false)]
-        [InlineData("var a = 1", 1)]
-        [InlineData("var a = true", true)]
-        [InlineData("const a = 1", 1)]
-        [InlineData("const a = true", true)]
+        [InlineData("{ var a = 1 return a }", 1)]
+        [InlineData("{ var a = true return a }", true)]
+        [InlineData("{ const a = 1 return a }", 1)]
+        [InlineData("{ const a = true return a }", true)]
         [InlineData("\"test\"", "test")]
         [InlineData("\"te\"\"st\"", "te\"st")]
         [InlineData("\"hello \" + \"world\"", "hello world")]
@@ -74,22 +74,22 @@ namespace Compiler.Tests.CodeAnalysis
         [InlineData("\"test\" != \"test\"", false)]
         [InlineData("\"test\" == \"abc\"", false)]
         [InlineData("\"test\" != \"abc\"", true)]
-        [InlineData("{ var a = 0 (a = 20) * a }", 400)]
-        [InlineData("{ var a = 0 if a == 0 a = 10 }", 10)]
-        [InlineData("{ var a = 5 if a == 0 a = 10 }", 5)]
-        [InlineData("{ var a = 0 if a == 0 a = 10 else a = 20 }", 10)]
-        [InlineData("{ var a = 5 if a == 0 a = 10 else a = 20 }", 20)]
-        [InlineData("{ var a = 5 do a = a - 1 while a > 0 a }", 0)]
-        [InlineData("{ var a = 5 while a > 0 a = a - 1 a }", 0)]
-        [InlineData("{ var a = 5 while a == 0 a = a - 1 a }", 5)]
-        [InlineData("{ var a = 0 for i = 0 to 10 a = a + i a }", 55)]
-        [InlineData("{ var a = 0 for i = 0 to 10 step 2 a = a + i a }", 30)]
-        [InlineData("{ var a = 0 for i = 0 to 10 break a }", 0)]
-        [InlineData("{ var a = 0 for i = 0 to 10 { a = a + i continue } a }", 55)]
-        [InlineData("{ var a = 0 for i = 0 to 10 { continue a = a + i } a }", 0)]
-        [InlineData("{ var i = 0 while i < 5 { i = i + 1 if i == 5 continue } i }", 5)]
-        [InlineData("{ var i = 0 do { i = i + 1 if i == 5 continue } while i < 5 i }", 5)]
-        //[InlineData("{ var a = 0 for i = 0 to -10 step -1 a = a + i a }", -55)] // Currently we don't support reversed loops
+        [InlineData("{ var a = 0 return (a = 20) * a }", 400)]
+        [InlineData("{ var a = 0 if a == 0 a = 10 return a }", 10)]
+        [InlineData("{ var a = 5 if a == 0 a = 10 return a }", 5)]
+        [InlineData("{ var a = 0 if a == 0 a = 10 else a = 20 return a }", 10)]
+        [InlineData("{ var a = 5 if a == 0 a = 10 else a = 20 return a }", 20)]
+        [InlineData("{ var a = 5 do a = a - 1 while a > 0  return a }", 0)]
+        [InlineData("{ var a = 5 while a > 0 a = a - 1 return a }", 0)]
+        [InlineData("{ var a = 5 while a == 0 a = a - 1 return a }", 5)]
+        [InlineData("{ var a = 0 for i = 0 to 10 a = a + i return a }", 55)]
+        [InlineData("{ var a = 0 for i = 0 to 10 step 2 a = a + i return a }", 30)]
+        [InlineData("{ var a = 0 for i = 0 to 10 break return a }", 0)]
+        [InlineData("{ var a = 0 for i = 0 to 10 { a = a + i continue } return a }", 55)]
+        [InlineData("{ var a = 0 for i = 0 to 10 { continue a = a + i } return a }", 0)]
+        [InlineData("{ var i = 0 while i < 5 { i = i + 1 if i == 5 continue } return i }", 5)]
+        [InlineData("{ var i = 0 do { i = i + 1 if i == 5 continue } while i < 5 return i }", 5)]
+        //[InlineData("{ var a = 0 for i = 0 to -10 step -1 a = a + i return a }", -55)] // Currently we don't support reversed loops
         [InlineData("bool(\"false\")", false)]
         [InlineData("bool(\"true\")", true)]
         [InlineData("string(10)", "10")]
@@ -389,8 +389,18 @@ namespace Compiler.Tests.CodeAnalysis
                 DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.CloseParenthesisToken, SyntaxKind.IdentifierToken),
                 DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.EndOfFileToken, SyntaxKind.CloseBraceToken)
             };
-            
+
             AssertHasDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_Script_Return()
+        {
+            var text = @"
+                return
+            ";
+
+            AssertValue(text, "");
         }
 
         [Fact]
@@ -455,7 +465,7 @@ namespace Compiler.Tests.CodeAnalysis
                     return a + b + c
                 }
             ";
-            
+
             var diagnostics = new List<string>()
             {
                 DiagnosticCode.ParameterAlreadyDeclared.GetDiagnostic("a"),
@@ -641,7 +651,7 @@ namespace Compiler.Tests.CodeAnalysis
         private static void AssertValue(string text, object expectedValue)
         {
             var syntaxTree = SyntaxTree.Parse(text);
-            var compilation = new Compilation(syntaxTree);
+            var compilation = Compilation.CreateScript(null, syntaxTree);
 
             var variables = new Dictionary<VariableSymbol, object>();
             var result = compilation.Evaluate(variables);
@@ -655,7 +665,7 @@ namespace Compiler.Tests.CodeAnalysis
             var annotatedText = AnnotatedText.Parse(text);
             var syntaxTree = SyntaxTree.Parse(annotatedText.Text);
 
-            var compilation = new Compilation(syntaxTree);
+            var compilation = Compilation.CreateScript(null, syntaxTree);
             var result = compilation.Evaluate(new Dictionary<VariableSymbol, object>());
 
             if (annotatedText.Spans.Length != result.Diagnostics.Length)

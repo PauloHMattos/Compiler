@@ -15,8 +15,9 @@ namespace Compiler.CodeAnalysis
     {
         private readonly Compilation _previous;
         private BoundGlobalScope _globalScope;
-
+        public bool IsScript { get; }
         public ImmutableArray<SyntaxTree> SyntaxTrees { get; }
+        public FunctionSymbol MainFunction => GlobalScope.MainFunction;
         public ImmutableArray<FunctionSymbol> Functions => GlobalScope.Functions;
         public ImmutableArray<VariableSymbol> Variables => GlobalScope.Variables;
 
@@ -50,13 +51,6 @@ namespace Compiler.CodeAnalysis
             }
         }
 
-        public bool IsScript { get; }
-
-        public Compilation ContinueWith(SyntaxTree syntaxTree)
-        {
-            return new Compilation(this.IsScript, this, syntaxTree);
-        }
-
         private BoundProgram GetProgram()
         {
             var previous = _previous == null ? null : _previous.GetProgram();
@@ -75,15 +69,15 @@ namespace Compiler.CodeAnalysis
 
             var program = GetProgram();
 
-            var appPath = Environment.GetCommandLineArgs()[0];
-            var appDirectory = Path.GetDirectoryName(appPath);
-            var cfgPath = Path.Combine(appDirectory, "cfg.dot");
-            var cfgStatement = !program.Statement.Statements.Any() && program.Functions.Any()
-                ? program.Functions.Last().Value
-                : program.Statement;
-            var cfg = ControlFlowGraph.Create(cfgStatement);
-            using (var streamWriter = new StreamWriter(cfgPath))
-                cfg.WriteTo(streamWriter);
+            // var appPath = Environment.GetCommandLineArgs()[0];
+            // var appDirectory = Path.GetDirectoryName(appPath);
+            // var cfgPath = Path.Combine(appDirectory, "cfg.dot");
+            // var cfgStatement = !program.Statement.Statements.Any() && program.Functions.Any()
+            //     ? program.Functions.Last().Value
+            //     : program.Statement;
+            // var cfg = ControlFlowGraph.Create(cfgStatement);
+            // using (var streamWriter = new StreamWriter(cfgPath))
+            //     cfg.WriteTo(streamWriter);
 
 
             if (program.Diagnostics.Any())
@@ -98,22 +92,13 @@ namespace Compiler.CodeAnalysis
 
         public void EmitTree(TextWriter writer)
         {
-            var program = GetProgram();
-            if (program.Statement.Statements.Any())
+            if (GlobalScope.MainFunction != null)
             {
-                program.Statement.WriteTo(writer);
+                EmitTree(GlobalScope.MainFunction, writer);
             }
-            else
+            else if (GlobalScope.ScriptFunction != null)
             {
-                foreach (var (function, statement) in program.Functions)
-                {
-                    if (!GlobalScope.Functions.Contains(function))
-                        continue;
-
-                    function.WriteTo(writer);
-                    writer.WriteLine();
-                    statement.WriteTo(writer);
-                }
+                EmitTree(GlobalScope.ScriptFunction, writer);
             }
         }
 

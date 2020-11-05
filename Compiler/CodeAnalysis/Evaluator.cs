@@ -36,7 +36,14 @@ namespace Compiler.CodeAnalysis
 
         public object Evaluate()
         {
-            return EvaluateStatement(_program.Statement);
+            var function = _program.MainFunction ?? _program.ScriptFunction;
+            if (function == null)
+            {
+                return null;
+            }
+
+            var body = _functions[function];
+            return EvaluateStatement(body);
         }
 
         private object EvaluateStatement(BoundBlockStatement body)
@@ -50,23 +57,23 @@ namespace Compiler.CodeAnalysis
                     continue;
                 }
 
-                var labelStatement = (BoundLabelStatement) statement;
+                var labelStatement = (BoundLabelStatement)statement;
                 labelToIndex.Add(labelStatement.Label, i + 1);
             }
 
             var index = 0;
-            while(index < body.Statements.Length)
+            while (index < body.Statements.Length)
             {
                 var statement = body.Statements[index];
                 switch (statement.Kind)
                 {
                     case BoundNodeKind.ExpressionStatement:
-                        EvaluateExpressionStatement((BoundExpressionStatement) statement);
+                        EvaluateExpressionStatement((BoundExpressionStatement)statement);
                         index++;
                         break;
 
                     case BoundNodeKind.VariableDeclarationStatement:
-                        EvaluateVariableDeclarationStatement((BoundVariableDeclarationStatement) statement);
+                        EvaluateVariableDeclarationStatement((BoundVariableDeclarationStatement)statement);
                         index++;
                         break;
 
@@ -75,12 +82,12 @@ namespace Compiler.CodeAnalysis
                         break;
 
                     case BoundNodeKind.GotoStatement:
-                        var gotoStatement = (BoundGotoStatement) statement;
+                        var gotoStatement = (BoundGotoStatement)statement;
                         index = labelToIndex[gotoStatement.Label];
                         break;
 
                     case BoundNodeKind.ConditionalGotoStatement:
-                        var conditionalGotoStatement = (BoundConditionalGotoStatement) statement;
+                        var conditionalGotoStatement = (BoundConditionalGotoStatement)statement;
                         var condition = (bool)EvaluateExpression(conditionalGotoStatement.Condition);
                         if (condition == conditionalGotoStatement.JumpIfTrue)
                         {
@@ -108,16 +115,16 @@ namespace Compiler.CodeAnalysis
             _lastValue = value;
             Assign(statement.Variable, value);
         }
-        
+
         private void EvaluateExpressionStatement(BoundExpressionStatement expressionStatement)
         {
             _lastValue = EvaluateExpression(expressionStatement.Expression);
         }
-        
+
         private object EvaluateReturnStatement(BoundReturnStatement returnStatement)
         {
-            _lastValue = returnStatement.Expression == null ? 
-                null : 
+            _lastValue = returnStatement.Expression == null ?
+                null :
                 EvaluateExpression(returnStatement.Expression);
             return _lastValue;
         }
@@ -269,7 +276,7 @@ namespace Compiler.CodeAnalysis
             {
                 return Console.ReadLine();
             }
-            
+
             if (callExpression.Function == BuiltinFunctions.Print)
             {
                 var message = (string)EvaluateExpression(callExpression.Arguments[0]);
@@ -319,7 +326,11 @@ namespace Compiler.CodeAnalysis
         private object EvaluateConversionExpression(BoundConversionExpression node)
         {
             var value = EvaluateExpression(node.Expression);
-            if (node.Type == TypeSymbol.Bool)
+            if (node.Type == TypeSymbol.Any)
+            {
+                return value;
+            }
+            else if (node.Type == TypeSymbol.Bool)
             {
                 return Convert.ToBoolean(value);
             }

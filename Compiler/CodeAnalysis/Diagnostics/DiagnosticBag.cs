@@ -133,11 +133,6 @@ namespace Compiler.CodeAnalysis.Diagnostics
             Report(location, DiagnosticCode.InvalidBreakOrContinue.GetDiagnostic(text));
         }
 
-        public void ReportInvalidReturn(in TextLocation location)
-        {
-            Report(location, DiagnosticCode.InvalidReturn.GetDiagnostic());
-        }
-
         public void ReportInvalidReturnExpression(in TextLocation location, string functionName)
         {
             Report(location, DiagnosticCode.InvalidReturnExpression.GetDiagnostic(functionName));
@@ -153,9 +148,24 @@ namespace Compiler.CodeAnalysis.Diagnostics
             Report(location, DiagnosticCode.AllPathsMustReturn.GetDiagnostic());
         }
 
-        internal void ReportInvalidExpressionStatement(in TextLocation location)
+        public void ReportInvalidExpressionStatement(in TextLocation location)
         {
             Report(location, DiagnosticCode.InvalidExpressionStatement.GetDiagnostic());
+        }
+
+        public void ReportOnlyOneFileCanHaveGlobalStatements(in TextLocation location)
+        {
+            Report(location, DiagnosticCode.OnlyOneFileCanHaveGlobalStatements.GetDiagnostic());
+        }
+
+        public void ReportMainMustHaveCorrectSignature(in TextLocation location)
+        {
+            Report(location, DiagnosticCode.MainMustHaveCorrectSignature.GetDiagnostic());
+        }
+
+        public void ReportCannotMixMainAndGlobalStatements(in TextLocation location)
+        {
+            Report(location, DiagnosticCode.CannotMixMainAndGlobalStatements.GetDiagnostic());
         }
     }
 }
