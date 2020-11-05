@@ -50,7 +50,14 @@ namespace Compiler.CodeAnalysis.Symbols
             }
 
             writer.WritePunctuation(SyntaxKind.CloseParenthesisToken);
-            writer.WriteLine();
+
+            if (symbol.Type != TypeSymbol.Void)
+            {
+                writer.WriteSpace();
+                writer.WritePunctuation(SyntaxKind.ColonToken);
+                writer.WriteSpace();
+                symbol.Type.WriteTo(writer);
+            }
         }
 
         private static void WriteGlobalVariableTo(GlobalVariableSymbol symbol, TextWriter writer)
@@ -58,7 +65,8 @@ namespace Compiler.CodeAnalysis.Symbols
             writer.WriteKeyword(symbol.IsReadOnly ? SyntaxKind.ConstKeyword : SyntaxKind.VarKeyword);
             writer.WriteSpace();
             writer.WriteIdentifier(symbol.Name);
-            writer.WritePunctuation(SyntaxKind.CommaToken);
+            writer.WriteSpace();
+            writer.WritePunctuation(SyntaxKind.ColonToken);
             writer.WriteSpace();
             symbol.Type.WriteTo(writer);
         }
@@ -68,7 +76,8 @@ namespace Compiler.CodeAnalysis.Symbols
             writer.WriteKeyword(symbol.IsReadOnly ? SyntaxKind.ConstKeyword : SyntaxKind.VarKeyword);
             writer.WriteSpace();
             writer.WriteIdentifier(symbol.Name);
-            writer.WritePunctuation(SyntaxKind.CommaToken);
+            writer.WriteSpace();
+            writer.WritePunctuation(SyntaxKind.ColonToken);
             writer.WriteSpace();
             symbol.Type.WriteTo(writer);
         }
@@ -76,7 +85,8 @@ namespace Compiler.CodeAnalysis.Symbols
         private static void WriteParameterTo(ParameterSymbol symbol, TextWriter writer)
         {
             writer.WriteIdentifier(symbol.Name);
-            writer.WritePunctuation(SyntaxKind.CommaToken);
+            writer.WriteSpace();
+            writer.WritePunctuation(SyntaxKind.ColonToken);
             writer.WriteSpace();
             symbol.Type.WriteTo(writer);
         }

@@ -17,6 +17,8 @@ namespace Compiler.CodeAnalysis
         private BoundGlobalScope _globalScope;
 
         public ImmutableArray<SyntaxTree> SyntaxTrees { get; }
+        public ImmutableArray<FunctionSymbol> Functions => GlobalScope.Functions;
+        public ImmutableArray<VariableSymbol> Variables => GlobalScope.Variables;
 
         public Compilation(params SyntaxTree[] syntaxTrees)
             : this(null, syntaxTrees)
@@ -51,7 +53,7 @@ namespace Compiler.CodeAnalysis
         {
             var parseDiagnostics = SyntaxTrees.SelectMany(st => st.Diagnostics);
             var diagnostics = parseDiagnostics.Concat(GlobalScope.Diagnostics).ToImmutableArray();
-            
+
             if (diagnostics.Any())
             {
                 return new EvaluationResult(diagnostics, null);
@@ -95,8 +97,49 @@ namespace Compiler.CodeAnalysis
                         continue;
 
                     function.WriteTo(writer);
+                    writer.WriteLine();
                     statement.WriteTo(writer);
                 }
+            }
+        }
+
+        public void EmitTree(FunctionSymbol symbol, TextWriter writer)
+        {
+            var program = Binder.BindProgram(GlobalScope);
+            if (!program.Functions.TryGetValue(symbol, out var body))
+            {
+                return;
+            }
+
+            symbol.WriteTo(writer);
+            writer.WriteLine();
+            body.WriteTo(writer);
+        }
+
+        public IEnumerable<Symbol> GetSymbols()
+        {
+            var submission = this;
+            var seenSymbolNames = new HashSet<string>();
+
+            while (submission != null)
+            {
+                foreach (var function in submission.Functions)
+                {
+                    if (seenSymbolNames.Add(function.Name))
+                    {
+                        yield return function;
+                    }
+                }
+
+                foreach (var variable in submission.Variables)
+                {
+                    if (seenSymbolNames.Add(variable.Name))
+                    {
+                        yield return variable;
+                    }
+                }
+
+                submission = submission._previous;
             }
         }
     }
