@@ -48,16 +48,16 @@ namespace Compiler.REPL
             {
                 var text = EditSubmission();
                 if (string.IsNullOrEmpty(text))
-                {    
+                {
                     return;
                 }
 
                 if (!text.Contains(Environment.NewLine) && text.StartsWith("#"))
-                {    
+                {
                     EvaluateMetaCommand(text);
                 }
                 else
-                {   
+                {
                     EvaluateSubmission(text);
                 }
 
@@ -452,26 +452,34 @@ namespace Compiler.REPL
             while (position < input.Length)
             {
                 var c = input[position];
-                var l = position + 1>= input.Length ? '\0' : input[position + 1];
+                var l = position + 1 >= input.Length ? '\0' : input[position + 1];
 
                 if (char.IsWhiteSpace(c))
                 {
                     if (!inQuotes)
+                    {
                         CommitPendingArgument();
+                    }
                     else
+                    {
                         sb.Append(c);
+                    }
                 }
                 else if (c == '\"')
                 {
                     if (!inQuotes)
+                    {
                         inQuotes = true;
+                    }
                     else if (l == '\"')
                     {
                         sb.Append(c);
                         position++;
                     }
                     else
+                    {
                         inQuotes = false;
+                    }
                 }
                 else
                 {
@@ -487,13 +495,17 @@ namespace Compiler.REPL
             {
                 var arg = sb.ToString();
                 if (!string.IsNullOrWhiteSpace(arg))
+                {
                     args.Add(arg);
+                }
                 sb.Clear();
             }
 
             var commandName = args.FirstOrDefault();
             if (args.Count > 0)
+            {
                 args.RemoveAt(0);
+            }
 
             var command = _metaCommands.SingleOrDefault(mc => mc.Name == commandName);
             if (command == null)
@@ -522,8 +534,8 @@ namespace Compiler.REPL
         protected abstract bool IsCompleteSubmission(string text);
 
         protected abstract void EvaluateSubmission(string text);
-        
-        
+
+
         [MetaCommand("help", "Shows help")]
         protected void EvaluateHelp()
         {
