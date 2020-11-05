@@ -95,6 +95,7 @@ namespace Compiler.CodeAnalysis
                         continue;
 
                     function.WriteTo(writer);
+                    writer.WriteLine();
                     statement.WriteTo(writer);
                 }
             }
