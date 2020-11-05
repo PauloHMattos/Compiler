@@ -49,6 +49,12 @@ namespace Compiler.CodeAnalysis
             return new Compilation(this, syntaxTree);
         }
 
+        private BoundProgram GetProgram()
+        {
+            var previous = _previous == null ? null : _previous.GetProgram();
+            return Binder.BindProgram(previous, GlobalScope);
+        }
+
         public EvaluationResult Evaluate(Dictionary<VariableSymbol, object> variables)
         {
             var parseDiagnostics = SyntaxTrees.SelectMany(st => st.Diagnostics);
@@ -59,7 +65,7 @@ namespace Compiler.CodeAnalysis
                 return new EvaluationResult(diagnostics, null);
             }
 
-            var program = Binder.BindProgram(GlobalScope);
+            var program = GetProgram();
 
             var appPath = Environment.GetCommandLineArgs()[0];
             var appDirectory = Path.GetDirectoryName(appPath);
@@ -84,7 +90,7 @@ namespace Compiler.CodeAnalysis
 
         public void EmitTree(TextWriter writer)
         {
-            var program = Binder.BindProgram(GlobalScope);
+            var program = GetProgram();
             if (program.Statement.Statements.Any())
             {
                 program.Statement.WriteTo(writer);
@@ -105,7 +111,7 @@ namespace Compiler.CodeAnalysis
 
         public void EmitTree(FunctionSymbol symbol, TextWriter writer)
         {
-            var program = Binder.BindProgram(GlobalScope);
+            var program = GetProgram();
             symbol.WriteTo(writer);
             writer.WriteLine();
             if (!program.Functions.TryGetValue(symbol, out var body))

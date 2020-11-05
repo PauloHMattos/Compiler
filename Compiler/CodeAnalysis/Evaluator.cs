@@ -9,7 +9,8 @@ namespace Compiler.CodeAnalysis
     {
         private readonly BoundProgram _program;
         private readonly Dictionary<VariableSymbol, object> _globals;
-        private readonly Stack<Dictionary<VariableSymbol, object>> _locals = new Stack<Dictionary<VariableSymbol, object>>();
+        private readonly Stack<Dictionary<VariableSymbol, object>> _locals;
+        private readonly Dictionary<FunctionSymbol, BoundBlockStatement> _functions;
 
         private Random _random;
         private object _lastValue;
@@ -18,7 +19,19 @@ namespace Compiler.CodeAnalysis
         {
             _program = program;
             _globals = variables;
+            _locals = new Stack<Dictionary<VariableSymbol, object>>();
             _locals.Push(new Dictionary<VariableSymbol, object>());
+            _functions = new Dictionary<FunctionSymbol, BoundBlockStatement>();
+
+            var current = program;
+            while (current != null)
+            {
+                foreach (var (function, body) in current.Functions)
+                {
+                    _functions.Add(function, body);
+                }
+                current = current.Previous;
+            }
         }
 
         public object Evaluate()
@@ -282,7 +295,7 @@ namespace Compiler.CodeAnalysis
 
             _locals.Push(locals);
 
-            var statement = _program.Functions[callExpression.Function];
+            var statement = _functions[callExpression.Function];
             var result = EvaluateStatement(statement);
 
             _locals.Pop();
