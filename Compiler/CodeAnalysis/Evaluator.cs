@@ -279,8 +279,8 @@ namespace Compiler.CodeAnalysis
 
             if (callExpression.Function == BuiltinFunctions.Print)
             {
-                var message = (string)EvaluateExpression(callExpression.Arguments[0]);
-                Console.WriteLine(message);
+                var value = EvaluateExpression(callExpression.Arguments[0]);
+                Console.WriteLine(value);
                 return null;
             }
 
