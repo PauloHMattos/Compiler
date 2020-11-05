@@ -440,12 +440,14 @@ namespace Compiler.CodeAnalysis.Binding
                 {
                     // Ignore because we allow both return with and without values.
                     if (expression == null)
+                    {
                         expression = new BoundLiteralExpression("");
+                    }
                 }
                 else if (expression != null)
                 {
                     // Main does not support return values.
-                    Diagnostics.ReportInvalidReturnExpression(syntax.Expression.Location, _function.Name);
+                    Diagnostics.ReportInvalidReturnWithValueInGlobalStatements(syntax.Expression.Location);
                 }
             }
             else

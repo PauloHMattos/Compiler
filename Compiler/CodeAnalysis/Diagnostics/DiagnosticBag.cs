@@ -162,5 +162,10 @@ namespace Compiler.CodeAnalysis.Diagnostics
         {
             Report(location, DiagnosticCode.CannotMixMainAndGlobalStatements.GetDiagnostic());
         }
+
+        internal void ReportInvalidReturnWithValueInGlobalStatements(TextLocation location)
+        {
+            Report(location, DiagnosticCode.InvalidReturnWithValueInGlobalStatements.GetDiagnostic());
+        }
     }
 }

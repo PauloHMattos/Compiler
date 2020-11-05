@@ -30,7 +30,8 @@ namespace Compiler.CodeAnalysis.Diagnostics
         InvalidExpressionStatement,
         OnlyOneFileCanHaveGlobalStatements,
         MainMustHaveCorrectSignature,
-        CannotMixMainAndGlobalStatements
+        CannotMixMainAndGlobalStatements,
+        InvalidReturnWithValueInGlobalStatements
     }
 
 
@@ -65,6 +66,7 @@ namespace Compiler.CodeAnalysis.Diagnostics
             {DiagnosticCode.OnlyOneFileCanHaveGlobalStatements, "At most one file can have global statements."},
             {DiagnosticCode.MainMustHaveCorrectSignature, "main must not take arguments and not return anything."},
             {DiagnosticCode.CannotMixMainAndGlobalStatements, "Cannot declare main function when global statements are used."},
+            {DiagnosticCode.InvalidReturnWithValueInGlobalStatements, "The 'return' keyword cannot be followed by an expression in global statements."},
         };
 
         public static string GetDiagnostic(this DiagnosticCode code, params object[] arguments)
