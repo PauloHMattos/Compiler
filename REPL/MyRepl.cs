@@ -151,6 +151,23 @@ namespace Compiler.REPL
             _showProgram = !_showProgram;
             Console.WriteLine(_showProgram ? "Showing bound tree." : "Not showing bound tree.");
         }
+        
+        [MetaCommand("load", "Loads a script file")]
+        private void EvaluateLoad(string path)
+        {
+            path = Path.GetFullPath(path);
+
+            if (!File.Exists(path))
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"error: file does not exist '{path}'");
+                Console.ResetColor();
+                return;
+            }
+
+            var text = File.ReadAllText(path);
+            EvaluateSubmission(text);
+        }
 
         private static string GetSubmissionsDirectory()
         {
