@@ -97,7 +97,7 @@ namespace Compiler.CodeAnalysis.Binding
                 mainFunction = functions.FirstOrDefault(f => f.Name == "main");
                 scriptFunction = null;
 
-                if (mainFunction != null && mainFunction.Type != TypeSymbol.Void || mainFunction.Parameters.Any())
+                if (mainFunction != null && (mainFunction.Type != TypeSymbol.Void || mainFunction.Parameters.Any()))
                 {
                     binder.Diagnostics.ReportMainMustHaveCorrectSignature(mainFunction.Declaration.Identifier.Location);
                 }
