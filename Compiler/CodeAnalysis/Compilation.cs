@@ -20,15 +20,21 @@ namespace Compiler.CodeAnalysis
         public ImmutableArray<FunctionSymbol> Functions => GlobalScope.Functions;
         public ImmutableArray<VariableSymbol> Variables => GlobalScope.Variables;
 
-        public Compilation(params SyntaxTree[] syntaxTrees)
-            : this(null, syntaxTrees)
+        private Compilation(bool isScript, Compilation previous, params SyntaxTree[] syntaxTrees)
         {
-        }
-
-        private Compilation(Compilation previous, params SyntaxTree[] syntaxTrees)
-        {
+            IsScript = isScript;
             _previous = previous;
             SyntaxTrees = syntaxTrees.ToImmutableArray();
+        }
+
+        public static Compilation Create(params SyntaxTree[] syntaxTrees)
+        {
+            return new Compilation(false, null, syntaxTrees);
+        }
+
+        public static Compilation CreateScript(Compilation previous, params SyntaxTree[] syntaxTrees)
+        {
+            return new Compilation(true, previous, syntaxTrees);
         }
 
         internal BoundGlobalScope GlobalScope
@@ -37,22 +43,24 @@ namespace Compiler.CodeAnalysis
             {
                 if (_globalScope == null)
                 {
-                    var globalScope = Binder.BindGlobalScope(_previous?.GlobalScope, SyntaxTrees);
+                    var globalScope = Binder.BindGlobalScope(IsScript, _previous?.GlobalScope, SyntaxTrees);
                     Interlocked.CompareExchange(ref _globalScope, globalScope, null);
                 }
                 return _globalScope;
             }
         }
 
+        public bool IsScript { get; }
+
         public Compilation ContinueWith(SyntaxTree syntaxTree)
         {
-            return new Compilation(this, syntaxTree);
+            return new Compilation(this.IsScript, this, syntaxTree);
         }
 
         private BoundProgram GetProgram()
         {
             var previous = _previous == null ? null : _previous.GetProgram();
-            return Binder.BindProgram(previous, GlobalScope);
+            return Binder.BindProgram(IsScript, previous, GlobalScope);
         }
 
         public EvaluationResult Evaluate(Dictionary<VariableSymbol, object> variables)

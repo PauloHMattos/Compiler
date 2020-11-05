@@ -28,7 +28,8 @@ namespace Compiler.CodeAnalysis.Diagnostics
         InvalidReturn,
         InvalidReturnExpression,
         MissingReturnExpression,
-        AllPathsMustReturn
+        AllPathsMustReturn,
+        InvalidExpressionStatement
     }
 
 
@@ -61,6 +62,7 @@ namespace Compiler.CodeAnalysis.Diagnostics
             {DiagnosticCode.InvalidReturnExpression, "Since the function '{0}' does not return a value the 'return' keyword cannot be followed by an expression."},
             {DiagnosticCode.MissingReturnExpression, "An expression of type '{0}' is expected."},
             {DiagnosticCode.AllPathsMustReturn, "Not all code paths return a value."},
+            {DiagnosticCode.InvalidExpressionStatement, "Only assignment and call expressions can be used as a statement."},
         };
 
         public static string GetDiagnostic(this DiagnosticCode code, params object[] arguments)

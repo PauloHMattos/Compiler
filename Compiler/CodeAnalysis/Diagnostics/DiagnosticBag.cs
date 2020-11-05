@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using Compiler.CodeAnalysis.Symbols;
 using Compiler.CodeAnalysis.Syntax;
@@ -150,6 +151,11 @@ namespace Compiler.CodeAnalysis.Diagnostics
         public void ReportAllPathsMustReturn(in TextLocation location)
         {
             Report(location, DiagnosticCode.AllPathsMustReturn.GetDiagnostic());
+        }
+
+        internal void ReportInvalidExpressionStatement(in TextLocation location)
+        {
+            Report(location, DiagnosticCode.InvalidExpressionStatement.GetDiagnostic());
         }
     }
 }
