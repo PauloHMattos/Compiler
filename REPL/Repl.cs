@@ -49,7 +49,7 @@ namespace Compiler.REPL
                 var text = EditSubmission();
                 if (string.IsNullOrEmpty(text))
                 {
-                    return;
+                    continue;
                 }
 
                 if (!text.Contains(Environment.NewLine) && text.StartsWith("#"))
@@ -590,9 +590,15 @@ namespace Compiler.REPL
         }
 
         [MetaCommand("cls", "Clears the screen")]
-        private void EvaluateCls()
+        protected void EvaluateCls()
         {
             Console.Clear();
+        }
+
+        [MetaCommand("exit", "Exits the REPL")]
+        protected void EvaluateExit()
+        {
+            Environment.Exit(0);
         }
     }
 }
