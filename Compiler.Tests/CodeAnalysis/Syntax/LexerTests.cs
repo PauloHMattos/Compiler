@@ -10,7 +10,6 @@ namespace Compiler.Tests.CodeAnalysis.Syntax
 {
     public class LexerTests
     {
-
         [Fact]
         public void Lexer_Lexes_UnterminateString()
         {
@@ -94,6 +93,22 @@ namespace Compiler.Tests.CodeAnalysis.Syntax
 
             Assert.Equal(kind2, tokens[2].Kind);
             Assert.Equal(text2, tokens[2].Text);
+        }
+
+        [Theory]
+        [InlineData("foo")]
+        [InlineData("foo42")]
+        [InlineData("foo_42")]
+        [InlineData("_foo")]
+        public void Lexer_Lexes_Identifiers(string name)
+        {
+            var tokens = SyntaxTree.ParseTokens(name).ToArray();
+
+            Assert.Single(tokens);
+
+            var token = tokens[0];
+            Assert.Equal(SyntaxKind.IdentifierToken, token.Kind);
+            Assert.Equal(name, token.Text);
         }
 
         public static IEnumerable<object[]> GetTokensData()

@@ -183,10 +183,13 @@ namespace Compiler.CodeAnalysis.Syntax
                 case '\r':
                     LexWhitespace();
                     break;
+                case '_':
+                    LexIdentifierOrKeyword();
+                    break;
                 default:
                     if (char.IsLetter(Current))
                     {
-                        LexLetter();
+                        LexIdentifierOrKeyword();
                     }
                     else if (char.IsWhiteSpace(Current))
                     {
@@ -275,9 +278,9 @@ namespace Compiler.CodeAnalysis.Syntax
             _kind = SyntaxKind.WhitespaceToken;
         }
 
-        private void LexLetter()
+        private void LexIdentifierOrKeyword()
         {
-            ConsumesTokenWhile(char.IsLetter);
+            ConsumesTokenWhile(c => char.IsLetterOrDigit(c) || c == '_');
             var length = _position - _start;
             _tokenText = _text.ToString(_start, length);
             _kind = SyntaxFacts.GetKeywordKind(_tokenText);
