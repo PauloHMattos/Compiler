@@ -14,6 +14,15 @@
             "problemMatcher": "$msCompile"
         },
         {
+            "label": "test",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "test"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
             "label": "PyS",
             "command": "dotnet",
             "type": "shell",
