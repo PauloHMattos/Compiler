@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Compiler.CodeAnalysis;
 using Compiler.CodeAnalysis.Symbols;
@@ -10,10 +11,17 @@ namespace Compiler.REPL
 {
     internal sealed class MyRepl : Repl
     {
+        private static bool _loadingSubmission;
+
         private Compilation _previous;
         private bool _showTree;
         private bool _showProgram;
         private readonly Dictionary<VariableSymbol, object> _variables = new Dictionary<VariableSymbol, object>();
+
+        public MyRepl()
+        {
+            LoadSubmissions();
+        }
 
         protected override void RenderLine(string line)
         {
@@ -73,8 +81,9 @@ namespace Compiler.REPL
             var syntaxTree = SyntaxTree.Parse(text);
 
             if (syntaxTree.Diagnostics.Any())
+            {
                 return false;
-
+            }
             return true;
         }
 
@@ -87,10 +96,14 @@ namespace Compiler.REPL
                                 : _previous.ContinueWith(syntaxTree);
 
             if (_showTree)
+            {
                 syntaxTree.Root.WriteTo(Console.Out);
+            }
 
             if (_showProgram)
+            {
                 compilation.EmitTree(Console.Out);
+            }
 
             var result = compilation.Evaluate(_variables);
 
@@ -103,6 +116,7 @@ namespace Compiler.REPL
                     Console.ResetColor();
                 }
                 _previous = compilation;
+                SaveSubmission(text);
             }
             else
             {
@@ -121,6 +135,7 @@ namespace Compiler.REPL
         {
             _previous = null;
             _variables.Clear();
+            ClearSubmissions();
         }
 
         [MetaCommand("tree", "Shows the parse tree")]
@@ -135,6 +150,62 @@ namespace Compiler.REPL
         {
             _showProgram = !_showProgram;
             Console.WriteLine(_showProgram ? "Showing bound tree." : "Not showing bound tree.");
+        }
+
+        private static string GetSubmissionsDirectory()
+        {
+            var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            var submissionsDirectory = Path.Combine(localAppData, "PySharp", "Submissions");
+            return submissionsDirectory;
+        }
+
+        private void LoadSubmissions()
+        {
+            var submissionsDirectory = GetSubmissionsDirectory();
+            if (!Directory.Exists(submissionsDirectory))
+            {
+                return;
+            }
+
+            var files = Directory.GetFiles(submissionsDirectory).OrderBy(f => f).ToArray();
+            if (files.Length == 0)
+            {
+                return;
+            }
+
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.WriteLine($"Loaded {files.Length} submission(s)");
+            Console.ResetColor();
+
+            _loadingSubmission = true;
+
+            foreach (var file in files)
+            {
+                var text = File.ReadAllText(file);
+                EvaluateSubmission(text);
+            }
+
+            _loadingSubmission = false;
+        }
+
+        private static void ClearSubmissions()
+        {
+            Directory.Delete(GetSubmissionsDirectory(), recursive: true);
+        }
+
+        private static void SaveSubmission(string text)
+        {
+            if (_loadingSubmission)
+            {
+                return;
+            }
+
+            var submissionsDirectory = GetSubmissionsDirectory();
+            Directory.CreateDirectory(submissionsDirectory);
+            var count = Directory.GetFiles(submissionsDirectory).Length;
+            var name = $"submission{count:0000}";
+            var fileName = Path.Combine(submissionsDirectory, name);
+            File.WriteAllText(fileName, text);
         }
     }
 }
