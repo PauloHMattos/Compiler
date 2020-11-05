@@ -118,11 +118,6 @@ namespace Compiler.CodeAnalysis.Diagnostics
             Report(location, DiagnosticCode.WrongArgumentCount.GetDiagnostic(name, expectedCount, actualCount));
         }
 
-        public void ReportWrongArgumentType(in TextLocation location, string name, TypeSymbol expectedType, TypeSymbol actualType)
-        {
-            Report(location, DiagnosticCode.WrongArgumentType.GetDiagnostic(name, expectedType, actualType));
-        }
-
         public void ReportParameterAlreadyDeclared(in TextLocation location, string parameterName)
         {
             Report(location, DiagnosticCode.ParameterAlreadyDeclared.GetDiagnostic(parameterName));

@@ -514,13 +514,13 @@ namespace Compiler.Tests.CodeAnalysis
         {
             var text = @"
                 {
-                    print([42])
+                    random([""42""], 0)
                 }
             ";
 
             var diagnostics = new List<string>()
             {
-                DiagnosticCode.WrongArgumentType.GetDiagnostic("text", TypeSymbol.String, TypeSymbol.Int),
+                DiagnosticCode.CannotConvertImplicitly.GetDiagnostic(TypeSymbol.String,TypeSymbol.Int),
             };
 
             AssertHasDiagnostics(text, diagnostics);
