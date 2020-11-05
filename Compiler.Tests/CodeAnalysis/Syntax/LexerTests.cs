@@ -182,6 +182,12 @@ namespace Compiler.Tests.CodeAnalysis.Syntax
             if (kind1IsKeyword && kind2 == SyntaxKind.IdentifierToken)
                 return true;
 
+            if (kind1 == SyntaxKind.IdentifierToken && kind2 == SyntaxKind.NumberToken)
+                return true;
+
+            if (kind1IsKeyword && kind2 == SyntaxKind.NumberToken)
+                return true;
+
             if (kind1 == SyntaxKind.IdentifierToken && kind2IsKeyword)
                 return true;
 
