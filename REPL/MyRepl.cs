@@ -4,7 +4,6 @@ using System.Linq;
 using Compiler.CodeAnalysis;
 using Compiler.CodeAnalysis.Symbols;
 using Compiler.CodeAnalysis.Syntax;
-using Compiler.CodeAnalysis.Text;
 using Compiler.IO;
 
 namespace Compiler.REPL
@@ -50,31 +49,6 @@ namespace Compiler.REPL
                 Console.Write(token.Text);
 
                 Console.ResetColor();
-            }
-        }
-
-        protected override void EvaluateMetaCommand(string input)
-        {
-            switch (input)
-            {
-                case "#tree":
-                    _showTree = !_showTree;
-                    Console.WriteLine(_showTree ? "Showing parse trees." : "Not showing parse trees.");
-                    break;
-                case "#program":
-                    _showProgram = !_showProgram;
-                    Console.WriteLine(_showProgram ? "Showing bound tree." : "Not showing bound tree.");
-                    break;
-                case "#cls":
-                    Console.Clear();
-                    break;
-                case "#reset":
-                    _previous = null;
-                    _variables.Clear();
-                    break;
-                default:
-                    base.EvaluateMetaCommand(input);
-                    break;
             }
         }
 
@@ -134,6 +108,33 @@ namespace Compiler.REPL
             {
                 Console.Out.WriteDiagnostics(result.Diagnostics);
             }
+        }
+
+        [MetaCommand("cls", "Clears the screen")]
+        private void EvaluateCls()
+        {
+            Console.Clear();
+        }
+
+        [MetaCommand("reset", "Clears all previous submissions")]
+        private void EvaluateReset()
+        {
+            _previous = null;
+            _variables.Clear();
+        }
+
+        [MetaCommand("tree", "Shows the parse tree")]
+        private void EvaluateShowTree()
+        {
+            _showTree = !_showTree;
+            Console.WriteLine(_showTree ? "Showing parse trees." : "Not showing parse trees.");
+        }
+
+        [MetaCommand("program", "Shows the bound tree")]
+        private void EvaluateShowProgram()
+        {
+            _showProgram = !_showProgram;
+            Console.WriteLine(_showProgram ? "Showing bound tree." : "Not showing bound tree.");
         }
     }
 }
