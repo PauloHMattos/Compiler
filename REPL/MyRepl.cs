@@ -151,7 +151,7 @@ namespace Compiler.REPL
             _showProgram = !_showProgram;
             Console.WriteLine(_showProgram ? "Showing bound tree." : "Not showing bound tree.");
         }
-        
+
         [MetaCommand("load", "Loads a script file")]
         private void EvaluateLoad(string path)
         {
@@ -167,6 +167,22 @@ namespace Compiler.REPL
 
             var text = File.ReadAllText(path);
             EvaluateSubmission(text);
+        }
+
+        [MetaCommand("ls", "Lists all symbols")]
+        private void EvaluateLs()
+        {
+            if (_previous == null)
+            {
+                return;
+            }
+
+            var symbols = _previous.GetSymbols().OrderBy(s => s.Kind).ThenBy(s => s.Name);
+            foreach (var symbol in symbols)
+            {
+                symbol.WriteTo(Console.Out);
+                Console.WriteLine();
+            }
         }
 
         private static string GetSubmissionsDirectory()
