@@ -101,6 +101,14 @@ namespace Compiler.IO
                 .ThenBy(d => d.Location.Span.Start)
                 .ThenBy(d => d.Location.Span.Length))
             {
+                if (diagnostic.Location.Text == null)
+                {
+                    writer.SetForeground(ConsoleColor.DarkRed);
+                    writer.WriteLine(diagnostic);
+                    writer.ResetColor();
+                    continue;
+                }
+
                 var text = diagnostic.Location.Text;
                 var fileName = diagnostic.Location.FileName;
                 var startLine = diagnostic.Location.StartLine + 1;
@@ -111,7 +119,7 @@ namespace Compiler.IO
                 var span = diagnostic.Location.Span;
                 var lineIndex = text.GetLineIndex(span.Start);
                 var line = text.Lines[lineIndex];
-
+                
                 writer.WriteLine();
 
                 writer.SetForeground(ConsoleColor.DarkRed);

@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Compiler.CodeAnalysis;
-using Compiler.CodeAnalysis.Symbols;
 using Compiler.CodeAnalysis.Syntax;
 using Compiler.IO;
+using Mono.Options;
 
 namespace Compiler.Application
 {
@@ -13,23 +13,46 @@ namespace Compiler.Application
     {
         private static int Main(string[] args)
         {
-            if (args.Length == 0)
+            var outputPath = (string) null;
+            var moduleName = (string) null;
+            var referencePaths = new List<string>();
+            var sourcePaths = new List<string>();
+            var helpRequested = false;
+
+            var options = new OptionSet
             {
-                Console.Error.WriteLine("usage: ps <source-paths>");
+                "usage: msc <source-paths> [options]",
+                { "r=", "The {path} of an assembly to reference", v => referencePaths.Add(v) },
+                { "o=", "The output {path} of the assembly to create", v => outputPath = v },
+                { "m=", "The {name} of the module", v => moduleName = v },
+                { "?|h|help", "Prints help", v => helpRequested = true },
+                { "<>", v => sourcePaths.Add(v) }
+            };
+
+            options.Parse(args);
+
+            if (helpRequested)
+            {
+                options.WriteOptionDescriptions(Console.Out);
+                return 0;
+            }
+
+            if (sourcePaths.Count == 0)
+            {
+                Console.Error.WriteLine("error: need at least one source file");
                 return 1;
             }
 
-            if (args.Length > 1)
-            {
-                Console.Error.WriteLine("error: only one path supported right now");
-                return 1;
-            }
+            if (outputPath == null)
+                outputPath = Path.ChangeExtension(sourcePaths[0], ".exe");
 
-            var paths = GetFilePaths(args);
+            if (moduleName == null)
+                moduleName = Path.GetFileNameWithoutExtension(outputPath);
+
             var syntaxTrees = new List<SyntaxTree>();
             var hasErrors = false;
 
-            foreach (var path in paths)
+            foreach (var path in sourcePaths)
             {
                 if (!File.Exists(path))
                 {
@@ -37,47 +60,34 @@ namespace Compiler.Application
                     hasErrors = true;
                     continue;
                 }
+
                 var syntaxTree = SyntaxTree.Load(path);
                 syntaxTrees.Add(syntaxTree);
+            }
+
+            foreach (var path in referencePaths)
+            {
+                if (!File.Exists(path))
+                {
+                    Console.Error.WriteLine($"error: file '{path}' doesn't exist");
+                    hasErrors = true;
+                    continue;
+                }
             }
 
             if (hasErrors)
                 return 1;
 
             var compilation = Compilation.Create(syntaxTrees.ToArray());
-            var result = compilation.Evaluate(new Dictionary<VariableSymbol, object>());
+            var diagnostics = compilation.Emit(moduleName, referencePaths.ToArray(), outputPath);
 
-            if (!result.Diagnostics.Any())
+            if (diagnostics.Any())
             {
-                if (result.Value != null)
-                {
-                    Console.WriteLine(result.Value);
-                }
+                Console.Error.WriteDiagnostics(diagnostics);
+                return 1;
             }
-            else
-            {
-                Console.Error.WriteDiagnostics(result.Diagnostics);
-            }
+
             return 0;
-        }
-
-        private static IEnumerable<string> GetFilePaths(IEnumerable<string> paths)
-        {
-            var result = new SortedSet<string>();
-
-            foreach (var path in paths)
-            {
-                if (Directory.Exists(path))
-                {
-                    result.UnionWith(Directory.EnumerateFiles(path, "*.pys", SearchOption.AllDirectories));
-                }
-                else
-                {
-                    result.Add(path);
-                }
-            }
-
-            return result;
         }
     }
 }

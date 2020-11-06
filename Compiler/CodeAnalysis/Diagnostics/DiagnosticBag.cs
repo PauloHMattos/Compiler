@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Compiler.CodeAnalysis.Symbols;
 using Compiler.CodeAnalysis.Syntax;
 using Compiler.CodeAnalysis.Text;
+using Mono.Cecil;
 
 namespace Compiler.CodeAnalysis.Diagnostics
 {
@@ -38,6 +40,11 @@ namespace Compiler.CodeAnalysis.Diagnostics
             Report(location, DiagnosticCode.BadCharacter.GetDiagnostic(current));
         }
 
+        internal void ReportInvalidReference(string referencePath)
+        {
+            Report(new TextLocation(), DiagnosticCode.InvalidReference.GetDiagnostic(referencePath));
+        }
+
         public void ReportInvalidLiteralType(in TextLocation location, string text, TypeSymbol type)
         {
             Report(location, DiagnosticCode.InvalidLiteralType.GetDiagnostic(text, type));
@@ -67,6 +74,34 @@ namespace Compiler.CodeAnalysis.Diagnostics
         {
             Report(location, DiagnosticCode.UndefinedVariable.GetDiagnostic(name));
         }
+
+        internal void ReportRequiredTypeNotFound(string name, string metadataName)
+        {
+            name = name == null
+                ? $"'{metadataName}'"
+                : $"'{name}' ('{metadataName}')";
+
+            Report(default, DiagnosticCode.RequiredTypeNotFound.GetDiagnostic(name));
+        }
+
+        internal void ReportRequiredTypeAmbiguous(string name, string metadataName, TypeDefinition[] foundTypes)
+        {
+            var assemblyNames = foundTypes.Select(t => t.Module.Assembly.Name.Name);
+            var assemblyNameList = string.Join(", ", assemblyNames);
+
+            name = name == null
+                ? $"'{metadataName}'"
+                : $"'{name}' ('{metadataName}')";
+
+            Report(default, DiagnosticCode.RequiredTypeAmbiguous.GetDiagnostic(name, assemblyNameList));
+        }
+
+        internal void ReportRequiredMethodNotFound(string typeName, string methodName, Type[] parameterTypes)
+        {
+            var parameterTypeNameList = string.Join(", ", parameterTypes.Select(t => t.FullName));
+            Report(default, DiagnosticCode.RequiredMethodNotFound.GetDiagnostic(typeName, methodName, parameterTypeNameList));
+        }
+
 
         public void ReportNotAVariable(in TextLocation location, string name)
         {

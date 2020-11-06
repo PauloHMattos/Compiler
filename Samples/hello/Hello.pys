@@ -1,5 +1,5 @@
-function main()
-{
-    const name = getName()
-    print("Hello " + name)
-}
+print("What is your name?")
+var name = input();
+print("Hello, " + name)
+print(42)
+print(false)

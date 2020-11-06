@@ -141,7 +141,7 @@ namespace Compiler.CodeAnalysis.Binding
             {
                 var binder = new Binder(isScript, parentScope, function);
                 var body = binder.BindStatement(function.Declaration.Body);
-                var loweredBody = Lowerer.Lower(body);
+                var loweredBody = Lowerer.Lower(function, body);
 
                 if (function.Type != TypeSymbol.Void && !ControlFlowGraph.AllPathsReturn(loweredBody))
                 {
@@ -155,7 +155,7 @@ namespace Compiler.CodeAnalysis.Binding
 
             if (globalScope.MainFunction != null && globalScope.Statements.Any())
             {
-                var body = Lowerer.Lower(new BoundBlockStatement(globalScope.Statements));
+                var body = Lowerer.Lower(globalScope.MainFunction, new BoundBlockStatement(globalScope.Statements));
                 functionBodies.Add(globalScope.MainFunction, body);
             }
             else if (globalScope.ScriptFunction != null)
@@ -173,7 +173,7 @@ namespace Compiler.CodeAnalysis.Binding
                     statements = statements.Add(new BoundReturnStatement(nullValue));
                 }
 
-                var body = Lowerer.Lower(new BoundBlockStatement(statements));
+                var body = Lowerer.Lower(globalScope.MainFunction, new BoundBlockStatement(statements));
                 functionBodies.Add(globalScope.ScriptFunction, body);
             }
 
@@ -200,7 +200,7 @@ namespace Compiler.CodeAnalysis.Binding
                 }
                 else
                 {
-                    var parameter = new ParameterSymbol(parameterName, parameterType);
+                    var parameter = new ParameterSymbol(parameterName, parameterType, parameters.Count);
                     parameters.Add(parameter);
                 }
             }
