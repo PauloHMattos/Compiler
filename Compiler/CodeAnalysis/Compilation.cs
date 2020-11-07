@@ -60,12 +60,9 @@ namespace Compiler.CodeAnalysis
 
         public EvaluationResult Evaluate(Dictionary<VariableSymbol, object> variables)
         {
-            var parseDiagnostics = SyntaxTrees.SelectMany(st => st.Diagnostics);
-            var diagnostics = parseDiagnostics.Concat(GlobalScope.Diagnostics).ToImmutableArray();
-
-            if (diagnostics.Any())
+            if (GlobalScope.Diagnostics.Any())
             {
-                return new EvaluationResult(diagnostics, null);
+                return new EvaluationResult(GlobalScope.Diagnostics, null);
             }
 
             var program = GetProgram();
@@ -141,9 +138,13 @@ namespace Compiler.CodeAnalysis
                 submission = submission._previous;
             }
         }
-        
+
         public ImmutableArray<Diagnostic> Emit(string moduleName, IEnumerable<string> references, string outputPath)
         {
+            if (GlobalScope.Diagnostics.Any())
+            {
+                return GlobalScope.Diagnostics;
+            }
             var program = GetProgram();
             return Emitter.Emit(program, moduleName, references, outputPath);
         }
