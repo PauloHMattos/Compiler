@@ -13,8 +13,8 @@ namespace Compiler.Application
     {
         private static int Main(string[] args)
         {
-            var outputPath = (string) null;
-            var moduleName = (string) null;
+            var outputPath = (string)null;
+            var moduleName = (string)null;
             var referencePaths = new List<string>();
             var sourcePaths = new List<string>();
             var helpRequested = false;
@@ -44,11 +44,13 @@ namespace Compiler.Application
             }
 
             if (outputPath == null)
+            {
                 outputPath = Path.ChangeExtension(sourcePaths[0], ".exe");
-
+            }
             if (moduleName == null)
+            {
                 moduleName = Path.GetFileNameWithoutExtension(outputPath);
-
+            }
             var syntaxTrees = new List<SyntaxTree>();
             var hasErrors = false;
 
@@ -67,16 +69,18 @@ namespace Compiler.Application
 
             foreach (var path in referencePaths)
             {
-                if (!File.Exists(path))
+                if (File.Exists(path))
                 {
-                    Console.Error.WriteLine($"error: file '{path}' doesn't exist");
-                    hasErrors = true;
                     continue;
                 }
+                Console.Error.WriteLine($"error: file '{path}' doesn't exist");
+                hasErrors = true;
             }
 
             if (hasErrors)
+            {
                 return 1;
+            }
 
             var compilation = Compilation.Create(syntaxTrees.ToArray());
             var diagnostics = compilation.Emit(moduleName, referencePaths.ToArray(), outputPath);

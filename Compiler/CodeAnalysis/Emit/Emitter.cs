@@ -78,50 +78,50 @@ namespace Compiler.CodeAnalysis.Emit
                                        .SelectMany(m => m.Types)
                                        .Where(t => t.FullName == typeName)
                                        .ToArray();
-            if (foundTypes.Length == 1)
-            {
-                var foundType = foundTypes[0];
-                var methods = foundType.Methods.Where(m => m.Name == methodName);
 
-                foreach (var method in methods)
-                {
-                    if (method.Parameters.Count != parameterTypes.Length)
-                    {
-                        continue;
-                    }
-
-                    var allParametersMatch = true;
-
-                    for (var i = 0; i < parameterTypes.Length; i++)
-                    {
-                        var parameterTypeName = parameterTypes[i].FullName;
-                        if (method.Parameters[i].ParameterType.FullName != parameterTypeName)
-                        {
-                            allParametersMatch = false;
-                            break;
-                        }
-                    }
-
-                    if (!allParametersMatch)
-                    {
-                        continue;
-                    }
-
-                    return _assemblyDefinition.MainModule.ImportReference(method);
-                }
-
-                _diagnostics.ReportRequiredMethodNotFound(typeName, methodName, parameterTypes);
-                return null;
-            }
-            else if (foundTypes.Length == 0)
+            if (foundTypes.Length == 0)
             {
                 _diagnostics.ReportRequiredTypeNotFound(null, typeName);
+                return null;
             }
-            else
+            else if (foundTypes.Length > 1)
             {
                 _diagnostics.ReportRequiredTypeAmbiguous(null, typeName, foundTypes);
+                return null;
             }
 
+            var foundType = foundTypes[0];
+            var methods = foundType.Methods.Where(m => m.Name == methodName);
+
+            foreach (var method in methods)
+            {
+                if (method.Parameters.Count != parameterTypes.Length)
+                {
+                    continue;
+                }
+
+                var allParametersMatch = true;
+
+                for (var i = 0; i < parameterTypes.Length; i++)
+                {
+                    var parameterTypeName = parameterTypes[i].FullName;
+                    if (method.Parameters[i].ParameterType.FullName == parameterTypeName)
+                    {
+                        continue;
+                    }
+                    allParametersMatch = false;
+                    break;
+                }
+
+                if (!allParametersMatch)
+                {
+                    continue;
+                }
+
+                return _assemblyDefinition.MainModule.ImportReference(method);
+            }
+
+            _diagnostics.ReportRequiredMethodNotFound(typeName, methodName, parameterTypes);
             return null;
         }
         private void ReadAssemblies(IEnumerable<string> references)
@@ -282,7 +282,7 @@ namespace Compiler.CodeAnalysis.Emit
                     EmitExpressionStatement(ilProcessor, (BoundExpressionStatement)node);
                     break;
                 default:
-                    throw new Exception($"Unexpected node kind {node.Kind}");
+                    throw new InvalidOperationException($"Unexpected node kind {node.Kind}");
             }
         }
 
@@ -364,7 +364,7 @@ namespace Compiler.CodeAnalysis.Emit
                     EmitConversionExpression(ilProcessor, (BoundConversionExpression)node);
                     break;
                 default:
-                    throw new Exception($"Unexpected node kind {node.Kind}");
+                    throw new InvalidOperationException($"Unexpected node kind {node.Kind}");
             }
         }
 
@@ -388,7 +388,7 @@ namespace Compiler.CodeAnalysis.Emit
             }
             else
             {
-                throw new Exception($"Unexpected literal type: {node.Type}");
+                throw new InvalidOperationException($"Unexpected literal type: {node.Type}");
             }
         }
 
@@ -436,7 +436,7 @@ namespace Compiler.CodeAnalysis.Emit
             }
             else
             {
-                throw new Exception($"Unexpected unary operator {SyntaxFacts.GetText(node.Operator.SyntaxKind)}({node.Operand.Type})");
+                throw new InvalidOperationException($"Unexpected unary operator {SyntaxFacts.GetText(node.Operator.SyntaxKind)}({node.Operand.Type})");
             }
         }
 
@@ -447,41 +447,36 @@ namespace Compiler.CodeAnalysis.Emit
 
             // +(string, string)
 
-            if (node.Operator.Kind == BoundBinaryOperatorKind.Addition)
+            if (node.Operator.Kind == BoundBinaryOperatorKind.Addition
+                && node.Left.Type == TypeSymbol.String
+                && node.Right.Type == TypeSymbol.String)
             {
-                if (node.Left.Type == TypeSymbol.String && node.Right.Type == TypeSymbol.String)
-                {
-                    ilProcessor.Emit(OpCodes.Call, _stringConcatReference);
-                    return;
-                }
+                ilProcessor.Emit(OpCodes.Call, _stringConcatReference);
+                return;
             }
 
             // ==(any, any)
             // ==(string, string)
 
-            if (node.Operator.Kind == BoundBinaryOperatorKind.Equals)
+            if (node.Operator.Kind == BoundBinaryOperatorKind.Equals && 
+                (node.Left.Type == TypeSymbol.Any && node.Right.Type == TypeSymbol.Any ||
+                node.Left.Type == TypeSymbol.String && node.Right.Type == TypeSymbol.String))
             {
-                if (node.Left.Type == TypeSymbol.Any && node.Right.Type == TypeSymbol.Any ||
-                    node.Left.Type == TypeSymbol.String && node.Right.Type == TypeSymbol.String)
-                {
-                    ilProcessor.Emit(OpCodes.Call, _objectEqualsReference);
-                    return;
-                }
+                ilProcessor.Emit(OpCodes.Call, _objectEqualsReference);
+                return;
             }
 
             // !=(any, any)
             // !=(string, string)
 
-            if (node.Operator.Kind == BoundBinaryOperatorKind.NotEquals)
+            if (node.Operator.Kind == BoundBinaryOperatorKind.NotEquals && 
+                (node.Left.Type == TypeSymbol.Any && node.Right.Type == TypeSymbol.Any ||
+                node.Left.Type == TypeSymbol.String && node.Right.Type == TypeSymbol.String))
             {
-                if (node.Left.Type == TypeSymbol.Any && node.Right.Type == TypeSymbol.Any ||
-                    node.Left.Type == TypeSymbol.String && node.Right.Type == TypeSymbol.String)
-                {
-                    ilProcessor.Emit(OpCodes.Call, _objectEqualsReference);
-                    ilProcessor.Emit(OpCodes.Ldc_I4_0);
-                    ilProcessor.Emit(OpCodes.Ceq);
-                    return;
-                }
+                ilProcessor.Emit(OpCodes.Call, _objectEqualsReference);
+                ilProcessor.Emit(OpCodes.Ldc_I4_0);
+                ilProcessor.Emit(OpCodes.Ceq);
+                return;
             }
 
             switch (node.Operator.Kind)
@@ -536,7 +531,7 @@ namespace Compiler.CodeAnalysis.Emit
                     ilProcessor.Emit(OpCodes.Ceq);
                     break;
                 default:
-                    throw new Exception($"Unexpected binary operator {SyntaxFacts.GetText(node.Operator.SyntaxKind)}({node.Left.Type}, {node.Right.Type})");
+                    throw new InvalidOperationException($"Unexpected binary operator {SyntaxFacts.GetText(node.Operator.SyntaxKind)}({node.Left.Type}, {node.Right.Type})");
             }
         }
 

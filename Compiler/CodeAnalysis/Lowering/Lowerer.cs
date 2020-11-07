@@ -51,12 +51,10 @@ namespace Compiler.CodeAnalysis.Lowering
                 }
             }
 
-            if (function.Type == TypeSymbol.Void)
+            if (function.Type == TypeSymbol.Void && 
+                (builder.Count == 0 || CanFallThrough(builder.Last())))
             {
-                if (builder.Count == 0 || CanFallThrough(builder.Last()))
-                {
-                    builder.Add(new BoundReturnStatement(null));
-                }
+                builder.Add(new BoundReturnStatement(null));
             }
 
             return new BoundBlockStatement(builder.ToImmutable());
