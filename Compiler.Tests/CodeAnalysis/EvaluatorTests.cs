@@ -95,8 +95,6 @@ namespace Compiler.Tests.CodeAnalysis
         [InlineData("string(10)", "10")]
         [InlineData("string(true)", "True")]
         [InlineData("int(\"100\")", 100)]
-        [InlineData("random(0, 0)", 0)]
-        [InlineData("random(100, 100)", 100)]
         public void Evaluator_Compute_CorrectValues(string text, object expectedValue)
         {
             AssertValue(text, expectedValue);
@@ -513,14 +511,16 @@ namespace Compiler.Tests.CodeAnalysis
         public void Evaluator_CallExpression_WrongArgumentType()
         {
             var text = @"
-                {
-                    random([""42""], 0)
-                }
+                    function a(x : int)
+                    {
+
+                    }
+                    a([""42""])
             ";
 
             var diagnostics = new List<string>()
             {
-                DiagnosticCode.CannotConvertImplicitly.GetDiagnostic(TypeSymbol.String,TypeSymbol.Int),
+                DiagnosticCode.CannotConvertImplicitly.GetDiagnostic(TypeSymbol.String, TypeSymbol.Int),
             };
 
             AssertHasDiagnostics(text, diagnostics);
@@ -546,15 +546,13 @@ namespace Compiler.Tests.CodeAnalysis
         {
             var text = @"
                 {
-                    random(0[)]
-                    random(0, 100[, 100])
+                    print(0[, 100, 100])
                 }
             ";
 
             var diagnostics = new List<string>()
             {
-                DiagnosticCode.WrongArgumentCount.GetDiagnostic("random", 2, 1),
-                DiagnosticCode.WrongArgumentCount.GetDiagnostic("random", 2, 3),
+                DiagnosticCode.WrongArgumentCount.GetDiagnostic("print", 1, 3),
             };
 
             AssertHasDiagnostics(text, diagnostics);

@@ -8,6 +8,7 @@ using Compiler.CodeAnalysis.Binding;
 using Compiler.CodeAnalysis.Diagnostics;
 using Compiler.CodeAnalysis.Symbols;
 using Compiler.CodeAnalysis.Syntax;
+using Compiler.CodeAnalysis.Emit;
 
 namespace Compiler.CodeAnalysis
 {
@@ -139,6 +140,12 @@ namespace Compiler.CodeAnalysis
 
                 submission = submission._previous;
             }
+        }
+        
+        public ImmutableArray<Diagnostic> Emit(string moduleName, IEnumerable<string> references, string outputPath)
+        {
+            var program = GetProgram();
+            return Emitter.Emit(program, moduleName, references, outputPath);
         }
     }
 }

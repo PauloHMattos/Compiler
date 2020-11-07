@@ -31,7 +31,11 @@ namespace Compiler.CodeAnalysis.Diagnostics
         OnlyOneFileCanHaveGlobalStatements,
         MainMustHaveCorrectSignature,
         CannotMixMainAndGlobalStatements,
-        InvalidReturnWithValueInGlobalStatements
+        InvalidReturnWithValueInGlobalStatements,
+        InvalidReference,
+        RequiredTypeNotFound,
+        RequiredTypeAmbiguous,
+        RequiredMethodNotFound
     }
 
 
@@ -67,6 +71,10 @@ namespace Compiler.CodeAnalysis.Diagnostics
             {DiagnosticCode.MainMustHaveCorrectSignature, "main must not take arguments and not return anything."},
             {DiagnosticCode.CannotMixMainAndGlobalStatements, "Cannot declare main function when global statements are used."},
             {DiagnosticCode.InvalidReturnWithValueInGlobalStatements, "The 'return' keyword cannot be followed by an expression in global statements."},
+            {DiagnosticCode.InvalidReference, "The reference is not a valid .NET assembly {0}"},
+            {DiagnosticCode.RequiredTypeNotFound, "The required type {0} cannot be resolved among the given references."},
+            {DiagnosticCode.RequiredTypeAmbiguous, "The required type {0} was found in multiple references: {1}"},
+            {DiagnosticCode.RequiredMethodNotFound, "The required method '{0}.{1}({2})' cannot be resolved among the given references."},
         };
 
         public static string GetDiagnostic(this DiagnosticCode code, params object[] arguments)

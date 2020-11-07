@@ -17,7 +17,7 @@ namespace Compiler.CodeAnalysis.Binding
         private BoundScope _scope;
         private readonly bool _isScript;
         private readonly FunctionSymbol _function;
-        private readonly Stack<(BoundLabel BreakLabel, BoundLabel ContinueLabel)> _loopStack = new Stack<(BoundLabel BreakLabel, BoundLabel ContinueLabel)>();
+        private readonly Stack<(BoundLabel BreakLabel, BoundLabel ContinueLabel)> _loopStack;
 
         public DiagnosticBag Diagnostics { get; }
 
@@ -27,12 +27,13 @@ namespace Compiler.CodeAnalysis.Binding
             Diagnostics = new DiagnosticBag();
             _isScript = isScript;
             _function = function;
+            _loopStack = new Stack<(BoundLabel BreakLabel, BoundLabel ContinueLabel)>();
 
             if (function != null)
             {
                 foreach (var p in function.Parameters)
                 {
-                    _scope.TryDeclareVariable(p);
+                    _ = _scope.TryDeclareVariable(p);
                 }
             }
         }
@@ -43,7 +44,7 @@ namespace Compiler.CodeAnalysis.Binding
             var binder = new Binder(isScript, parentScope, null);
 
             var functionDeclarations = syntaxTrees.SelectMany(st => st.Root.Members)
-                .OfType<FunctionDeclarationSyntax>();
+                                                  .OfType<FunctionDeclarationSyntax>();
 
             foreach (var function in functionDeclarations)
             {
@@ -141,7 +142,7 @@ namespace Compiler.CodeAnalysis.Binding
             {
                 var binder = new Binder(isScript, parentScope, function);
                 var body = binder.BindStatement(function.Declaration.Body);
-                var loweredBody = Lowerer.Lower(body);
+                var loweredBody = Lowerer.Lower(function, body);
 
                 if (function.Type != TypeSymbol.Void && !ControlFlowGraph.AllPathsReturn(loweredBody))
                 {
@@ -155,7 +156,7 @@ namespace Compiler.CodeAnalysis.Binding
 
             if (globalScope.MainFunction != null && globalScope.Statements.Any())
             {
-                var body = Lowerer.Lower(new BoundBlockStatement(globalScope.Statements));
+                var body = Lowerer.Lower(globalScope.MainFunction, new BoundBlockStatement(globalScope.Statements));
                 functionBodies.Add(globalScope.MainFunction, body);
             }
             else if (globalScope.ScriptFunction != null)
@@ -173,7 +174,7 @@ namespace Compiler.CodeAnalysis.Binding
                     statements = statements.Add(new BoundReturnStatement(nullValue));
                 }
 
-                var body = Lowerer.Lower(new BoundBlockStatement(statements));
+                var body = Lowerer.Lower(globalScope.ScriptFunction, new BoundBlockStatement(statements));
                 functionBodies.Add(globalScope.ScriptFunction, body);
             }
 
@@ -200,7 +201,7 @@ namespace Compiler.CodeAnalysis.Binding
                 }
                 else
                 {
-                    var parameter = new ParameterSymbol(parameterName, parameterType);
+                    var parameter = new ParameterSymbol(parameterName, parameterType, parameters.Count);
                     parameters.Add(parameter);
                 }
             }

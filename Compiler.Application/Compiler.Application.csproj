@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="mono.options" Version="6.6.0.161" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Compiler\Compiler.csproj" />
   </ItemGroup>
 

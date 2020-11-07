@@ -1,6 +1,6 @@
-function getName() : string
+function GetName(question : string) : string
 {
-    print("What's your name?")
-    const name = input()
+    print(question)
+    var name = input()
     return name
 }

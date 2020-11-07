@@ -12,7 +12,6 @@ namespace Compiler.CodeAnalysis
         private readonly Stack<Dictionary<VariableSymbol, object>> _locals;
         private readonly Dictionary<FunctionSymbol, BoundBlockStatement> _functions;
 
-        private Random _random;
         private object _lastValue;
 
         public Evaluator(BoundProgram program, Dictionary<VariableSymbol, object> variables)
@@ -282,14 +281,6 @@ namespace Compiler.CodeAnalysis
                 var value = EvaluateExpression(callExpression.Arguments[0]);
                 Console.WriteLine(value);
                 return null;
-            }
-
-            if (callExpression.Function == BuiltinFunctions.Random)
-            {
-                var min = (int)EvaluateExpression(callExpression.Arguments[0]);
-                var max = (int)EvaluateExpression(callExpression.Arguments[1]);
-                _random ??= new Random();
-                return _random.Next(min, max);
             }
 
             var locals = new Dictionary<VariableSymbol, object>();
