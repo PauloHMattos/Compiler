@@ -1,0 +1,6 @@
+function GetName(question : string) : string
+{
+    print(question)
+    var name = input()
+    return name
+}

@@ -17,7 +17,7 @@ namespace Compiler.CodeAnalysis.Binding
         private BoundScope _scope;
         private readonly bool _isScript;
         private readonly FunctionSymbol _function;
-        private readonly Stack<(BoundLabel BreakLabel, BoundLabel ContinueLabel)> _loopStack = new Stack<(BoundLabel BreakLabel, BoundLabel ContinueLabel)>();
+        private readonly Stack<(BoundLabel BreakLabel, BoundLabel ContinueLabel)> _loopStack;
 
         public DiagnosticBag Diagnostics { get; }
 
@@ -27,12 +27,13 @@ namespace Compiler.CodeAnalysis.Binding
             Diagnostics = new DiagnosticBag();
             _isScript = isScript;
             _function = function;
+            _loopStack = new Stack<(BoundLabel BreakLabel, BoundLabel ContinueLabel)>();
 
             if (function != null)
             {
                 foreach (var p in function.Parameters)
                 {
-                    _scope.TryDeclareVariable(p);
+                    _ = _scope.TryDeclareVariable(p);
                 }
             }
         }
@@ -43,7 +44,7 @@ namespace Compiler.CodeAnalysis.Binding
             var binder = new Binder(isScript, parentScope, null);
 
             var functionDeclarations = syntaxTrees.SelectMany(st => st.Root.Members)
-                .OfType<FunctionDeclarationSyntax>();
+                                                  .OfType<FunctionDeclarationSyntax>();
 
             foreach (var function in functionDeclarations)
             {

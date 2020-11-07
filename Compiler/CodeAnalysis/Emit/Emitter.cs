@@ -128,6 +128,7 @@ namespace Compiler.CodeAnalysis.Emit
         {
             foreach (var reference in references)
             {
+                Console.WriteLine(reference);
                 try
                 {
                     var assembly = AssemblyDefinition.ReadAssembly(reference);
