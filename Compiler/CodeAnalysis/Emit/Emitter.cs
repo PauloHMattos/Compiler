@@ -493,6 +493,9 @@ namespace Compiler.CodeAnalysis.Emit
                 case BoundBinaryOperatorKind.Division:
                     ilProcessor.Emit(OpCodes.Div);
                     break;
+                case BoundBinaryOperatorKind.Modulus:
+                    ilProcessor.Emit(OpCodes.Rem);
+                    break;
                 // TODO: Implement short-circuit evaluation
                 case BoundBinaryOperatorKind.LogicalAnd:
                 case BoundBinaryOperatorKind.BitwiseAnd:

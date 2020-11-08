@@ -1,24 +1,21 @@
 function IsEven(n : int) : bool
 {
-    var mod = n
-    while (mod > 0)
-    {
-        mod = mod - 2
-    }
-    return mod == 0
+    return n % 2 == 0
 }
 
 function main()
 {
-    print("Digite um numero: ")
-    var n = int(input())
-    if IsEven(n)
+    while(true)
     {
-        print("É par")
+        print("Digite um numero: ")
+        var n = int(input())
+        if IsEven(n)
+        {
+            print("É par")
+        }
+        else
+        {
+            print("Não é par")
+        }
     }
-    else
-    {
-        print("Não é par")
-    }
-    input()
 }

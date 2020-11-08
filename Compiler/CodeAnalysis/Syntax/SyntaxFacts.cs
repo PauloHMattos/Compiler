@@ -26,6 +26,7 @@ namespace Compiler.CodeAnalysis.Syntax
             {
                 case SyntaxKind.StarToken:
                 case SyntaxKind.SlashToken:
+                case SyntaxKind.PercentToken:
                     return 5;
 
                 case SyntaxKind.PlusToken:
@@ -148,6 +149,8 @@ namespace Compiler.CodeAnalysis.Syntax
                     return "*";
                 case SyntaxKind.SlashToken: 
                     return "/";
+                case SyntaxKind.PercentToken: 
+                    return "%";
                 case SyntaxKind.TildeToken:
                     return "~";
                 case SyntaxKind.HatToken:

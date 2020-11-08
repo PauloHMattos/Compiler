@@ -40,6 +40,7 @@
         MinusToken,
         StarToken,
         SlashToken,
+        PercentToken,
         BangToken,
         TildeToken,
         HatToken,

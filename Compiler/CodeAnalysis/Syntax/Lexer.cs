@@ -74,6 +74,10 @@ namespace Compiler.CodeAnalysis.Syntax
                     _position++;
                     _kind = SyntaxKind.SlashToken;
                     break;
+                case '%':
+                    _position++;
+                    _kind = SyntaxKind.PercentToken;
+                    break;
                 case '(':
                     _position++;
                     _kind = SyntaxKind.OpenParenthesisToken;
