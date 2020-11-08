@@ -18,10 +18,10 @@ namespace Compiler.CodeAnalysis.Syntax
         {
             Diagnostics = new DiagnosticBag();
             var lexer = new Lexer(syntaxTree);
-            
+
             SyntaxToken token;
             var tokens = new List<SyntaxToken>();
-            
+
             do
             {
                 token = lexer.Lex();
@@ -192,7 +192,7 @@ namespace Compiler.CodeAnalysis.Syntax
         private StatementSyntax ParseVariableDeclarationStatement()
         {
             var expectedToken = Current.Kind == SyntaxKind.VarKeyword ?
-                                            SyntaxKind.VarKeyword : 
+                                            SyntaxKind.VarKeyword :
                                             SyntaxKind.ConstKeyword;
             var keyword = MatchToken(expectedToken);
             var identifier = MatchToken(SyntaxKind.IdentifierToken);
@@ -343,13 +343,23 @@ namespace Compiler.CodeAnalysis.Syntax
 
         private ExpressionSyntax ParseAssignmentExpression()
         {
-            if (Current.Kind == SyntaxKind.IdentifierToken &&
-                Peek(1).Kind == SyntaxKind.EqualsToken)
+            if (Current.Kind == SyntaxKind.IdentifierToken)
             {
-                var identifierToken = NextToken();
-                var operatorToken = NextToken();
-                var expression = ParseAssignmentExpression();
-                return new AssignmentExpressionSyntax(_syntaxTree, identifierToken, operatorToken, expression);
+                switch (Peek(1).Kind)
+                {
+                    case SyntaxKind.PlusEqualsToken:
+                    case SyntaxKind.MinusEqualsToken:
+                    case SyntaxKind.StarEqualsToken:
+                    case SyntaxKind.SlashEqualsToken:
+                    case SyntaxKind.AmpersandEqualsToken:
+                    case SyntaxKind.PipeEqualsToken:
+                    case SyntaxKind.HatEqualsToken:
+                    case SyntaxKind.EqualsToken:
+                        var identifierToken = NextToken();
+                        var operatorToken = NextToken();
+                        var right = ParseAssignmentExpression();
+                        return new AssignmentExpressionSyntax(_syntaxTree, identifierToken, operatorToken, right);
+                }
 
             }
             return ParseBinaryExpression();
@@ -431,8 +441,8 @@ namespace Compiler.CodeAnalysis.Syntax
         private ExpressionSyntax ParseBooleanLiteral()
         {
             var isTrue = Current.Kind == SyntaxKind.TrueKeyword;
-            var keywordToken = isTrue ? 
-                                        MatchToken(SyntaxKind.TrueKeyword) : 
+            var keywordToken = isTrue ?
+                                        MatchToken(SyntaxKind.TrueKeyword) :
                                         MatchToken(SyntaxKind.FalseKeyword);
             return new LiteralExpressionSyntax(_syntaxTree, keywordToken, isTrue);
         }
@@ -459,7 +469,7 @@ namespace Compiler.CodeAnalysis.Syntax
             var nodesAndSeparators = ImmutableArray.CreateBuilder<SyntaxNode>();
 
             var parseNextParameter = true;
-            while (parseNextParameter && 
+            while (parseNextParameter &&
                    Current.Kind != SyntaxKind.CloseParenthesisToken &&
                    Current.Kind != SyntaxKind.EndOfFileToken)
             {

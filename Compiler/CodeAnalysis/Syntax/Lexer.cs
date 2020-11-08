@@ -60,19 +60,51 @@ namespace Compiler.CodeAnalysis.Syntax
                     break;
                 case '+':
                     _position++;
-                    _kind = SyntaxKind.PlusToken;
+                    if (Current == '=')
+                    {
+                        _position++;
+                        _kind = SyntaxKind.PlusEqualsToken;
+                    }
+                    else
+                    {
+                        _kind = SyntaxKind.PlusToken;
+                    }
                     break;
                 case '-':
                     _position++;
-                    _kind = SyntaxKind.MinusToken;
+                    if (Current == '=')
+                    {
+                        _position++;
+                        _kind = SyntaxKind.MinusEqualsToken;
+                    }
+                    else
+                    {
+                        _kind = SyntaxKind.MinusToken;
+                    }
                     break;
                 case '*':
                     _position++;
-                    _kind = SyntaxKind.StarToken;
+                    if (Current == '=')
+                    {
+                        _position++;
+                        _kind = SyntaxKind.StarEqualsToken;
+                    }
+                    else
+                    {
+                        _kind = SyntaxKind.StarToken;
+                    }
                     break;
                 case '/':
                     _position++;
-                    _kind = SyntaxKind.SlashToken;
+                    if (Current == '=')
+                    {
+                        _position++;
+                        _kind = SyntaxKind.SlashEqualsToken;
+                    }
+                    else
+                    {
+                        _kind = SyntaxKind.SlashToken;
+                    }
                     break;
                 case '%':
                     _position++;
@@ -100,7 +132,15 @@ namespace Compiler.CodeAnalysis.Syntax
                     break;
                 case '^':
                     _position++;
-                    _kind = SyntaxKind.HatToken;
+                    if (Current == '=')
+                    {
+                        _position++;
+                        _kind = SyntaxKind.HatEqualsToken;
+                    }
+                    else
+                    {
+                        _kind = SyntaxKind.HatToken;
+                    }
                     break;
                 case '!':
                     _position++;
@@ -121,6 +161,11 @@ namespace Compiler.CodeAnalysis.Syntax
                         _position++;
                         _kind = SyntaxKind.AmpersandAmpersandToken;
                     }
+                    else if (Current == '=')
+                    {
+                        _position++;
+                        _kind = SyntaxKind.AmpersandEqualsToken;
+                    }
                     else
                     {
                         _kind = SyntaxKind.AmpersandToken;
@@ -132,6 +177,11 @@ namespace Compiler.CodeAnalysis.Syntax
                     {
                         _position++;
                         _kind = SyntaxKind.PipePipeToken;
+                    }
+                    else if (Current == '=')
+                    {
+                        _position++;
+                        _kind = SyntaxKind.PipeEqualsToken;
                     }
                     else
                     {

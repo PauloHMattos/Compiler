@@ -56,6 +56,29 @@ namespace Compiler.CodeAnalysis.Syntax
             }
         }
 
+        public static SyntaxKind GetBinaryOperatorOfAssignmentOperator(this SyntaxKind kind)
+        {
+            switch(kind)
+            {
+                case SyntaxKind.PlusEqualsToken:
+                    return SyntaxKind.PlusToken;
+                case SyntaxKind.MinusEqualsToken:
+                    return SyntaxKind.MinusToken;
+                case SyntaxKind.StarEqualsToken:
+                    return SyntaxKind.StarToken;
+                case SyntaxKind.SlashEqualsToken:
+                    return SyntaxKind.SlashToken;
+                case SyntaxKind.AmpersandEqualsToken:
+                    return SyntaxKind.AmpersandToken;
+                case SyntaxKind.PipeEqualsToken:
+                    return SyntaxKind.PipeToken;
+                case SyntaxKind.HatEqualsToken:
+                    return SyntaxKind.HatToken;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(kind), $"Unexpected syntax: '{kind}'");
+            }
+        }
+
         public static SyntaxKind GetKeywordKind(string text)
         {
             switch (text)
@@ -143,26 +166,40 @@ namespace Compiler.CodeAnalysis.Syntax
                     return "return";
                 case SyntaxKind.PlusToken: 
                     return "+";
+                case SyntaxKind.PlusEqualsToken: 
+                    return "+=";
                 case SyntaxKind.MinusToken: 
                     return "-";
+                case SyntaxKind.MinusEqualsToken: 
+                    return "-=";
                 case SyntaxKind.StarToken: 
                     return "*";
+                case SyntaxKind.StarEqualsToken: 
+                    return "*=";
                 case SyntaxKind.SlashToken: 
                     return "/";
+                case SyntaxKind.SlashEqualsToken: 
+                    return "/=";
                 case SyntaxKind.PercentToken: 
                     return "%";
                 case SyntaxKind.TildeToken:
                     return "~";
                 case SyntaxKind.HatToken:
                     return "^";
+                case SyntaxKind.HatEqualsToken:
+                    return "^=";
                 case SyntaxKind.BangToken: 
                     return "!";
                 case SyntaxKind.AmpersandToken:
                     return "&";
+                case SyntaxKind.AmpersandEqualsToken:
+                    return "&=";
                 case SyntaxKind.AmpersandAmpersandToken:
                     return "&&";
                 case SyntaxKind.PipeToken:
                     return "|";
+                case SyntaxKind.PipeEqualsToken:
+                    return "|=";
                 case SyntaxKind.PipePipeToken:
                     return "||";
                 case SyntaxKind.EqualsToken: 

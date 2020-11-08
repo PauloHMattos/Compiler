@@ -3,18 +3,18 @@
     public sealed class AssignmentExpressionSyntax : ExpressionSyntax
     {
         public SyntaxToken IdentifierToken { get; }
-        public SyntaxToken EqualsToken { get; }
+        public SyntaxToken AssignmentToken { get; }
         public ExpressionSyntax Expression { get; }
         public override SyntaxKind Kind => SyntaxKind.AssignmentExpression;
 
         public AssignmentExpressionSyntax(SyntaxTree syntaxTree, 
             SyntaxToken identifierToken, 
-            SyntaxToken equalsToken, 
+            SyntaxToken assignmentToken, 
             ExpressionSyntax expression)
             : base(syntaxTree)
         {
             IdentifierToken = identifierToken;
-            EqualsToken = equalsToken;
+            AssignmentToken = assignmentToken;
             Expression = expression;
         }
     }

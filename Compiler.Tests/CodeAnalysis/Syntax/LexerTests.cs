@@ -233,6 +233,61 @@ namespace Compiler.Tests.CodeAnalysis.Syntax
             if (kind1 == SyntaxKind.StringToken && kind2 == SyntaxKind.StringToken)
                 return true;
 
+            
+            if (kind1 == SyntaxKind.PlusToken && kind2 == SyntaxKind.EqualsToken)
+                return true;
+
+            if (kind1 == SyntaxKind.PlusToken && kind2 == SyntaxKind.EqualsEqualsToken)
+                return true;
+
+            if (kind1 == SyntaxKind.MinusToken && kind2 == SyntaxKind.EqualsToken)
+                return true;
+
+            if (kind1 == SyntaxKind.MinusToken && kind2 == SyntaxKind.EqualsEqualsToken)
+                return true;
+
+            if (kind1 == SyntaxKind.StarToken && kind2 == SyntaxKind.EqualsToken)
+                return true;
+
+            if (kind1 == SyntaxKind.StarToken && kind2 == SyntaxKind.EqualsEqualsToken)
+                return true;
+
+            if (kind1 == SyntaxKind.SlashToken && kind2 == SyntaxKind.EqualsToken)
+                return true;
+
+            if (kind1 == SyntaxKind.SlashToken && kind2 == SyntaxKind.EqualsEqualsToken)
+                return true;
+
+            if (kind1 == SyntaxKind.AmpersandToken && kind2 == SyntaxKind.EqualsToken)
+                return true;
+
+            if (kind1 == SyntaxKind.AmpersandToken && kind2 == SyntaxKind.EqualsEqualsToken)
+                return true;
+
+            if (kind1 == SyntaxKind.AmpersandToken && kind2 == SyntaxKind.AmpersandEqualsToken)
+                return true;
+
+            if (kind1 == SyntaxKind.PipeToken && kind2 == SyntaxKind.EqualsToken)
+                return true;
+
+            if (kind1 == SyntaxKind.PipeToken && kind2 == SyntaxKind.EqualsEqualsToken)
+                return true;
+
+            if (kind1 == SyntaxKind.PipeToken && kind2 == SyntaxKind.PipeEqualsToken)
+                return true;
+
+            if (kind1 == SyntaxKind.HatToken && kind2 == SyntaxKind.EqualsToken)
+                return true;
+
+            if (kind1 == SyntaxKind.HatToken && kind2 == SyntaxKind.EqualsEqualsToken)
+                return true;
+
+            if (kind1 == SyntaxKind.SlashToken && kind2 == SyntaxKind.SlashEqualsToken)
+                return true;
+
+            if (kind1 == SyntaxKind.SlashToken && kind2 == SyntaxKind.StarEqualsToken)
+                return true;
+
             return false;
         }
 

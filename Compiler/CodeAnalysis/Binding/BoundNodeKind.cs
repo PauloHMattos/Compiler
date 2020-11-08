@@ -22,6 +22,7 @@
         BinaryExpression,
         VariableExpression,
         AssignmentExpression,
+        CompoundAssignmentExpression,
         CallExpression,
         ConversionExpression
     }

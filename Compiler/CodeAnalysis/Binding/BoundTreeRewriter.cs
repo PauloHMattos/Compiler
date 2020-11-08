@@ -173,6 +173,8 @@ namespace Compiler.CodeAnalysis.Binding
                     return RewriteVariableExpression((BoundVariableExpression)expression);
                 case BoundNodeKind.AssignmentExpression:
                     return RewriteAssignmentExpression((BoundAssignmentExpression)expression);
+                case BoundNodeKind.CompoundAssignmentExpression:
+                    return RewriteCompoundAssignmentExpression((BoundCompoundAssignmentExpression)expression);
                 case BoundNodeKind.UnaryExpression:
                     return RewriteUnaryExpression((BoundUnaryExpression)expression);
                 case BoundNodeKind.BinaryExpression:
@@ -209,6 +211,15 @@ namespace Compiler.CodeAnalysis.Binding
                 return node;
             }
             return new BoundAssignmentExpression(node.Variable, expression);
+        }
+
+        private BoundExpression RewriteCompoundAssignmentExpression(BoundCompoundAssignmentExpression node)
+        {
+            var boundVariableExpression = new BoundVariableExpression(node.Variable);
+            var boundBinaryExpression = new BoundBinaryExpression(boundVariableExpression, node.Operator, node.Expression);
+            var boundAssignmentExpression = new BoundAssignmentExpression(node.Variable, boundBinaryExpression);
+
+            return RewriteAssignmentExpression(boundAssignmentExpression);
         }
 
         protected virtual BoundExpression RewriteUnaryExpression(BoundUnaryExpression node)

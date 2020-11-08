@@ -250,7 +250,8 @@ namespace Compiler.CodeAnalysis.Binding
                 {
                     var isAllowedExpression = es.Expression.Kind == BoundNodeKind.ErrorExpression ||
                                               es.Expression.Kind == BoundNodeKind.AssignmentExpression ||
-                                              es.Expression.Kind == BoundNodeKind.CallExpression;
+                                              es.Expression.Kind == BoundNodeKind.CallExpression ||
+                                              es.Expression.Kind == BoundNodeKind.CompoundAssignmentExpression;
                     if (!isAllowedExpression)
                     {
                         Diagnostics.ReportInvalidExpressionStatement(syntax.Location);
@@ -758,11 +759,27 @@ namespace Compiler.CodeAnalysis.Binding
 
             if (variable.IsReadOnly)
             {
-                Diagnostics.ReportCannotReassigned(syntax.EqualsToken.Location, name);
+                Diagnostics.ReportCannotReassigned(syntax.AssignmentToken.Location, name);
             }
+            
+            if (syntax.AssignmentToken.Kind != SyntaxKind.EqualsToken)
+            {
+                var equivalentOperatorTokenKind = SyntaxFacts.GetBinaryOperatorOfAssignmentOperator(syntax.AssignmentToken.Kind);
+                var boundOperator = BoundBinaryOperator.Bind(equivalentOperatorTokenKind, variable.Type, boundExpression.Type);
 
-            var convertedExpression = BindConversion(syntax.Expression.Location, boundExpression, variable.Type, false);
-            return new BoundAssignmentExpression(variable, convertedExpression);
+                if (boundOperator == null)
+                {
+                    Diagnostics.ReportUndefinedBinaryOperator(syntax.AssignmentToken.Location, syntax.AssignmentToken.Text, variable.Type, boundExpression.Type);
+                    return new BoundErrorExpression();
+                }
+                var convertedExpression = BindConversion(syntax.Expression.Location, boundExpression, variable.Type, false);
+                return new BoundCompoundAssignmentExpression(variable, boundOperator, convertedExpression);
+            }
+            else
+            {
+                var convertedExpression = BindConversion(syntax.Expression.Location, boundExpression, variable.Type, false);
+                return new BoundAssignmentExpression(variable, convertedExpression);
+            }
         }
     }
 }

@@ -37,16 +37,23 @@
 
         // Operators
         PlusToken,
+        PlusEqualsToken,
         MinusToken,
+        MinusEqualsToken,
         StarToken,
+        StarEqualsToken,
         SlashToken,
+        SlashEqualsToken,
         PercentToken,
         BangToken,
         TildeToken,
         HatToken,
+        HatEqualsToken,
         AmpersandToken,
+        AmpersandEqualsToken,
         AmpersandAmpersandToken,
         PipeToken,
+        PipeEqualsToken,
         PipePipeToken,
         EqualsToken,
         BangEqualsToken,
@@ -84,6 +91,7 @@
         ParenthesizedExpression,
         UnaryExpression,
         AssignmentExpression,
+        CompoundAssignmentExpression,
         CallExpression,
     }
 }

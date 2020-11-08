@@ -81,6 +81,19 @@ namespace Compiler.Tests.CodeAnalysis
         [InlineData("{ var a : any = 0 var b : any = \"b\" return a != b }", true)]
         [InlineData("{ var a : any = 0 var b : any = 0 return a == b }", true)]
         [InlineData("{ var a : any = 0 var b : any = 0 return a != b }", false)]
+        [InlineData("{ var a = 1 a += (2 + 3) return a }", 6)]
+        [InlineData("{ var a = 1 a -= (2 + 3) return a }", -4)]
+        [InlineData("{ var a = 1 a *= (2 + 3) return a }", 5)]
+        [InlineData("{ var a = 1 a /= (2 + 3) return a }", 0)]
+        [InlineData("{ var a = true a &= (false) return a }", false)]
+        [InlineData("{ var a = true a |= (false) return a }", true)]
+        [InlineData("{ var a = true a ^= (true) return a }", false)]
+        [InlineData("{ var a = 1 a |= 0 return a }", 1)]
+        [InlineData("{ var a = 1 a &= 3 return a }", 1)]
+        [InlineData("{ var a = 1 a &= 0 return a }", 0)]
+        [InlineData("{ var a = 1 a ^= 0 return a }", 1)]
+        [InlineData("{ var a = 1 var b = 2 var c = 3 a += b += c return a }", 6)]
+        [InlineData("{ var a = 1 var b = 2 var c = 3 a += b += c return b }", 5)]
         [InlineData("{ var a = 0 return (a = 20) * a }", 400)]
         [InlineData("{ var a = 0 if a == 0 a = 10 return a }", 10)]
         [InlineData("{ var a = 5 if a == 0 a = 10 return a }", 5)]
@@ -234,7 +247,6 @@ namespace Compiler.Tests.CodeAnalysis
             AssertHasDiagnostics(text, diagnostics);
         }
 
-
         [Fact]
         public void Evaluator_AssignmentExpression_Reports_Undefined()
         {
@@ -346,6 +358,49 @@ namespace Compiler.Tests.CodeAnalysis
             };
             AssertHasDiagnostics(text, diagnostics);
         }
+
+        [Fact]
+        public void Evaluator_CompoundExpression_Reports_Undefined()
+        {
+            var text = @"var x = 10
+                         x [+=] false";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.UndefinedBinaryOperator.GetDiagnostic("+=", TypeSymbol.Int, TypeSymbol.Bool)
+            };
+            AssertHasDiagnostics(text, diagnostics);
+        }
+        
+        [Fact]
+        public void Evaluator_CompoundExpression_Assignemnt_NonDefinedVariable_Reports_Undefined()
+        {
+            var text = @"[x] += 10";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.UndefinedVariable.GetDiagnostic("x")
+            };
+            AssertHasDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_CompoundDeclarationExpression_Reports_CannotAssign()
+        {
+            var text = @"
+                {
+                    const x = 10
+                    x [+=] 1
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.VariableCannotReassigned.GetDiagnostic("x")
+            };
+            AssertHasDiagnostics(text, diagnostics);
+        }
+
 
         [Fact]
         public void Evaluator_VariableDeclaration_Reports_Redeclaration()
