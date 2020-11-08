@@ -60,6 +60,11 @@ namespace Compiler.CodeAnalysis.Binding
             return new BoundBlockStatement(builder.ToImmutable());
         }
 
+        protected virtual BoundStatement RewriteNopStatement(BoundNopStatement node)
+        {
+            return node;
+        }
+
         protected virtual BoundStatement RewriteExpressionStatement(BoundExpressionStatement node)
         {
             var expression = RewriteExpression(node.Expression);

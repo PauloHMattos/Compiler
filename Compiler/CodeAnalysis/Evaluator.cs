@@ -66,6 +66,10 @@ namespace Compiler.CodeAnalysis
                 var statement = body.Statements[index];
                 switch (statement.Kind)
                 {
+                    case BoundNodeKind.NopStatement:
+                        index++;
+                        break;
+
                     case BoundNodeKind.ExpressionStatement:
                         EvaluateExpressionStatement((BoundExpressionStatement)statement);
                         index++;
@@ -130,12 +134,13 @@ namespace Compiler.CodeAnalysis
 
         private object EvaluateExpression(BoundExpression expression)
         {
+            if (expression.ConstantValue != null)
+            {
+                return EvaluateConstantExpression(expression);
+            }
+
             switch (expression.Kind)
             {
-                case BoundNodeKind.LiteralExpression:
-                    var boundLiteralExpression = (BoundLiteralExpression)expression;
-                    return boundLiteralExpression.Value;
-
                 case BoundNodeKind.VariableExpression:
                     return EvaluateVariableExpression((BoundVariableExpression)expression);
 
@@ -160,6 +165,11 @@ namespace Compiler.CodeAnalysis
                 default:
                     throw new InvalidOperationException($"Unexpected expression {expression.Kind}");
             }
+        }
+            
+        private static object EvaluateConstantExpression(BoundExpression n)
+        {
+            return n.ConstantValue.Value;
         }
 
         private object EvaluateVariableExpression(BoundVariableExpression expression)

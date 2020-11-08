@@ -9,12 +9,14 @@ namespace Compiler.CodeAnalysis.Binding
         public BoundExpression Right { get; }
         public override BoundNodeKind Kind => BoundNodeKind.BinaryExpression;
         public override TypeSymbol Type => Operator.ResultType;
+        public override BoundConstant ConstantValue { get; }
 
         public BoundBinaryExpression(BoundExpression left, BoundBinaryOperator op, BoundExpression right)
         {
             Left = left;
             Operator = op;
             Right = right;
+            ConstantValue = ConstantFolding.Fold(left, op, right);
         }
     }
 }

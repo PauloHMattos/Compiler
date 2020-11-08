@@ -28,6 +28,9 @@ namespace Compiler.CodeAnalysis.Binding
                 case BoundNodeKind.BlockStatement:
                     WriteBlockStatement((BoundBlockStatement)node, writer);
                     break;
+                case BoundNodeKind.NopStatement:
+                    WriteNopStatement((BoundNopStatement)node, writer);
+                    break;
                 case BoundNodeKind.VariableDeclarationStatement:
                     WriteVariableDeclarationStatement((BoundVariableDeclarationStatement)node, writer);
                     break;
@@ -85,6 +88,12 @@ namespace Compiler.CodeAnalysis.Binding
                 default:
                     throw new InvalidOperationException($"Unexpected node {node.Kind}");
             }
+        }
+
+        private static void WriteNopStatement(BoundNopStatement node, IndentedTextWriter writer)
+        {
+            writer.WriteKeyword("nop");
+            writer.WriteLine();
         }
 
         private static void WriteNestedStatement(this IndentedTextWriter writer, BoundStatement node)

@@ -8,11 +8,13 @@ namespace Compiler.CodeAnalysis.Binding
         public BoundUnaryOperator Operator { get; }
         public override BoundNodeKind Kind => BoundNodeKind.UnaryExpression;
         public override TypeSymbol Type => Operator.ResultType;
+        public override BoundConstant ConstantValue { get; }
 
         public BoundUnaryExpression(BoundExpression operand, BoundUnaryOperator op)
         {
             Operand = operand;
             Operator = op;
+            ConstantValue = ConstantFolding.Fold(op, operand);
         }
     }
 }

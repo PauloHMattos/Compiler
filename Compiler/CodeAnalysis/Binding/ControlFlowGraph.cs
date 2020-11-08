@@ -115,6 +115,7 @@ namespace Compiler.CodeAnalysis.Binding
                             _statements.Add(statement);
                             StartBlock();
                             break;
+                        case BoundNodeKind.NopStatement:
                         case BoundNodeKind.VariableDeclarationStatement:
                         case BoundNodeKind.ExpressionStatement:
                             _statements.Add(statement);
@@ -214,6 +215,7 @@ namespace Compiler.CodeAnalysis.Binding
                             case BoundNodeKind.ReturnStatement:
                                 Connect(current, _end);
                                 break;
+                            case BoundNodeKind.NopStatement:
                             case BoundNodeKind.VariableDeclarationStatement:
                             case BoundNodeKind.LabelStatement:
                             case BoundNodeKind.ExpressionStatement:
