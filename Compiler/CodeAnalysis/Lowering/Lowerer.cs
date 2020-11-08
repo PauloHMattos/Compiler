@@ -4,6 +4,7 @@ using System.Linq;
 using Compiler.CodeAnalysis.Binding;
 using Compiler.CodeAnalysis.Symbols;
 using Compiler.CodeAnalysis.Syntax;
+using static Compiler.CodeAnalysis.Binding.BoundNodeFactory;
 
 namespace Compiler.CodeAnalysis.Lowering
 {
@@ -96,16 +97,8 @@ namespace Compiler.CodeAnalysis.Lowering
                 // gotoIfFalse <condition> end
                 // <then>
                 // end:
-
-                var endLabel = GenerateNewLabel();
-                var gotoFalse = new BoundConditionalGotoStatement(endLabel, node.Condition, false);
-                var endLabelStatement = new BoundLabelStatement(endLabel);
-                result = new BoundBlockStatement(ImmutableArray.Create(
-                        gotoFalse,
-                        node.ThenStatement,
-                        endLabelStatement
-                    ));
-
+                var endLabel = Label(GenerateNewLabel());
+                result = Block(GotoFalse(endLabel, node.Condition), node.ThenStatement, endLabel);
             }
             else
             {
@@ -123,22 +116,14 @@ namespace Compiler.CodeAnalysis.Lowering
                 // <else>
                 // end:
 
-                var elseLabel = GenerateNewLabel();
-                var endLabel = GenerateNewLabel();
-                var gotoFalse = new BoundConditionalGotoStatement(elseLabel, node.Condition, false);
-                var gotoEnd = new BoundGotoStatement(endLabel);
-
-                var elseLabelStatement = new BoundLabelStatement(elseLabel);
-                var endLabelStatement = new BoundLabelStatement(endLabel);
-
-                result = new BoundBlockStatement(ImmutableArray.Create(
-                    gotoFalse,
-                    node.ThenStatement,
-                    gotoEnd,
-                    elseLabelStatement,
-                    node.ElseStatement,
-                    endLabelStatement
-                ));
+                var elseLabel = Label(GenerateNewLabel());
+                var endLabel = Label(GenerateNewLabel());
+                result = Block(GotoFalse(elseLabel, node.Condition),
+                                   node.ThenStatement,
+                                   Goto(endLabel),
+                                   elseLabel,
+                                   node.ElseStatement,
+                                   endLabel);
             }
             return RewriteStatement(result);
         }
@@ -158,23 +143,13 @@ namespace Compiler.CodeAnalysis.Lowering
             //      gotoTrue <condition> body
             // break:
 
-            var bodyLabel = GenerateNewLabel();
+            var bodyLabel = Label(GenerateNewLabel());
+            var result = Block(bodyLabel,
+                               node.Body,
+                               Label(node.ContinueLabel),
+                               GotoTrue(bodyLabel, node.Condition),
+                               Label(node.BreakLabel));
 
-
-            var continueLabelStatement = new BoundLabelStatement(node.ContinueLabel);
-            var bodyLabelStatement = new BoundLabelStatement(bodyLabel);
-
-            var gotoTrue = new BoundConditionalGotoStatement(bodyLabel, node.Condition, true);
-
-            var breakLabelStatement = new BoundLabelStatement(node.BreakLabel);
-
-            var result = new BoundBlockStatement(ImmutableArray.Create(
-                bodyLabelStatement,
-                node.Body,
-                continueLabelStatement,
-                gotoTrue,
-                breakLabelStatement
-            ));
             return RewriteStatement(result);
         }
 
@@ -192,24 +167,15 @@ namespace Compiler.CodeAnalysis.Lowering
             //      gotoTrue <condition> continue
             // break:
 
-            var bodyLabel = GenerateNewLabel();
+            var bodyLabel = Label(GenerateNewLabel());
 
-            var gotoContinue = new BoundGotoStatement(node.ContinueLabel);
-            var bodyLabelStatement = new BoundLabelStatement(bodyLabel);
-            var continueLabelStatement = new BoundLabelStatement(node.ContinueLabel);
+            var result = Block(Goto(node.ContinueLabel),
+                               bodyLabel,
+                               node.Body,
+                               Label(node.ContinueLabel),
+                               GotoTrue(bodyLabel, node.Condition),
+                               Label(node.BreakLabel));
 
-            var gotoTrue = new BoundConditionalGotoStatement(bodyLabel, node.Condition, true);
-
-            var breakLabelStatement = new BoundLabelStatement(node.BreakLabel);
-
-            var result = new BoundBlockStatement(ImmutableArray.Create(
-                gotoContinue,
-                bodyLabelStatement,
-                node.Body,
-                continueLabelStatement,
-                gotoTrue,
-                breakLabelStatement
-            ));
             return RewriteStatement(result);
         }
 
@@ -226,31 +192,19 @@ namespace Compiler.CodeAnalysis.Lowering
             //      continue:
             //      <var> = <var> + <step>
 
-            var variableDeclaration = new BoundVariableDeclarationStatement(node.Variable, node.LowerBound);
-            var variableExpression = new BoundVariableExpression(node.Variable);
-            var upperBoundSymbol = new LocalVariableSymbol("upperBound", true, TypeSymbol.Int, node.UpperBound.ConstantValue);
-            var upperBoundDeclaration = new BoundVariableDeclarationStatement(upperBoundSymbol, node.UpperBound);
-            var condition = new BoundBinaryExpression(
-                variableExpression,
-                BoundBinaryOperator.Bind(SyntaxKind.LessOrEqualsToken, TypeSymbol.Int, TypeSymbol.Int),
-                new BoundVariableExpression(upperBoundSymbol)
+            var lowerBound = VariableDeclaration(node.Variable, node.LowerBound);
+            var upperBound = ConstantDeclaration("upperBound", node.UpperBound);
+
+            var result = Block(lowerBound, 
+                               upperBound, 
+                               While(LessOrEqual(Variable(lowerBound),Variable(upperBound)),
+                                    Block(node.Body,
+                                        Label(node.ContinueLabel),
+                                        Increment(Variable(lowerBound), node.Step)),
+                                    node.BreakLabel,
+                                    continueLabel: GenerateNewLabel())
             );
-            var continueLabelStatement = new BoundLabelStatement(node.ContinueLabel);
-            var stepIncrement = new BoundExpressionStatement(
-                new BoundAssignmentExpression(node.Variable,
-                    new BoundBinaryExpression(variableExpression,
-                        BoundBinaryOperator.Bind(SyntaxKind.PlusToken, TypeSymbol.Int, TypeSymbol.Int),
-                        node.Step))
-                );
 
-            var whileBody = new BoundBlockStatement(ImmutableArray.Create(
-                node.Body,
-                continueLabelStatement,
-                stepIncrement));
-            var whileStatement = new BoundWhileStatement(condition, whileBody, node.BreakLabel, GenerateNewLabel());
-
-            var result =
-                new BoundBlockStatement(ImmutableArray.Create<BoundStatement>(variableDeclaration, upperBoundDeclaration, whileStatement));
             return RewriteStatement(result);
         }
 
@@ -262,11 +216,11 @@ namespace Compiler.CodeAnalysis.Lowering
                 condition = node.JumpIfTrue ? condition : !condition;
                 if (condition)
                 {
-                    return RewriteStatement(new BoundGotoStatement(node.Label));
+                    return RewriteStatement(Goto(node.Label));
                 }
                 else
                 {
-                    return RewriteStatement(new BoundNopStatement());
+                    return RewriteStatement(Nop());
                 }
             }
 
