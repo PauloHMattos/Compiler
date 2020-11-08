@@ -244,18 +244,20 @@ namespace Compiler.CodeAnalysis.Binding
         {
             var result = BindStatementInternal(syntax);
 
-            if (!_isScript || !isGlobal)
+            if (_isScript && isGlobal)
             {
-                if (result is BoundExpressionStatement es)
+                return result;
+            }
+            
+            if (result is BoundExpressionStatement es)
+            {
+                var isAllowedExpression = es.Expression.Kind == BoundNodeKind.ErrorExpression ||
+                                          es.Expression.Kind == BoundNodeKind.AssignmentExpression ||
+                                          es.Expression.Kind == BoundNodeKind.CallExpression ||
+                                          es.Expression.Kind == BoundNodeKind.CompoundAssignmentExpression;
+                if (!isAllowedExpression)
                 {
-                    var isAllowedExpression = es.Expression.Kind == BoundNodeKind.ErrorExpression ||
-                                              es.Expression.Kind == BoundNodeKind.AssignmentExpression ||
-                                              es.Expression.Kind == BoundNodeKind.CallExpression ||
-                                              es.Expression.Kind == BoundNodeKind.CompoundAssignmentExpression;
-                    if (!isAllowedExpression)
-                    {
-                        Diagnostics.ReportInvalidExpressionStatement(syntax.Location);
-                    }
+                    Diagnostics.ReportInvalidExpressionStatement(syntax.Location);
                 }
             }
 

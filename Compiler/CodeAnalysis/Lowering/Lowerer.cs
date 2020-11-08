@@ -3,7 +3,6 @@ using System.Collections.Immutable;
 using System.Linq;
 using Compiler.CodeAnalysis.Binding;
 using Compiler.CodeAnalysis.Symbols;
-using Compiler.CodeAnalysis.Syntax;
 using static Compiler.CodeAnalysis.Binding.BoundNodeFactory;
 
 namespace Compiler.CodeAnalysis.Lowering
