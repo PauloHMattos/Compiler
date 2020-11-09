@@ -1,3 +1,11 @@
+  
 @echo off
 
-dotnet run --project C:\Users\Paulo\source\repos\PauloHMattos\Compiler\Compiler.Application\Compiler.Application.csproj -- %*
+REM Vars
+set "SLNDIR=%~dp0"
+
+REM Restore + Build
+dotnet build "%SLNDIR%\Compiler.Application" --nologo || exit /b
+
+REM Run
+dotnet run -p "%SLNDIR%\Compiler.Application" --no-build -- %*
