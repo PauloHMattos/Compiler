@@ -18,7 +18,7 @@
             <PySScriptExt Condition="$([MSBuild]::IsOSUnixLike())">.sh</PySScriptExt>
             <PySScriptExt Condition="$([MSBuild]::IsOSPlatform('Windows'))">.cmd</PySScriptExt>
             <PySCompilerScript Condition="'$(PySCompilerScript)' == ''">pysc$(PySScriptExt)</PySCompilerScript>
-            <PySCompileCommand>"$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)..\..\', '$(PySCompilerScript)'))" $(PySCompilerArgs)</PySCompileCommand>
+            <PySCompileCommand>"$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)..\..', '$(PySCompilerScript)'))" $(PySCompilerArgs)</PySCompileCommand>
         </PropertyGroup>
 
         <Exec Command="$(PySCompileCommand)" />
