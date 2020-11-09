@@ -5,78 +5,84 @@ using Compiler.CodeAnalysis.Diagnostics;
 using Compiler.CodeAnalysis.Symbols;
 using Compiler.CodeAnalysis.Syntax;
 using Xunit;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Diagnostics;
+using System.Text;
 
 namespace Compiler.Tests.CodeAnalysis
 {
     public class EvaluatorTests
     {
+        private string _testProjectsPath = @"../../../TestProjects";
+
         [Theory]
-        [InlineData("1", 1)]
-        [InlineData("+1", 1)]
-        [InlineData("-1", -1)]
-        [InlineData("~1", -2)]
-        [InlineData("+-1", -1)]
-        [InlineData("1+2", 3)]
-        [InlineData("1-2", -1)]
-        [InlineData("1*2", 2)]
-        [InlineData("100/10", 10)]
-        [InlineData("(1 + 2)", 3)]
-        [InlineData("1 == 2", false)]
-        [InlineData("1 != 2", true)]
-        [InlineData("1 < 2", true)]
-        [InlineData("2 <= 2", true)]
-        [InlineData("3 <= 4", true)]
-        [InlineData("5 > 4", true)]
-        [InlineData("4 > 3 * 2", false)]
-        [InlineData("2 >= 2", true)]
-        [InlineData("2 * 2 > 2", true)]
-        [InlineData("1 + 1 == 2", true)]
-        [InlineData("1 | 2", 3)]
-        [InlineData("1 | 0", 1)]
-        [InlineData("1 & 3", 1)]
-        [InlineData("1 & 0", 0)]
-        [InlineData("1 ^ 0", 1)]
-        [InlineData("0 ^ 1", 1)]
-        [InlineData("1 ^ 3", 2)]
-        [InlineData("3 % 1", 0)]
-        [InlineData("2 % 2", 0)]
-        [InlineData("1 % 2", 1)]
-        [InlineData("true", true)]
-        [InlineData("false", false)]
-        [InlineData("!true", false)]
-        [InlineData("!false", true)]
-        [InlineData("true == true", true)]
-        [InlineData("true || true", true)]
-        [InlineData("true && true", true)]
-        [InlineData("true == false", false)]
-        [InlineData("true || false", true)]
-        [InlineData("true && false", false)]
-        [InlineData("false == false", true)]
-        [InlineData("false || true", true)]
-        [InlineData("false || false", false)]
-        [InlineData("false | false", false)]
-        [InlineData("false | true", true)]
-        [InlineData("true | false", true)]
-        [InlineData("true | true", true)]
-        [InlineData("false & false", false)]
-        [InlineData("false & true", false)]
-        [InlineData("true & false", false)]
-        [InlineData("true & true", true)]
-        [InlineData("false ^ false", false)]
-        [InlineData("true ^ false", true)]
-        [InlineData("false ^ true", true)]
-        [InlineData("true ^ true", false)]
+        [InlineData("1", 1, true)]
+        [InlineData("+1", 1, true)]
+        [InlineData("-1", -1, true)]
+        [InlineData("~1", -2, true)]
+        [InlineData("+-1", -1, true)]
+        [InlineData("1+2", 3, true)]
+        [InlineData("1-2", -1, true)]
+        [InlineData("1*2", 2, true)]
+        [InlineData("100/10", 10, true)]
+        [InlineData("(1 + 2)", 3, true)]
+        [InlineData("1 == 2", false, true)]
+        [InlineData("1 != 2", true, true)]
+        [InlineData("1 < 2", true, true)]
+        [InlineData("2 <= 2", true, true)]
+        [InlineData("3 <= 4", true, true)]
+        [InlineData("5 > 4", true, true)]
+        [InlineData("4 > 3 * 2", false, true)]
+        [InlineData("2 >= 2", true, true)]
+        [InlineData("2 * 2 > 2", true, true)]
+        [InlineData("1 + 1 == 2", true, true)]
+        [InlineData("1 | 2", 3, true)]
+        [InlineData("1 | 0", 1, true)]
+        [InlineData("1 & 3", 1, true)]
+        [InlineData("1 & 0", 0, true)]
+        [InlineData("1 ^ 0", 1, true)]
+        [InlineData("0 ^ 1", 1, true)]
+        [InlineData("1 ^ 3", 2, true)]
+        [InlineData("3 % 1", 0, true)]
+        [InlineData("2 % 2", 0, true)]
+        [InlineData("1 % 2", 1, true)]
+        [InlineData("true", true, true)]
+        [InlineData("false", false, true)]
+        [InlineData("!true", false, true)]
+        [InlineData("!false", true, true)]
+        [InlineData("true == true", true, true)]
+        [InlineData("true || true", true, true)]
+        [InlineData("true && true", true, true)]
+        [InlineData("true == false", false, true)]
+        [InlineData("true || false", true, true)]
+        [InlineData("true && false", false, true)]
+        [InlineData("false == false", true, true)]
+        [InlineData("false || true", true, true)]
+        [InlineData("false || false", false, true)]
+        [InlineData("false | false", false, true)]
+        [InlineData("false | true", true, true)]
+        [InlineData("true | false", true, true)]
+        [InlineData("true | true", true, true)]
+        [InlineData("false & false", false, true)]
+        [InlineData("false & true", false, true)]
+        [InlineData("true & false", false, true)]
+        [InlineData("true & true", true, true)]
+        [InlineData("false ^ false", false, true)]
+        [InlineData("true ^ false", true, true)]
+        [InlineData("false ^ true", true, true)]
+        [InlineData("true ^ true", false, true)]
         [InlineData("{ var a = 1 return a }", 1)]
         [InlineData("{ var a = true return a }", true)]
         [InlineData("{ const a = 1 return a }", 1)]
         [InlineData("{ const a = true return a }", true)]
-        [InlineData("\"test\"", "test")]
-        [InlineData("\"te\"\"st\"", "te\"st")]
-        [InlineData("\"hello \" + \"world\"", "hello world")]
-        [InlineData("\"test\" == \"test\"", true)]
-        [InlineData("\"test\" != \"test\"", false)]
-        [InlineData("\"test\" == \"abc\"", false)]
-        [InlineData("\"test\" != \"abc\"", true)]
+        [InlineData("\"test\"", "test", true)]
+        [InlineData("\"te\"\"st\"", "te\"st", true)]
+        [InlineData("\"hello \" + \"world\"", "hello world", true)]
+        [InlineData("\"test\" == \"test\"", true, true)]
+        [InlineData("\"test\" != \"test\"", false, true)]
+        [InlineData("\"test\" == \"abc\"", false, true)]
+        [InlineData("\"test\" != \"abc\"", true, true)]
         [InlineData("{ var a : any = 0 var b : any = \"b\" return a == b }", false)]
         [InlineData("{ var a : any = 0 var b : any = \"b\" return a != b }", true)]
         [InlineData("{ var a : any = 0 var b : any = 0 return a == b }", true)]
@@ -110,14 +116,15 @@ namespace Compiler.Tests.CodeAnalysis
         [InlineData("{ var i = 0 while i < 5 { i = i + 1 if i == 5 continue } return i }", 5)]
         [InlineData("{ var i = 0 do { i = i + 1 if i == 5 continue } while i < 5 return i }", 5)]
         //[InlineData("{ var a = 0 for i = 0 to -10 step -1 a = a + i return a }", -55)] // Currently we don't support reversed loops
-        [InlineData("bool(\"false\")", false)]
-        [InlineData("bool(\"true\")", true)]
-        [InlineData("string(10)", "10")]
-        [InlineData("string(true)", "True")]
-        [InlineData("int(\"100\")", 100)]
-        public void Evaluator_Compute_CorrectValues(string text, object expectedValue)
+        [InlineData("bool(\"false\")", false, true)]
+        [InlineData("bool(\"true\")", true, true)]
+        [InlineData("string(10)", "10", true)]
+        [InlineData("string(true)", "True", true)]
+        [InlineData("int(\"100\")", 100, true)]
+        public void Evaluator_Compute_CorrectValues(string text, object expectedValue, bool injectReturn = false)
         {
             AssertValue(text, expectedValue);
+            AssertEmittedValue(text, expectedValue, injectReturn);
         }
 
         [Fact]
@@ -719,7 +726,7 @@ namespace Compiler.Tests.CodeAnalysis
             Assert.Empty(result.Diagnostics);
             Assert.Equal(expectedValue, result.Value);
         }
-
+        
         private void AssertHasDiagnostics(string text, List<string> expectedDiagnostics)
         {
             var annotatedText = AnnotatedText.Parse(text);
@@ -739,6 +746,103 @@ namespace Compiler.Tests.CodeAnalysis
                 Assert.Equal(annotatedText.Spans[i], result.Diagnostics[i].Location.Span);
                 Assert.Equal(expectedDiagnostics[i], result.Diagnostics[i].Message);
             }
+        }
+
+        private void AssertEmittedValue(string text, object expectedValue, bool injectReturn)
+        {
+            var stringBuilder = new StringBuilder();
+            stringBuilder.Append(@"
+                function evaluate() : any
+                {
+            ");
+            if (injectReturn)
+            {
+                stringBuilder.Append("return ");
+            }
+            stringBuilder.Append(text);
+            stringBuilder.Append(@"
+                }
+
+                function main()
+                {
+                    print(evaluate())
+                }
+            ");
+
+            var projectPath = GetProjectPath("Emit");
+            var projectDir = Path.GetDirectoryName(projectPath);
+            File.WriteAllText($"{projectDir}/main.pys", stringBuilder.ToString());
+            
+            using var intProcess = RunTestProject("Emit");
+            var actualText = intProcess.StandardOutput.ReadLine();
+            var actualValue = Convert.ChangeType(actualText, expectedValue.GetType());
+            Assert.Equal(expectedValue, actualValue);
+        }
+
+        protected (bool succeeded, string buildOutput) BuildTestProject(string project, string configuration = "Debug")
+        {
+            var projectPath = GetProjectPath(project);
+
+            using var buildProcess = new Process
+            {
+                StartInfo =
+                {
+                    FileName = "dotnet",
+                    Arguments = $"build {projectPath} -c {configuration}",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                }
+            };
+
+
+            buildProcess.Start();
+            buildProcess.WaitForExit();
+
+            var succeeded = buildProcess.ExitCode == 0;
+            var buildOutput = buildProcess.StandardOutput.ReadToEnd();
+
+            return (succeeded, buildOutput);
+
+        }
+
+        protected Process RunTestProject(string project, string configuration = "Debug")
+        {
+            var (buildSucceeded, buildOutput) = BuildTestProject(project);
+            Assert.True(buildSucceeded, buildOutput);
+
+            var executablePath = GetExecutablePath(project, configuration);
+
+            var process = new Process
+            {
+                StartInfo =
+                {
+                    FileName = executablePath,
+                    UseShellExecute = false,
+                    RedirectStandardInput = true,
+                    RedirectStandardOutput = true
+                }
+            };
+
+            process.Start();
+            return process;
+        }
+
+        private string GetProjectPath(string project)
+        {
+            var path = $@"{_testProjectsPath}/{project}/{project}.pysproj";
+            Assert.True(File.Exists(path), path);
+            return path;
+        }
+
+        private string GetExecutablePath(string project, string configuration)
+        {
+            var path = $@"{_testProjectsPath}/{project}/bin/{configuration}/netcoreapp3.1/{project}";
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                path += ".exe";
+            }
+            Assert.True(File.Exists(path), path);
+            return path;
         }
     }
 }

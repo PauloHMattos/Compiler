@@ -1,0 +1,11 @@
+
+                function evaluate() : any
+                {
+            { var a = 5 while a > 0 a = a - 1 return a }
+                }
+
+                function main()
+                {
+                    print(evaluate())
+                }
+            

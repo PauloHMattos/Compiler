@@ -1,0 +1,26 @@
+<Project>
+    <PropertyGroup>
+        <DefaultLanguageSourceExtension>.pys</DefaultLanguageSourceExtension>
+    </PropertyGroup>
+
+    <Target Name="CreateManifestResourceNames" />
+    <Target Name="CoreCompile" DependsOnTargets="$(CoreCompileDependsOn)">
+        <ItemGroup>
+            <ReferencePath Remove="@(ReferencePath)" Condition="'%(FileName)' != 'System.Console' AND
+                                '%(FileName)' != 'System.Runtime' AND
+                                '%(FileName)' != 'System.Runtime.Extensions'" />          
+        </ItemGroup> 
+        <PropertyGroup>
+            <PySCompilerArgs>@(Compile->'"%(Identity)"', ' ')</PySCompilerArgs>
+            <PySCompilerArgs>$(PySCompilerArgs) /o "@(IntermediateAssembly)"</PySCompilerArgs>
+            <PySCompilerArgs>$(PySCompilerArgs) @(ReferencePath->'/r "%(Identity)"', ' ')</PySCompilerArgs>
+
+            <PySScriptExt Condition="$([MSBuild]::IsOSUnixLike())">.sh</PySScriptExt>
+            <PySScriptExt Condition="$([MSBuild]::IsOSPlatform('Windows'))">.cmd</PySScriptExt>
+            <PySCompilerScript Condition="'$(PySCompilerScript)' == ''">pysc$(PySScriptExt)</PySCompilerScript>
+            <PySCompileCommand>"$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)..\', '$(PySCompilerScript)'))" $(PySCompilerArgs)</PySCompileCommand>
+        </PropertyGroup>
+
+        <Exec Command="$(PySCompileCommand)" />
+    </Target>
+</Project>
