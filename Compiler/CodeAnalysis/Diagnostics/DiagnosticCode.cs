@@ -35,7 +35,8 @@ namespace Compiler.CodeAnalysis.Diagnostics
         InvalidReference,
         RequiredTypeNotFound,
         RequiredTypeAmbiguous,
-        RequiredMethodNotFound
+        RequiredMethodNotFound,
+        UnterminatedMultilineComment
     }
 
 
@@ -75,6 +76,7 @@ namespace Compiler.CodeAnalysis.Diagnostics
             {DiagnosticCode.RequiredTypeNotFound, "The required type {0} cannot be resolved among the given references."},
             {DiagnosticCode.RequiredTypeAmbiguous, "The required type {0} was found in multiple references: {1}"},
             {DiagnosticCode.RequiredMethodNotFound, "The required method '{0}.{1}({2})' cannot be resolved among the given references."},
+            {DiagnosticCode.UnterminatedMultilineComment, "Unterminated multi-line comment."},
         };
 
         public static string GetDiagnostic(this DiagnosticCode code, params object[] arguments)

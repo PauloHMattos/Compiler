@@ -19,16 +19,17 @@ namespace Compiler.CodeAnalysis.Syntax
 
         public DiagnosticBag Diagnostics { get; }
 
-        private char Current 
+        private char Current => Peek(0);
+        private char Lookahead => Peek(1);
+
+        private char Peek(int offset) 
         {
-            get
+            var index = _position + offset;
+            if (index >= _text.Length)
             {
-                if (_position >= _text.Length)
-                {
-                    return '\0';
-                }
-                return _text[_position];
-            }    
+                return '\0';
+            }
+            return _text[index];
         }
         
         public Lexer(SyntaxTree syntaxTree)
@@ -99,6 +100,10 @@ namespace Compiler.CodeAnalysis.Syntax
                     if (Current == '/')
                     {
                         LexSingleLineComment();
+                    }
+                    else if (Current == '*')
+                    {
+                        LexMultiLineComment();
                     }
                     else if (Current == '=')
                     {
@@ -341,6 +346,37 @@ namespace Compiler.CodeAnalysis.Syntax
             _position++;
             ConsumesTokenWhile(c => c != '\n' && c != '\r' && c != '\0');
             _kind = SyntaxKind.SingleLineCommentToken;
+        }
+        
+        private void LexMultiLineComment()
+        {
+            _position++;
+            
+            var done = false;
+            while (!done)
+            {
+                switch (Current)
+                {
+                    case '\0':
+                        done = true;
+                        var span = new TextSpan(_start, 2);
+                        var location = new TextLocation(_text, span);
+                        Diagnostics.ReportUnterminatedMultilineComment(location);
+                        break;
+                    case '*':
+                        _position++;
+                        if (Current == '/')
+                        {
+                            _position++;
+                            done = true;
+                        }
+                        break;
+                    default:
+                        _position++;
+                        break;
+                }
+            }
+            _kind = SyntaxKind.MultiLineCommentToken;
         }
         
         private void LexIdentifierOrKeyword()

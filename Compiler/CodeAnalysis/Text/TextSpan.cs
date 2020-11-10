@@ -35,6 +35,34 @@
             return new TextSpan(start, end - start);
         }
 
+        public bool OverlapsWith(in TextSpan span)
+        {
+            // Case 1
+            //          [---------------------]
+            // [------------]
+            //
+            // Case 2
+            //          [---------------------]
+            //                          [------------]
+            //
+            // Case 3
+            //          [---------------------]
+            //              [------------]
+            //
+            // Case 4
+            //              [------------]
+            //          [---------------------]
+            //
+            // Case 5
+            //                          [-----------]
+            //  [------------------]
+            //
+            // Case 6
+            // [------------]
+            //                  [-----------------]
+            return Start < span.End && End > span.Start;
+        }
+
         public override string ToString() => $"{Start}..{End}";
     }
 }
