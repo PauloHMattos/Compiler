@@ -30,6 +30,8 @@ namespace Compiler.Tests.CodeAnalysis.Syntax
         {
             var tokenKinds = Enum.GetValues(typeof(SyntaxKind))
                 .Cast<SyntaxKind>()
+                .Where(k => k != SyntaxKind.SingleLineCommentToken &&
+                            k != SyntaxKind.MultiLineCommentToken)
                 .Where(k => k.ToString().EndsWith("Keyword") ||
                             k.ToString().EndsWith("Token"))
                 .ToList();
@@ -165,6 +167,7 @@ namespace Compiler.Tests.CodeAnalysis.Syntax
                 (SyntaxKind.WhitespaceToken, "\r"),
                 (SyntaxKind.WhitespaceToken, "\n"),
                 (SyntaxKind.WhitespaceToken, "\r\n"),
+                (SyntaxKind.MultiLineCommentToken, "/**/"),
             };
         }
 
@@ -288,6 +291,18 @@ namespace Compiler.Tests.CodeAnalysis.Syntax
             if (kind1 == SyntaxKind.SlashToken && kind2 == SyntaxKind.StarEqualsToken)
                 return true;
 
+            if (kind1 == SyntaxKind.SlashToken && kind2 == SyntaxKind.SlashToken)
+                return true;
+
+            if (kind1 == SyntaxKind.SlashToken && kind2 == SyntaxKind.StarToken)
+                return true;
+            
+            if (kind1 == SyntaxKind.SlashToken && kind2 == SyntaxKind.SingleLineCommentToken)
+                return true;
+
+            if (kind1 == SyntaxKind.SlashToken && kind2 == SyntaxKind.MultiLineCommentToken)
+                return true;
+
             return false;
         }
 
@@ -323,6 +338,11 @@ namespace Compiler.Tests.CodeAnalysis.Syntax
 
                     foreach (var (separatorKind, separatorText) in GetSeparators())
                     {
+                        if (RequiresSeparator(kind1, separatorKind) || 
+                            RequiresSeparator(kind2, separatorKind))
+                        {
+                            continue;
+                        }
                         yield return (kind1, text1, separatorKind, separatorText, kind2, text2);
                     }
                 }
