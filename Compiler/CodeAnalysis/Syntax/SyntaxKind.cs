@@ -6,6 +6,7 @@
         BadToken,
         EndOfFileToken,
         WhitespaceToken,
+        SingleLineCommentToken,
         OpenParenthesisToken,
         CloseParenthesisToken,
         OpenBraceToken,

@@ -28,6 +28,15 @@ namespace Compiler.CodeAnalysis.Syntax
             SyntaxTree = syntaxTree;
         }
 
+        public SyntaxToken GetLastToken()
+        {
+            if (this is SyntaxToken token)
+                return token;
+
+            // A syntax node should always contain at least 1 token.
+            return GetChildren().Last().GetLastToken();
+        }
+
         public IEnumerable<SyntaxNode> GetChildren()
         {
             var properties = GetType()

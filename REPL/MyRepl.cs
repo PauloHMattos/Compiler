@@ -32,6 +32,7 @@ namespace Compiler.REPL
                 var isIdentifier = token.Kind == SyntaxKind.IdentifierToken;
                 var isNumber = token.Kind == SyntaxKind.NumberToken;
                 var isString = token.Kind == SyntaxKind.StringToken;
+                var isComment = token.Kind == SyntaxKind.SingleLineCommentToken;
 
                 if (isKeyword)
                 {
@@ -48,6 +49,10 @@ namespace Compiler.REPL
                 else if (isString)
                 {
                     Console.ForegroundColor = ConsoleColor.Magenta;
+                }
+                else if (isComment)
+                {
+                    Console.ForegroundColor = ConsoleColor.White;
                 }
                 else
                 {
@@ -79,8 +84,9 @@ namespace Compiler.REPL
             }
 
             var syntaxTree = SyntaxTree.Parse(text);
-
-            if (syntaxTree.Diagnostics.Any())
+            
+            var lastMember = syntaxTree.Root.Members.LastOrDefault();
+            if (lastMember == null || lastMember.GetLastToken().IsMissing)
             {
                 return false;
             }

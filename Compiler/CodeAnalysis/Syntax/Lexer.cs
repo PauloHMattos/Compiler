@@ -96,7 +96,11 @@ namespace Compiler.CodeAnalysis.Syntax
                     break;
                 case '/':
                     _position++;
-                    if (Current == '=')
+                    if (Current == '/')
+                    {
+                        LexSingleLineComment();
+                    }
+                    else if (Current == '=')
                     {
                         _position++;
                         _kind = SyntaxKind.SlashEqualsToken;
@@ -331,7 +335,14 @@ namespace Compiler.CodeAnalysis.Syntax
             ConsumesTokenWhile(char.IsWhiteSpace);
             _kind = SyntaxKind.WhitespaceToken;
         }
-
+        
+        private void LexSingleLineComment()
+        {
+            _position++;
+            ConsumesTokenWhile(c => c != '\n' && c != '\r' && c != '\0');
+            _kind = SyntaxKind.SingleLineCommentToken;
+        }
+        
         private void LexIdentifierOrKeyword()
         {
             ConsumesTokenWhile(c => char.IsLetterOrDigit(c) || c == '_');
