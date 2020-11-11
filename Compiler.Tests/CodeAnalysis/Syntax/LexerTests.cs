@@ -40,7 +40,7 @@ namespace Compiler.Tests.CodeAnalysis.Syntax
 
             var untestedTokenKinds = new SortedSet<SyntaxKind>(tokenKinds);
             untestedTokenKinds.ExceptWith(testedTokenKinds);
-            untestedTokenKinds.Remove(SyntaxKind.BadTokenTrivia);
+            untestedTokenKinds.Remove(SyntaxKind.BadToken);
             untestedTokenKinds.Remove(SyntaxKind.EndOfFileToken);
 
             Assert.Empty(untestedTokenKinds);
@@ -161,9 +161,9 @@ namespace Compiler.Tests.CodeAnalysis.Syntax
                 (SyntaxKind.WhitespaceTrivia, " "),
                 (SyntaxKind.WhitespaceTrivia, "  "),
                 (SyntaxKind.WhitespaceTrivia, "\t"),
-                (SyntaxKind.WhitespaceTrivia, "\r"),
-                (SyntaxKind.WhitespaceTrivia, "\n"),
-                (SyntaxKind.WhitespaceTrivia, "\r\n"),
+                (SyntaxKind.LineBreakTrivia, "\r"),
+                (SyntaxKind.LineBreakTrivia, "\n"),
+                (SyntaxKind.LineBreakTrivia, "\r\n"),
                 (SyntaxKind.MultiLineCommentTrivia, "/**/"),
             };
         }

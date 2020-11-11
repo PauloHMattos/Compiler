@@ -30,7 +30,7 @@ namespace Compiler.IO
             return false;
         }
 
-        private static void SetForeground(this TextWriter writer, ConsoleColor color)
+        public static void SetForeground(this TextWriter writer, ConsoleColor color)
         {
             if (writer.IsConsole())
             {
@@ -38,7 +38,7 @@ namespace Compiler.IO
             }
         }
 
-        private static void ResetColor(this TextWriter writer)
+        public static void ResetColor(this TextWriter writer)
         {
             if (writer.IsConsole())
             {

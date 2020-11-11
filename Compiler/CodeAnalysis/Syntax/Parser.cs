@@ -21,15 +21,50 @@ namespace Compiler.CodeAnalysis.Syntax
 
             SyntaxToken token;
             var tokens = new List<SyntaxToken>();
+            var badTokens = new List<SyntaxToken>();
 
             do
             {
                 token = lexer.Lex();
-                if (!token.Kind.IsTrivia())
+
+                if (token.Kind == SyntaxKind.BadToken)
                 {
-                    tokens.Add(token);
+                    badTokens.Add(token);
+                    continue;
                 }
 
+                if (badTokens.Count > 0)
+                {
+                    var leadingTriviaBuilder = token.LeadingTrivia.ToBuilder();
+                    var index = 0;
+                    foreach (var badToken in badTokens)
+                    {
+                        foreach (var lt in badToken.LeadingTrivia)
+                        {
+                            leadingTriviaBuilder.Insert(index++, lt);
+                        }
+                        var trivia = new SyntaxTrivia(syntaxTree,
+                                                      SyntaxKind.SkippedTextTrivia,
+                                                      badToken.Position,
+                                                      badToken.Text);
+                        leadingTriviaBuilder.Insert(index++, trivia);
+
+                        
+                        foreach (var tt in badToken.TrailingTrivia)
+                        {
+                            leadingTriviaBuilder.Insert(index++, tt);
+                        }
+                    }
+                    badTokens.Clear();
+                    token = new SyntaxToken(token.SyntaxTree,
+                                            token.Kind,
+                                            token.Position,
+                                            token.Text,
+                                            token.Value,
+                                            leadingTriviaBuilder.ToImmutable(),
+                                            token.TrailingTrivia);
+                }
+                tokens.Add(token);
             } while (token.Kind != SyntaxKind.EndOfFileToken);
 
             _syntaxTree = syntaxTree;
@@ -65,7 +100,13 @@ namespace Compiler.CodeAnalysis.Syntax
             }
 
             Diagnostics.ReportUnexpectedToken(Current.Location, Current.Kind, kind);
-            return new SyntaxToken(_syntaxTree, kind, Current.Position, null, null);
+            return new SyntaxToken(_syntaxTree,
+                                   kind,
+                                   Current.Position,
+                                   null,
+                                   null,
+                                   ImmutableArray<SyntaxTrivia>.Empty,
+                                   ImmutableArray<SyntaxTrivia>.Empty);
         }
 
         public CompilationUnitSyntax ParseCompilationUnit()

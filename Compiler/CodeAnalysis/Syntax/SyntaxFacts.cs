@@ -267,8 +267,9 @@ namespace Compiler.CodeAnalysis.Syntax
         {
             switch (kind)
             {
-                case SyntaxKind.BadTokenTrivia:
+                case SyntaxKind.SkippedTextTrivia:
                 case SyntaxKind.WhitespaceTrivia:
+                case SyntaxKind.LineBreakTrivia:
                 case SyntaxKind.SingleLineCommentTrivia:
                 case SyntaxKind.MultiLineCommentTrivia:
                     return true;

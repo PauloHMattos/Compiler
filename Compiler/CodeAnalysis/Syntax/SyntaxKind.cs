@@ -2,9 +2,12 @@
 {
     public enum SyntaxKind
     {
+        BadToken,
+
         // Trivia
-        BadTokenTrivia,
+        SkippedTextTrivia,
         WhitespaceTrivia,
+        LineBreakTrivia,
         SingleLineCommentTrivia,
         MultiLineCommentTrivia,
 
