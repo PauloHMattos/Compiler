@@ -3,11 +3,11 @@
     public enum SyntaxKind
     {
         // Tokens
-        BadToken,
         EndOfFileToken,
-        WhitespaceToken,
-        SingleLineCommentToken,
-        MultiLineCommentToken,
+        BadTokenTrivia,
+        WhitespaceTrivia,
+        SingleLineCommentTrivia,
+        MultiLineCommentTrivia,
         OpenParenthesisToken,
         CloseParenthesisToken,
         OpenBraceToken,

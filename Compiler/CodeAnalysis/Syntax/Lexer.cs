@@ -42,7 +42,7 @@ namespace Compiler.CodeAnalysis.Syntax
         public SyntaxToken Lex()
         {
             _start = _position;
-            _kind = SyntaxKind.BadToken;
+            _kind = SyntaxKind.BadTokenTrivia;
             _value = null;
             _tokenText = null;
 
@@ -263,7 +263,7 @@ namespace Compiler.CodeAnalysis.Syntax
                         var span = new TextSpan(_position, 1);
                         var location = new TextLocation(_text, span);
                         Diagnostics.ReportBadCharacter(location, Current);
-                        _kind = SyntaxKind.BadToken;
+                        _kind = SyntaxKind.BadTokenTrivia;
                         _position++;
                     }
                     break;
@@ -338,14 +338,14 @@ namespace Compiler.CodeAnalysis.Syntax
         private void LexWhitespace()
         {
             ConsumesTokenWhile(char.IsWhiteSpace);
-            _kind = SyntaxKind.WhitespaceToken;
+            _kind = SyntaxKind.WhitespaceTrivia;
         }
         
         private void LexSingleLineComment()
         {
             _position++;
             ConsumesTokenWhile(c => c != '\n' && c != '\r' && c != '\0');
-            _kind = SyntaxKind.SingleLineCommentToken;
+            _kind = SyntaxKind.SingleLineCommentTrivia;
         }
         
         private void LexMultiLineComment()
@@ -376,7 +376,7 @@ namespace Compiler.CodeAnalysis.Syntax
                         break;
                 }
             }
-            _kind = SyntaxKind.MultiLineCommentToken;
+            _kind = SyntaxKind.MultiLineCommentTrivia;
         }
         
         private void LexIdentifierOrKeyword()

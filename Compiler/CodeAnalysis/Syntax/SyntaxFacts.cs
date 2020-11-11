@@ -252,14 +252,29 @@ namespace Compiler.CodeAnalysis.Syntax
 
         public static bool IsToken(this SyntaxKind kind)
         {
-            return kind.IsKeyword() ||
-                   kind.ToString().EndsWith("Token");
+            return !kind.IsTrivia() && 
+                    kind.IsKeyword() ||
+                    kind.ToString().EndsWith("Token");
         }
 
         public static bool IsComment(this SyntaxKind kind)
         {
-            return kind == SyntaxKind.SingleLineCommentToken ||
-                   kind == SyntaxKind.MultiLineCommentToken;
+            return kind == SyntaxKind.SingleLineCommentTrivia ||
+                   kind == SyntaxKind.MultiLineCommentTrivia;
+        }
+
+        public static bool IsTrivia(this SyntaxKind kind)
+        {
+            switch (kind)
+            {
+                case SyntaxKind.BadTokenTrivia:
+                case SyntaxKind.WhitespaceTrivia:
+                case SyntaxKind.SingleLineCommentTrivia:
+                case SyntaxKind.MultiLineCommentTrivia:
+                    return true;
+                default:
+                    return false;
+            }
         }
     }
 }

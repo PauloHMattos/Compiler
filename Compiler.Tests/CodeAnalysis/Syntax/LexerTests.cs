@@ -30,8 +30,6 @@ namespace Compiler.Tests.CodeAnalysis.Syntax
         {
             var tokenKinds = Enum.GetValues(typeof(SyntaxKind))
                 .Cast<SyntaxKind>()
-                .Where(k => k != SyntaxKind.SingleLineCommentToken &&
-                            k != SyntaxKind.MultiLineCommentToken)
                 .Where(k => k.IsToken())
                 .ToList();
 
@@ -42,7 +40,7 @@ namespace Compiler.Tests.CodeAnalysis.Syntax
 
             var untestedTokenKinds = new SortedSet<SyntaxKind>(tokenKinds);
             untestedTokenKinds.ExceptWith(testedTokenKinds);
-            untestedTokenKinds.Remove(SyntaxKind.BadToken);
+            untestedTokenKinds.Remove(SyntaxKind.BadTokenTrivia);
             untestedTokenKinds.Remove(SyntaxKind.EndOfFileToken);
 
             Assert.Empty(untestedTokenKinds);
@@ -160,13 +158,13 @@ namespace Compiler.Tests.CodeAnalysis.Syntax
         {
             return new[]
             {
-                (SyntaxKind.WhitespaceToken, " "),
-                (SyntaxKind.WhitespaceToken, "  "),
-                (SyntaxKind.WhitespaceToken, "\t"),
-                (SyntaxKind.WhitespaceToken, "\r"),
-                (SyntaxKind.WhitespaceToken, "\n"),
-                (SyntaxKind.WhitespaceToken, "\r\n"),
-                (SyntaxKind.MultiLineCommentToken, "/**/"),
+                (SyntaxKind.WhitespaceTrivia, " "),
+                (SyntaxKind.WhitespaceTrivia, "  "),
+                (SyntaxKind.WhitespaceTrivia, "\t"),
+                (SyntaxKind.WhitespaceTrivia, "\r"),
+                (SyntaxKind.WhitespaceTrivia, "\n"),
+                (SyntaxKind.WhitespaceTrivia, "\r\n"),
+                (SyntaxKind.MultiLineCommentTrivia, "/**/"),
             };
         }
 
@@ -296,10 +294,10 @@ namespace Compiler.Tests.CodeAnalysis.Syntax
             if (kind1 == SyntaxKind.SlashToken && kind2 == SyntaxKind.StarToken)
                 return true;
             
-            if (kind1 == SyntaxKind.SlashToken && kind2 == SyntaxKind.SingleLineCommentToken)
+            if (kind1 == SyntaxKind.SlashToken && kind2 == SyntaxKind.SingleLineCommentTrivia)
                 return true;
 
-            if (kind1 == SyntaxKind.SlashToken && kind2 == SyntaxKind.MultiLineCommentToken)
+            if (kind1 == SyntaxKind.SlashToken && kind2 == SyntaxKind.MultiLineCommentTrivia)
                 return true;
 
             return false;
