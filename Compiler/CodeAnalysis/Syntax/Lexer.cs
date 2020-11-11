@@ -358,12 +358,11 @@ namespace Compiler.CodeAnalysis.Syntax
                         break;
 
                     case '/':
-                        _position++;
-                        if (Current == '/')
+                        if (Lookahead == '/')
                         {
                             LexSingleLineComment();
                         }
-                        else if (Current == '*')
+                        else if (Lookahead == '*')
                         {
                             LexMultiLineComment();
                         }
