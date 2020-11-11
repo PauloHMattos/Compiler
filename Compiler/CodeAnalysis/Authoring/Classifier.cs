@@ -53,9 +53,7 @@ namespace Compiler.CodeAnalysis.Authoring
         {
             var overlap = elementSpan.Overlap(span);
             if (!overlap.HasValue)
-            {
                 return;
-            }
 
             var classification = GetClassification(elementKind);
             var classifiedSpan = new ClassifiedSpan(overlap.Value, classification);

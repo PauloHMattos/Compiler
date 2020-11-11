@@ -82,16 +82,17 @@ namespace Compiler.Tests.CodeAnalysis.Syntax
             var text = text1 + separatorText + text2;
             var tokens = SyntaxTree.ParseTokens(text).ToArray();
 
-            Assert.Equal(3, tokens.Length);
+            Assert.Equal(2, tokens.Length);
 
             Assert.Equal(kind1, tokens[0].Kind);
             Assert.Equal(text1, tokens[0].Text);
 
-            Assert.Equal(separatorKind, tokens[1].Kind);
-            Assert.Equal(separatorText, tokens[1].Text);
+            var separator = Assert.Single(tokens[0].TrailingTrivia);
+            Assert.Equal(separatorKind, separator.Kind);
+            Assert.Equal(separatorText, separator.Text);
 
-            Assert.Equal(kind2, tokens[2].Kind);
-            Assert.Equal(text2, tokens[2].Text);
+            Assert.Equal(kind2, tokens[1].Kind);
+            Assert.Equal(text2, tokens[1].Text);
         }
 
         [Theory]
@@ -110,9 +111,29 @@ namespace Compiler.Tests.CodeAnalysis.Syntax
             Assert.Equal(name, token.Text);
         }
 
+        [Theory]
+        [MemberData(nameof(GetSeparatorsData))]
+        public void Lexer_Lexes_Separator(SyntaxKind kind, string text)
+        {
+            var tokens = SyntaxTree.ParseTokens(text, includeEndOfFile: true);
+
+            var token = Assert.Single(tokens);
+            var trivia = Assert.Single(token.LeadingTrivia);
+            Assert.Equal(kind, trivia.Kind);
+            Assert.Equal(text, trivia.Text);
+        }
+
         public static IEnumerable<object[]> GetTokensData()
         {
-            foreach (var (kind, text) in GetTokens().Concat(GetSeparators()))
+            foreach (var (kind, text) in GetTokens())
+            {
+                yield return new object[] { kind, text };
+            }
+        }
+
+        public static IEnumerable<object[]> GetSeparatorsData()
+        {
+            foreach (var (kind, text) in GetSeparators())
             {
                 yield return new object[] { kind, text };
             }

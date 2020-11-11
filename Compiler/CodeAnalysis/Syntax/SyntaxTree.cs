@@ -49,22 +49,22 @@ namespace Compiler.CodeAnalysis.Syntax
             return new SyntaxTree(text, Parse);
         }
 
-        public static ImmutableArray<SyntaxToken> ParseTokens(string text)
+        public static ImmutableArray<SyntaxToken> ParseTokens(string text, bool includeEndOfFile = false)
         {
-            return ParseTokens(text, out _);
+            return ParseTokens(text, out _, includeEndOfFile);
         }
 
-        public static ImmutableArray<SyntaxToken> ParseTokens(string text, out ImmutableArray<Diagnostic> diagnostics)
+        public static ImmutableArray<SyntaxToken> ParseTokens(string text, out ImmutableArray<Diagnostic> diagnostics, bool includeEndOfFile = false)
         {
             var sourceText = SourceText.From(text);
-            return ParseTokens(sourceText, out diagnostics);
+            return ParseTokens(sourceText, out diagnostics, includeEndOfFile);
         }
 
-        public static ImmutableArray<SyntaxToken> ParseTokens(SourceText text)
+        public static ImmutableArray<SyntaxToken> ParseTokens(SourceText text, bool includeEndOfFile = false)
         {
-            return ParseTokens(text, out _);
+            return ParseTokens(text, out _, includeEndOfFile);
         }
-        public static ImmutableArray<SyntaxToken> ParseTokens(SourceText text, out ImmutableArray<Diagnostic> diagnostics)
+        public static ImmutableArray<SyntaxToken> ParseTokens(SourceText text, out ImmutableArray<Diagnostic> diagnostics, bool includeEndOfFile = false)
         {
             var tokens = new List<SyntaxToken>();
 
@@ -75,12 +75,17 @@ namespace Compiler.CodeAnalysis.Syntax
                 while (true)
                 {
                     var token = lexer.Lex();
+
+                    if (token.Kind != SyntaxKind.EndOfFileToken || includeEndOfFile)
+                    {
+                        tokens.Add(token);
+                    }
+                    
                     if (token.Kind == SyntaxKind.EndOfFileToken)
                     {
                         root = new CompilationUnitSyntax(st, ImmutableArray<MemberSyntax>.Empty, token);
                         break;
                     }
-                    tokens.Add(token);
                 }
                 d = lexer.Diagnostics.ToImmutableArray();
             }
