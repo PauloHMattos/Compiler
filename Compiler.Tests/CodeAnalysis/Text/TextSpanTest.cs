@@ -66,6 +66,9 @@ namespace Compiler.Tests.CodeAnalysis.Text
 
             Assert.True(span1.OverlapsWith(span2));
             Assert.True(span2.OverlapsWith(span1));
+
+            Assert.Equal(span1.Overlap(span2), TextSpan.FromBounds(10, 15));
+            Assert.Equal(span2.Overlap(span1), TextSpan.FromBounds(10, 15));
         }
 
         [Fact]
@@ -79,6 +82,9 @@ namespace Compiler.Tests.CodeAnalysis.Text
 
             Assert.True(span1.OverlapsWith(span2));
             Assert.True(span2.OverlapsWith(span1));
+            
+            Assert.Equal(span1.Overlap(span2), TextSpan.FromBounds(10, 15));
+            Assert.Equal(span2.Overlap(span1), TextSpan.FromBounds(10, 15));
         }
         
         [Fact]
@@ -92,6 +98,9 @@ namespace Compiler.Tests.CodeAnalysis.Text
 
             Assert.True(span1.OverlapsWith(span2));
             Assert.True(span2.OverlapsWith(span1));
+            
+            Assert.Equal(span1.Overlap(span2), TextSpan.FromBounds(10, 20));
+            Assert.Equal(span2.Overlap(span1), TextSpan.FromBounds(10, 20));
         }
         
         [Fact]
@@ -105,6 +114,9 @@ namespace Compiler.Tests.CodeAnalysis.Text
 
             Assert.False(span1.OverlapsWith(span2));
             Assert.False(span2.OverlapsWith(span1));
+            
+            Assert.Null(span1.Overlap(span2));
+            Assert.Null(span2.Overlap(span1));
         }
     }
 }
