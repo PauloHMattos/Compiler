@@ -244,5 +244,22 @@ namespace Compiler.CodeAnalysis.Syntax
                 }
             }
         }
+
+        public static bool IsKeyword(this SyntaxKind kind)
+        {
+            return kind.ToString().EndsWith("Keyword");
+        }
+
+        public static bool IsToken(this SyntaxKind kind)
+        {
+            return kind.IsKeyword() ||
+                   kind.ToString().EndsWith("Token");
+        }
+
+        public static bool IsComment(this SyntaxKind kind)
+        {
+            return kind == SyntaxKind.SingleLineCommentToken ||
+                   kind == SyntaxKind.MultiLineCommentToken;
+        }
     }
 }
