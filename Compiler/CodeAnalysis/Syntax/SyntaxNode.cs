@@ -50,7 +50,7 @@ namespace Compiler.CodeAnalysis.Syntax
             return GetChildren().Last().GetLastToken();
         }
 
-        public IEnumerable<SyntaxNode> GetChildren()
+        public virtual IEnumerable<SyntaxNode> GetChildren()
         {
             var properties = GetType()
                 .GetProperties(BindingFlags.Instance | BindingFlags.Public);

@@ -1,4 +1,6 @@
-﻿namespace Compiler.CodeAnalysis.Syntax
+﻿using System.Collections.Generic;
+
+namespace Compiler.CodeAnalysis.Syntax
 {
     internal class CallExpressionSyntax : ExpressionSyntax
     {
@@ -21,5 +23,15 @@
             CloseParenthesisToken = closeParenthesisToken;
         }
 
+        public override IEnumerable<SyntaxNode> GetChildren()
+        {
+            yield return Identifier;
+            yield return OpenParenthesisToken;
+            foreach (var arg in Arguments.GetWithSeparators())
+            {
+                yield return arg;
+            }
+            yield return CloseParenthesisToken;
+        }
     }
 }

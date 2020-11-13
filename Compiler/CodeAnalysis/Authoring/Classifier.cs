@@ -15,7 +15,7 @@ namespace Compiler.CodeAnalysis.Authoring
 
         private static void ClassifyNode(SyntaxNode node, TextSpan span, ImmutableArray<ClassifiedSpan>.Builder builder)
         {
-            if (!node.FullSpan.OverlapsWith(span))
+            if (node == null || !node.FullSpan.OverlapsWith(span))
             {
                 return;
             }
