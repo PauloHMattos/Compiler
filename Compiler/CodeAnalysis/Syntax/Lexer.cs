@@ -11,13 +11,13 @@ namespace Compiler.CodeAnalysis.Syntax
     {
         private readonly SyntaxTree _syntaxTree;
         private readonly SourceText _text;
+        private readonly ImmutableArray<SyntaxTrivia>.Builder _triviaBuilder;
 
         private int _position;
         private int _start;
         private SyntaxKind _kind;
         private object _value;
         private string _tokenText;
-        private ImmutableArray<SyntaxTrivia>.Builder _triviaBuilder;
 
         public DiagnosticBag Diagnostics { get; }
 
@@ -410,12 +410,6 @@ namespace Compiler.CodeAnalysis.Syntax
             }
 
         }
-
-        // private void LexWhitespace()
-        // {
-        //     ConsumesTokenWhile(char.IsWhiteSpace);
-        //     _kind = SyntaxKind.WhitespaceTrivia;
-        // }
 
         private void LexWhitespace()
         {

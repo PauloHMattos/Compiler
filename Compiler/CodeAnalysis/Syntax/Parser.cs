@@ -35,34 +35,7 @@ namespace Compiler.CodeAnalysis.Syntax
 
                 if (badTokens.Count > 0)
                 {
-                    var leadingTriviaBuilder = token.LeadingTrivia.ToBuilder();
-                    var index = 0;
-                    foreach (var badToken in badTokens)
-                    {
-                        foreach (var lt in badToken.LeadingTrivia)
-                        {
-                            leadingTriviaBuilder.Insert(index++, lt);
-                        }
-                        var trivia = new SyntaxTrivia(syntaxTree,
-                                                      SyntaxKind.SkippedTextTrivia,
-                                                      badToken.Position,
-                                                      badToken.Text);
-                        leadingTriviaBuilder.Insert(index++, trivia);
-
-                        
-                        foreach (var tt in badToken.TrailingTrivia)
-                        {
-                            leadingTriviaBuilder.Insert(index++, tt);
-                        }
-                    }
-                    badTokens.Clear();
-                    token = new SyntaxToken(token.SyntaxTree,
-                                            token.Kind,
-                                            token.Position,
-                                            token.Text,
-                                            token.Value,
-                                            leadingTriviaBuilder.ToImmutable(),
-                                            token.TrailingTrivia);
+                    token = HandleBadTokens(syntaxTree, token, badTokens);
                 }
                 tokens.Add(token);
             } while (token.Kind != SyntaxKind.EndOfFileToken);
@@ -71,6 +44,39 @@ namespace Compiler.CodeAnalysis.Syntax
             _text = syntaxTree.Text;
             _tokens = tokens.ToImmutableArray();
             Diagnostics.AddRange(lexer.Diagnostics);
+        }
+
+        private static SyntaxToken HandleBadTokens(SyntaxTree syntaxTree, SyntaxToken token, List<SyntaxToken> badTokens)
+        {
+            var leadingTriviaBuilder = token.LeadingTrivia.ToBuilder();
+            var index = 0;
+            foreach (var badToken in badTokens)
+            {
+                foreach (var lt in badToken.LeadingTrivia)
+                {
+                    leadingTriviaBuilder.Insert(index++, lt);
+                }
+                var trivia = new SyntaxTrivia(syntaxTree,
+                                              SyntaxKind.SkippedTextTrivia,
+                                              badToken.Position,
+                                              badToken.Text);
+                leadingTriviaBuilder.Insert(index++, trivia);
+
+
+                foreach (var tt in badToken.TrailingTrivia)
+                {
+                    leadingTriviaBuilder.Insert(index++, tt);
+                }
+            }
+            badTokens.Clear();
+            token = new SyntaxToken(token.SyntaxTree,
+                                    token.Kind,
+                                    token.Position,
+                                    token.Text,
+                                    token.Value,
+                                    leadingTriviaBuilder.ToImmutable(),
+                                    token.TrailingTrivia);
+            return token;
         }
 
         private SyntaxToken Peek(int offset)

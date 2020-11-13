@@ -4,7 +4,7 @@ using Compiler.CodeAnalysis.Text;
 
 namespace Compiler.CodeAnalysis.Authoring
 {
-    public sealed class Classifier
+    public static class Classifier
     {
         public static ImmutableArray<ClassifiedSpan> Classify(SyntaxTree syntaxTree, TextSpan span)
         {
