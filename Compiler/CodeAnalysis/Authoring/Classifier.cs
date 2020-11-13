@@ -82,6 +82,10 @@ namespace Compiler.CodeAnalysis.Authoring
             {
                 return Classification.Comment;
             }
+            else if(kind.IsWhitespace())
+            {
+                return Classification.Whitespace;
+            }
             return Classification.Text;
         }
     }

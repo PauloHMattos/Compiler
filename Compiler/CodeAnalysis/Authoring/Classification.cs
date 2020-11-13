@@ -8,5 +8,6 @@ namespace Compiler.CodeAnalysis.Authoring
         Number,
         String,
         Comment,
+        Whitespace,
     }
 }

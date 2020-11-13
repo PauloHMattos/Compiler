@@ -277,5 +277,11 @@ namespace Compiler.CodeAnalysis.Syntax
                     return false;
             }
         }
+
+        public static bool IsWhitespace(this SyntaxKind kind)
+        {
+            return kind == SyntaxKind.WhitespaceTrivia ||
+                   kind == SyntaxKind.LineBreakTrivia;
+        }
     }
 }
