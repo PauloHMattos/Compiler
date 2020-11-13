@@ -6,6 +6,7 @@ using Compiler.CodeAnalysis;
 using Compiler.CodeAnalysis.Symbols;
 using Compiler.CodeAnalysis.Syntax;
 using Compiler.IO;
+using Compiler.CodeAnalysis.Authoring;
 
 namespace Compiler.REPL
 {
@@ -23,41 +24,53 @@ namespace Compiler.REPL
             LoadSubmissions();
         }
 
-        protected override void RenderLine(string line)
+        protected override object RenderLine(IReadOnlyList<string> lines, int lineIndex, object state)
         {
-            var tokens = SyntaxTree.ParseTokens(line);
-            foreach (var token in tokens)
+            SyntaxTree syntaxTree;
+            if (state == null)
             {
-                var isKeyword = token.Kind.ToString().EndsWith("Keyword");
-                var isIdentifier = token.Kind == SyntaxKind.IdentifierToken;
-                var isNumber = token.Kind == SyntaxKind.NumberToken;
-                var isString = token.Kind == SyntaxKind.StringToken;
+                var text = string.Join(Environment.NewLine, lines);
+                syntaxTree = SyntaxTree.Parse(text);
+            }
+            else
+            {
+                syntaxTree = (SyntaxTree)state;
+            }
 
-                if (isKeyword)
-                {
-                    Console.ForegroundColor = ConsoleColor.Blue;
-                }
-                else if (isIdentifier)
-                {
-                    Console.ForegroundColor = ConsoleColor.DarkYellow;
-                }
-                else if (isNumber)
-                {
-                    Console.ForegroundColor = ConsoleColor.Cyan;
-                }
-                else if (isString)
-                {
-                    Console.ForegroundColor = ConsoleColor.Magenta;
-                }
-                else
-                {
-                    Console.ForegroundColor = ConsoleColor.DarkGray;
-                }
+            var lineSpan = syntaxTree.Text.Lines[lineIndex].Span;
+            var classifiedSpans = Classifier.Classify(syntaxTree, lineSpan);
 
-                Console.Write(token.Text);
+            foreach (var classifiedSpan in classifiedSpans)
+            {
+                var classifiedText = syntaxTree.Text.ToString(classifiedSpan.Span);
 
+                switch (classifiedSpan.Classification)
+                {
+                    case Classification.Keyword:
+                        Console.ForegroundColor = ConsoleColor.Blue;
+                        break;
+                    case Classification.Identifier:
+                        Console.ForegroundColor = ConsoleColor.DarkYellow;
+                        break;
+                    case Classification.Number:
+                        Console.ForegroundColor = ConsoleColor.Cyan;
+                        break;
+                    case Classification.String:
+                        Console.ForegroundColor = ConsoleColor.Magenta;
+                        break;
+                    case Classification.Comment:
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        break;
+                    case Classification.Text:
+                    default:
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
+                        break;
+                }
+                
+                Console.Write(classifiedText);
                 Console.ResetColor();
             }
+            return syntaxTree;
         }
 
         protected override bool IsCompleteSubmission(string text)
@@ -80,7 +93,8 @@ namespace Compiler.REPL
 
             var syntaxTree = SyntaxTree.Parse(text);
 
-            if (syntaxTree.Diagnostics.Any())
+            var lastMember = syntaxTree.Root.Members.LastOrDefault();
+            if (lastMember == null || lastMember.GetLastToken().IsMissing)
             {
                 return false;
             }

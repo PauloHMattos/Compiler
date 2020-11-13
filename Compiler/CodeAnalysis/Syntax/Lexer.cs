@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Immutable;
 using System.Text;
 using Compiler.CodeAnalysis.Diagnostics;
 using Compiler.CodeAnalysis.Symbols;
@@ -10,6 +11,7 @@ namespace Compiler.CodeAnalysis.Syntax
     {
         private readonly SyntaxTree _syntaxTree;
         private readonly SourceText _text;
+        private readonly ImmutableArray<SyntaxTrivia>.Builder _triviaBuilder;
 
         private int _position;
         private int _start;
@@ -19,26 +21,50 @@ namespace Compiler.CodeAnalysis.Syntax
 
         public DiagnosticBag Diagnostics { get; }
 
-        private char Current 
+        private char Current => Peek(0);
+        private char Lookahead => Peek(1);
+
+        private char Peek(int offset)
         {
-            get
+            var index = _position + offset;
+            if (index >= _text.Length)
             {
-                if (_position >= _text.Length)
-                {
-                    return '\0';
-                }
-                return _text[_position];
-            }    
+                return '\0';
+            }
+            return _text[index];
         }
-        
+
         public Lexer(SyntaxTree syntaxTree)
         {
             _syntaxTree = syntaxTree;
             _text = _syntaxTree.Text;
             Diagnostics = new DiagnosticBag();
+            _triviaBuilder = ImmutableArray.CreateBuilder<SyntaxTrivia>();
         }
 
         public SyntaxToken Lex()
+        {
+            LexTrivia(true);
+            var leadingTrivia = _triviaBuilder.ToImmutable();
+
+            var tokenStart = _position;
+            LexToken();
+            var tokenKind = _kind;
+            var tokenValue = _value;
+            var tokenLength = _position - tokenStart;
+
+            LexTrivia(false);
+            var trailingTrivia = _triviaBuilder.ToImmutable();
+
+            _tokenText ??= tokenKind.GetText();
+            if (_tokenText == null)
+            {
+                _tokenText = _text.ToString(tokenStart, tokenLength);
+            }
+            return new SyntaxToken(_syntaxTree, tokenKind, tokenStart, _tokenText, tokenValue, leadingTrivia, trailingTrivia);
+        }
+
+        public void LexToken()
         {
             _start = _position;
             _kind = SyntaxKind.BadToken;
@@ -224,18 +250,20 @@ namespace Compiler.CodeAnalysis.Syntax
                         _kind = SyntaxKind.GreaterToken;
                     }
                     break;
-                case '0': case '1': case '2': case '3': case '4':
-                case '5': case '6': case '7': case '8': case '9':
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                case '9':
                     LexDigit();
                     break;
                 case '"':
                     LexString();
-                    break;
-                case ' ':
-                case '\t':
-                case '\n':
-                case '\r':
-                    LexWhitespace();
                     break;
                 case '_':
                     LexIdentifierOrKeyword();
@@ -244,10 +272,6 @@ namespace Compiler.CodeAnalysis.Syntax
                     if (char.IsLetter(Current))
                     {
                         LexIdentifierOrKeyword();
-                    }
-                    else if (char.IsWhiteSpace(Current))
-                    {
-                        LexWhitespace();
                     }
                     else
                     {
@@ -259,14 +283,6 @@ namespace Compiler.CodeAnalysis.Syntax
                     }
                     break;
             }
-            
-            _tokenText ??= _kind.GetText();
-            if (_tokenText == null)
-            {
-                var length = _position - _start;
-                _tokenText = _text.ToString(_start, length);
-            }
-            return new SyntaxToken(_syntaxTree, _kind, _start, _tokenText, _value);
         }
 
         private void LexString()
@@ -326,10 +342,150 @@ namespace Compiler.CodeAnalysis.Syntax
             _kind = SyntaxKind.NumberToken;
         }
 
+        private void LexTrivia(bool leading)
+        {
+            _triviaBuilder.Clear();
+            var done = false;
+            while (!done)
+            {
+                _start = _position;
+                _kind = SyntaxKind.BadToken;
+                _value = null;
+                switch (Current)
+                {
+                    case '\0':
+                        done = true;
+                        break;
+
+                    case '/':
+                        if (Lookahead == '/')
+                        {
+                            LexSingleLineComment();
+                        }
+                        else if (Lookahead == '*')
+                        {
+                            LexMultiLineComment();
+                        }
+                        else
+                        {
+                            done = true;
+                        }
+                        break;
+
+                    case '\n':
+                    case '\r':
+                        if (!leading)
+                        {
+                            done = true; 
+                        }
+                        LexLineBreak();
+                        break;
+
+                    case ' ':
+                    case '\t':
+                        LexWhitespace();
+                        break;
+
+                    default:
+                        if (char.IsWhiteSpace(Current))
+                        {
+                            LexWhitespace();
+                        }
+                        else
+                        {
+                            done = true;
+                        }
+                        break;
+                }
+
+                var length = _position - _start;
+                if (length == 0)
+                {
+                    continue;
+                }
+                
+                var text = _text.ToString(_start, length);
+                var trivia = new SyntaxTrivia(_syntaxTree, _kind, _start, text);
+                _triviaBuilder.Add(trivia);
+            }
+
+        }
+
         private void LexWhitespace()
         {
-            ConsumesTokenWhile(char.IsWhiteSpace);
-            _kind = SyntaxKind.WhitespaceToken;
+            var done = false;
+
+            while (!done)
+            {
+                switch (Current)
+                {
+                    case '\0':
+                    case '\r':
+                    case '\n':
+                        done = true;
+                        break;
+                    default:
+                        if (!char.IsWhiteSpace(Current))
+                            done = true;
+                        else
+                            _position++;
+                        break;
+                }
+            }
+
+            _kind = SyntaxKind.WhitespaceTrivia;
+        }
+
+        private void LexLineBreak()
+        {
+            if (Current == '\r' && Lookahead == '\n')
+            {
+                _position += 2;
+            }
+            else
+            {
+                _position++;
+            }
+
+            _kind = SyntaxKind.LineBreakTrivia;
+        }
+
+        private void LexSingleLineComment()
+        {
+            _position++;
+            ConsumesTokenWhile(c => c != '\n' && c != '\r' && c != '\0');
+            _kind = SyntaxKind.SingleLineCommentTrivia;
+        }
+
+        private void LexMultiLineComment()
+        {
+            _position++;
+
+            var done = false;
+            while (!done)
+            {
+                switch (Current)
+                {
+                    case '\0':
+                        done = true;
+                        var span = new TextSpan(_start, 2);
+                        var location = new TextLocation(_text, span);
+                        Diagnostics.ReportUnterminatedMultilineComment(location);
+                        break;
+                    case '*':
+                        _position++;
+                        if (Current == '/')
+                        {
+                            _position++;
+                            done = true;
+                        }
+                        break;
+                    default:
+                        _position++;
+                        break;
+                }
+            }
+            _kind = SyntaxKind.MultiLineCommentTrivia;
         }
 
         private void LexIdentifierOrKeyword()

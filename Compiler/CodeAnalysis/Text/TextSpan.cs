@@ -1,23 +1,7 @@
-﻿namespace Compiler.CodeAnalysis.Text
+﻿using System;
+
+namespace Compiler.CodeAnalysis.Text
 {
-    public readonly struct TextLocation
-    {
-        public TextLocation(SourceText text, TextSpan span)
-        {
-            Text = text;
-            Span = span;
-        }
-
-        public SourceText Text { get; }
-        public TextSpan Span { get; }
-
-        public string FileName => Text.FileName;
-        public int StartLine => Text.GetLineIndex(Span.Start);
-        public int StartCharacter => Span.Start - Text.Lines[StartLine].Start;
-        public int EndLine => Text.GetLineIndex(Span.End);
-        public int EndCharacter => Span.End - Text.Lines[EndLine].Start;
-    }
-
     public readonly struct TextSpan
     {
         public int Start { get; }
@@ -35,6 +19,21 @@
             return new TextSpan(start, end - start);
         }
 
-        public override string ToString() => $"{Start}..{End}";
+        public bool OverlapsWith(in TextSpan span)
+        {
+            return Start < span.End && End > span.Start;
+        }
+
+        public TextSpan? Overlap(TextSpan span)
+        {
+            int overlapStart = Math.Max(Start, span.Start);
+            int overlapEnd = Math.Min(End, span.End);
+
+            return overlapStart < overlapEnd
+                ? FromBounds(overlapStart, overlapEnd)
+                : (TextSpan?)null;
+        }
+
+        public override string ToString() => $"[{Start}..{End})";
     }
 }

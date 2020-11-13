@@ -202,5 +202,10 @@ namespace Compiler.CodeAnalysis.Diagnostics
         {
             Report(location, DiagnosticCode.InvalidReturnWithValueInGlobalStatements.GetDiagnostic());
         }
+
+        internal void ReportUnterminatedMultilineComment(TextLocation location)
+        {
+            Report(location, DiagnosticCode.UnterminatedMultilineComment.GetDiagnostic());
+        }
     }
 }

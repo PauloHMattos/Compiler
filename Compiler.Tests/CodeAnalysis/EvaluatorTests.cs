@@ -708,6 +708,19 @@ namespace Compiler.Tests.CodeAnalysis
             AssertHasDiagnostics(text, diagnostics);
         }
 
+        [Fact]
+        public void Evaluator_MultiLineComment_ReportsUnterminated()
+        {
+            var text = @"[/*] unterminated comment";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.UnterminatedMultilineComment.GetDiagnostic(),
+            };
+
+            AssertHasDiagnostics(text, diagnostics);
+        }
+
         private static void AssertValue(string text, object expectedValue)
         {
             var syntaxTree = SyntaxTree.Parse(text);
