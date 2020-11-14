@@ -594,13 +594,13 @@ namespace Compiler.REPL
         }
 
         [MetaCommand("cls", "Clears the screen")]
-        protected void EvaluateCls()
+        protected static void EvaluateCls()
         {
             Console.Clear();
         }
 
         [MetaCommand("exit", "Exits the REPL")]
-        protected void EvaluateExit()
+        protected static void EvaluateExit()
         {
             Environment.Exit(0);
         }

@@ -91,7 +91,7 @@ namespace Compiler.CodeAnalysis.Syntax
             }
 
             var syntaxTree = new SyntaxTree(text, ParseTokens);
-            diagnostics = syntaxTree.Diagnostics.ToImmutableArray();
+            diagnostics = syntaxTree.Diagnostics;
             return tokens.ToImmutableArray();
         }
     }

@@ -1,6 +1,4 @@
-﻿using Compiler.CodeAnalysis.Binding;
-
-namespace Compiler.CodeAnalysis.Symbols
+﻿namespace Compiler.CodeAnalysis.Symbols
 {
     public sealed class ParameterSymbol : VariableSymbol
     {

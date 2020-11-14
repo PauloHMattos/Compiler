@@ -8,7 +8,6 @@ using System.IO;
 using System;
 using System.Text;
 using System.CodeDom.Compiler;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Compiler.Generators
 {
