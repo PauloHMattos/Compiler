@@ -1,6 +1,6 @@
 ﻿namespace Compiler.CodeAnalysis.Syntax
 {
-    public sealed class ElseClauseSyntax : SyntaxNode
+    public sealed partial class ElseClauseSyntax : SyntaxNode
     {
         public SyntaxToken ElseKeyword { get; }
         public StatementSyntax ElseStatement { get; }

@@ -1,6 +1,6 @@
 ﻿namespace Compiler.CodeAnalysis.Syntax
 {
-    internal sealed class ForStatementSyntax : StatementSyntax
+    internal sealed partial class ForStatementSyntax : StatementSyntax
     {
         public SyntaxToken ForKeyword { get; }
         public SyntaxToken Identifier { get; }

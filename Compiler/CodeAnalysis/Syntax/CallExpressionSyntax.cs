@@ -1,8 +1,6 @@
-﻿using System.Collections.Generic;
-
-namespace Compiler.CodeAnalysis.Syntax
+﻿namespace Compiler.CodeAnalysis.Syntax
 {
-    internal class CallExpressionSyntax : ExpressionSyntax
+    internal partial class CallExpressionSyntax : ExpressionSyntax
     {
         public SyntaxToken Identifier { get; }
         public SyntaxToken OpenParenthesisToken { get; }
@@ -21,17 +19,6 @@ namespace Compiler.CodeAnalysis.Syntax
             OpenParenthesisToken = openParenthesisToken;
             Arguments = arguments;
             CloseParenthesisToken = closeParenthesisToken;
-        }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return Identifier;
-            yield return OpenParenthesisToken;
-            foreach (var arg in Arguments.GetWithSeparators())
-            {
-                yield return arg;
-            }
-            yield return CloseParenthesisToken;
         }
     }
 }

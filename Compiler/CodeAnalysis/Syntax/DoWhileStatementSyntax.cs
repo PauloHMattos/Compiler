@@ -1,6 +1,6 @@
 ﻿namespace Compiler.CodeAnalysis.Syntax
 {
-    internal class DoWhileStatementSyntax : StatementSyntax
+    internal partial class DoWhileStatementSyntax : StatementSyntax
     {
         public SyntaxToken DoKeyword { get; }
         public StatementSyntax Body { get; }

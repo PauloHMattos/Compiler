@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using Compiler.CodeAnalysis.Text;
 using Compiler.IO;
 
@@ -50,35 +49,7 @@ namespace Compiler.CodeAnalysis.Syntax
             return GetChildren().Last().GetLastToken();
         }
 
-        public virtual IEnumerable<SyntaxNode> GetChildren()
-        {
-            var properties = GetType()
-                .GetProperties(BindingFlags.Instance | BindingFlags.Public);
-            foreach (var property in properties)
-            {
-                if (typeof(SyntaxNode).IsAssignableFrom(property.PropertyType))
-                {
-                    var value = (SyntaxNode)property.GetValue(this);
-                    if (value == null)
-                    {
-                        continue;
-                    }
-                    yield return value;
-                }
-                else if (typeof(IEnumerable<SyntaxNode>).IsAssignableFrom(property.PropertyType))
-                {
-                    var values = (IEnumerable<SyntaxNode>)property.GetValue(this);
-                    foreach (var value in values)
-                    {
-                        if (value == null)
-                        {
-                            continue;
-                        }
-                        yield return value;
-                    }
-                }
-            }
-        }
+        public abstract IEnumerable<SyntaxNode> GetChildren();
 
         public void WriteTo(TextWriter writer)
         {

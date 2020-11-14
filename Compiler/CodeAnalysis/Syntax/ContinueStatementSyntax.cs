@@ -1,6 +1,6 @@
 ﻿namespace Compiler.CodeAnalysis.Syntax
 {
-    internal class ContinueStatementSyntax : StatementSyntax
+    internal partial class ContinueStatementSyntax : StatementSyntax
     {
         public SyntaxToken Keyword { get; }
         public override SyntaxKind Kind => SyntaxKind.ContinueStatement;

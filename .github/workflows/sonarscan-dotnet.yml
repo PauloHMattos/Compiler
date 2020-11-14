@@ -17,7 +17,7 @@ jobs:
         fetch-depth: 0
 
     - name: SonarCloud
-      uses: highbyte/sonarscan-dotnet@1.0
+      uses: highbyte/sonarscan-dotnet@2.0-beta
       with:
         # The key of the SonarQube project
         sonarProjectKey: PauloHMattos_Compiler

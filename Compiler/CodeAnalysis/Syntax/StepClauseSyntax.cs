@@ -1,6 +1,6 @@
 ﻿namespace Compiler.CodeAnalysis.Syntax
 {
-    internal sealed class StepClauseSyntax : SyntaxNode
+    internal sealed partial class StepClauseSyntax : SyntaxNode
     {
         public SyntaxToken Keyword { get; }
         public ExpressionSyntax Expression { get; }

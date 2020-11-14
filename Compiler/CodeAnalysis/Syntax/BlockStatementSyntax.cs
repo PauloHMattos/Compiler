@@ -2,7 +2,7 @@
 
 namespace Compiler.CodeAnalysis.Syntax
 {
-    public sealed class BlockStatementSyntax : StatementSyntax
+    public sealed partial class BlockStatementSyntax : StatementSyntax
     {
         public SyntaxToken OpenBraceToken { get; }
         public ImmutableArray<StatementSyntax> Statements { get; }

@@ -1,6 +1,6 @@
 ﻿namespace Compiler.CodeAnalysis.Syntax
 {
-    public sealed class ReturnStatementSyntax : StatementSyntax
+    public sealed partial class ReturnStatementSyntax : StatementSyntax
     {
         public SyntaxToken ReturnKeyword { get; }
         public ExpressionSyntax Expression { get; }

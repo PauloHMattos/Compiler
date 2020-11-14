@@ -1,6 +1,6 @@
 ﻿namespace Compiler.CodeAnalysis.Syntax
 {
-    public sealed class NameExpressionSyntax : ExpressionSyntax
+    public sealed partial class NameExpressionSyntax : ExpressionSyntax
     {
         public SyntaxToken IdentifierToken { get; }
         public override SyntaxKind Kind => SyntaxKind.NameExpression;
