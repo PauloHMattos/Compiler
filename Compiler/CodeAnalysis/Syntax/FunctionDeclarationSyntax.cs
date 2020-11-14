@@ -1,8 +1,6 @@
-﻿using System.Collections.Generic;
-
-namespace Compiler.CodeAnalysis.Syntax
+﻿namespace Compiler.CodeAnalysis.Syntax
 {
-    public sealed class FunctionDeclarationSyntax : MemberSyntax
+    public sealed partial class FunctionDeclarationSyntax : MemberSyntax
     {
         public SyntaxToken FunctionKeyword { get; }
         public SyntaxToken Identifier { get; }
@@ -30,20 +28,6 @@ namespace Compiler.CodeAnalysis.Syntax
             CloseParenthesisToken = closeParenthesisToken;
             Type = type;
             Body = body;
-        }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return FunctionKeyword;
-            yield return Identifier;
-            yield return OpenParenthesisToken;
-            foreach (var arg in Parameters.GetWithSeparators())
-            {
-                yield return arg;
-            }
-            yield return CloseParenthesisToken;
-            yield return Type;
-            yield return Body;
         }
     }
 }

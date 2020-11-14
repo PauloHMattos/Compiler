@@ -1,6 +1,6 @@
 ﻿namespace Compiler.CodeAnalysis.Syntax
 {
-    public sealed class IfStatementSyntax : StatementSyntax
+    public sealed partial class IfStatementSyntax : StatementSyntax
     {
         public SyntaxToken IfKeyword { get; }
         public ExpressionSyntax Condition { get; }

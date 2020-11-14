@@ -1,6 +1,6 @@
 ﻿namespace Compiler.CodeAnalysis.Syntax
 {
-    public sealed class UnaryExpressionSyntax : ExpressionSyntax
+    public sealed partial class UnaryExpressionSyntax : ExpressionSyntax
     {
         public SyntaxToken OperatorToken { get; }
         public ExpressionSyntax Operand { get; }

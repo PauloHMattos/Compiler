@@ -2,7 +2,7 @@
 
 namespace Compiler.CodeAnalysis.Syntax
 {
-    public sealed class CompilationUnitSyntax : SyntaxNode
+    public sealed partial class CompilationUnitSyntax : SyntaxNode
     {
         public ImmutableArray<MemberSyntax> Members { get; }
         public SyntaxToken EndOfFileToken { get; }

@@ -1,6 +1,6 @@
 ﻿namespace Compiler.CodeAnalysis.Syntax
 {
-    internal class BreakStatementSyntax : StatementSyntax
+    internal partial class BreakStatementSyntax : StatementSyntax
     {
         public SyntaxToken Keyword { get; }
         public override SyntaxKind Kind => SyntaxKind.BreakStatement;

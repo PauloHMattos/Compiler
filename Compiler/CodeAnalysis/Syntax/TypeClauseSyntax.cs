@@ -1,6 +1,6 @@
 ﻿namespace Compiler.CodeAnalysis.Syntax
 {
-    public sealed class TypeClauseSyntax : SyntaxNode
+    public sealed partial class TypeClauseSyntax : SyntaxNode
     {
         public SyntaxToken ColonToken { get; }
         public SyntaxToken Identifier { get; }

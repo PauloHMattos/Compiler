@@ -1,6 +1,8 @@
-﻿using System.Collections.Immutable;
+﻿using System;
 using System.Linq;
 using Compiler.CodeAnalysis.Text;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace Compiler.CodeAnalysis.Syntax
 {
@@ -40,6 +42,11 @@ namespace Compiler.CodeAnalysis.Syntax
             LeadingTrivia = leadingTrivia;
             TrailingTrivia = trailingTrivia;
             Span = new TextSpan(position, Text?.Length ?? 0);
+        }
+
+        public override IEnumerable<SyntaxNode> GetChildren()
+        {
+            return Array.Empty<SyntaxNode>();
         }
     }
 }
