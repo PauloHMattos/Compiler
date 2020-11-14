@@ -13,7 +13,6 @@ using System.Diagnostics.CodeAnalysis;
 namespace Compiler.Generators
 {
     [Generator]
-    [ExcludeFromCodeCoverage]
     public class SyntaxNodeGetChildrenGenerator : ISourceGenerator
     {
         public void Initialize(GeneratorInitializationContext context)
