@@ -2,7 +2,6 @@
     <PropertyGroup>
         <LangVersion>9.0</LangVersion>
         <Features>strict</Features>
-        <TargetFramework>net5.0</TargetFramework>
     </PropertyGroup>
 
     <!--
