@@ -8,8 +8,8 @@
         public ExpressionSyntax LowerBound { get; }
         public SyntaxToken ToKeyword { get; }
         public ExpressionSyntax UpperBound { get; }
-        public StatementSyntax Body { get; }
         public StepClauseSyntax? StepClause { get; }
+        public StatementSyntax Body { get; }
         public override SyntaxKind Kind => SyntaxKind.ForStatement;
 
         public ForStatementSyntax(SyntaxTree syntaxTree, 
@@ -19,8 +19,8 @@
             ExpressionSyntax lowerBound, 
             SyntaxToken toKeyword, 
             ExpressionSyntax upperBound,
-            StatementSyntax body,
-            StepClauseSyntax? stepClause)
+            StepClauseSyntax? stepClause,
+            StatementSyntax body)
             : base(syntaxTree)
         {
             ForKeyword = forKeyword;
@@ -29,8 +29,8 @@
             LowerBound = lowerBound;
             ToKeyword = toKeyword;
             UpperBound = upperBound;
-            Body = body;
             StepClause = stepClause;
+            Body = body;
         }
     }
 }

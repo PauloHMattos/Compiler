@@ -251,7 +251,9 @@ namespace Compiler.CodeAnalysis.Syntax
         private TypeClauseSyntax? ParseOptionalTypeClause()
         {
             if (Current.Kind != SyntaxKind.ColonToken)
+            {
                 return null;
+            }
 
             return ParseTypeClause();
         }
@@ -283,7 +285,9 @@ namespace Compiler.CodeAnalysis.Syntax
                 // already tried to parse an expression statement
                 // and reported one.
                 if (Current == startToken)
+                {
                     NextToken();
+                }
             }
 
             var closeBraceToken = MatchToken(SyntaxKind.CloseBraceToken);
@@ -338,7 +342,19 @@ namespace Compiler.CodeAnalysis.Syntax
             var upperBound = ParseExpression();
             var stepClause = ParseOptionalStepClause();
             var body = ParseStatement();
-            return new ForStatementSyntax(_syntaxTree, keyword, identifier, equalsToken, lowerBound, toKeyword, upperBound, body, stepClause);
+            return new ForStatementSyntax(_syntaxTree, keyword, identifier, equalsToken, lowerBound, toKeyword, upperBound, stepClause, body);
+        }
+
+        private StepClauseSyntax? ParseOptionalStepClause()
+        {
+            if (Current.Kind != SyntaxKind.StepKeyword)
+            {
+                return null;
+            }
+
+            var keyword = NextToken();
+            var expression = ParseExpression();
+            return new StepClauseSyntax(_syntaxTree, keyword, expression);
         }
 
         private StatementSyntax ParseBreakStatement()
@@ -362,18 +378,6 @@ namespace Compiler.CodeAnalysis.Syntax
             var sameLine = !isEof && keywordLine == currentLine;
             var expression = sameLine ? ParseExpression() : null;
             return new ReturnStatementSyntax(_syntaxTree, keyword, expression);
-        }
-
-        private StepClauseSyntax? ParseOptionalStepClause()
-        {
-            if (Current.Kind != SyntaxKind.StepKeyword)
-            {
-                return null;
-            }
-
-            var keyword = NextToken();
-            var expression = ParseExpression();
-            return new StepClauseSyntax(_syntaxTree, keyword, expression);
         }
 
         private StatementSyntax ParseExpressionStatement()
