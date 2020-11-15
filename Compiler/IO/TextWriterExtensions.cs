@@ -1,6 +1,7 @@
 ﻿using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Compiler.CodeAnalysis.Diagnostics;
@@ -48,7 +49,9 @@ namespace Compiler.IO
 
         public static void WriteKeyword(this TextWriter writer, SyntaxKind kind)
         {
-            writer.WriteKeyword(kind.GetText());
+            var text = SyntaxFacts.GetText(kind);
+            Debug.Assert(kind.IsKeyword() && text != null);
+            writer.WriteKeyword(text);
         }
 
         public static void WriteKeyword(this TextWriter writer, string text)
@@ -85,7 +88,9 @@ namespace Compiler.IO
 
         public static void WritePunctuation(this TextWriter writer, SyntaxKind kind)
         {
-            writer.WritePunctuation(kind.GetText());
+            var text = SyntaxFacts.GetText(kind);
+            Debug.Assert(text != null);
+            writer.WritePunctuation(text);
         }
 
         public static void WritePunctuation(this TextWriter writer, string text)

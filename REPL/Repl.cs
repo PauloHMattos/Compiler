@@ -66,7 +66,7 @@ namespace Compiler.REPL
             }
         }
 
-        private delegate object LineRenderHandler(IReadOnlyList<string> lines, int lineIndex, object state);
+        private delegate object? LineRenderHandler(IReadOnlyList<string> lines, int lineIndex, object? state);
 
         private sealed class SubmissionView
         {
@@ -86,7 +86,7 @@ namespace Compiler.REPL
                 Render();
             }
 
-            private void SubmissionDocumentChanged(object sender, NotifyCollectionChangedEventArgs e)
+            private void SubmissionDocumentChanged(object? sender, NotifyCollectionChangedEventArgs e)
             {
                 Render();
             }
@@ -96,7 +96,7 @@ namespace Compiler.REPL
                 Console.CursorVisible = false;
 
                 var lineCount = 0;
-                var state = (object)null;
+                var state = (object?)null;
 
                 foreach (var line in _submissionDocument)
                 {
@@ -451,7 +451,7 @@ namespace Compiler.REPL
             _submissionHistory.Clear();
         }
 
-        protected virtual object RenderLine(IReadOnlyList<string> lines, int lineIndex, object state)
+        protected virtual object? RenderLine(IReadOnlyList<string> lines, int lineIndex, object? state)
         {
             Console.Write(lines[lineIndex]);
             return state;
@@ -574,7 +574,7 @@ namespace Compiler.REPL
                     {
                         Console.Out.WriteSpace();
                         Console.Out.WritePunctuation("<");
-                        Console.Out.WriteIdentifier(pi.Name);
+                        Console.Out.WriteIdentifier(pi.Name!);
                         Console.Out.WritePunctuation(">");
                     }
                     Console.Out.WriteLine();

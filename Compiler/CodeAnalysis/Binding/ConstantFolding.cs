@@ -5,7 +5,7 @@ namespace Compiler.CodeAnalysis.Binding
 {
     internal static class ConstantFolding
     {
-        public static BoundConstant Fold(BoundUnaryOperator op, BoundExpression operand)
+        public static BoundConstant? Fold(BoundUnaryOperator op, BoundExpression operand)
         {
             if (operand.ConstantValue != null)
             {
@@ -27,7 +27,7 @@ namespace Compiler.CodeAnalysis.Binding
             return null;
         }
 
-        public static BoundConstant Fold(BoundExpression left, BoundBinaryOperator op, BoundExpression right)
+        public static BoundConstant? Fold(BoundExpression left, BoundBinaryOperator op, BoundExpression right)
         {
             var leftConstant = left.ConstantValue;
             var rightConstant = right.ConstantValue;

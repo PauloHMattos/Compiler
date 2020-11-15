@@ -248,7 +248,7 @@ namespace Compiler.CodeAnalysis.Syntax
             return new VariableDeclarationStatementSyntax(_syntaxTree, keyword, identifier, typeClause, equals, initializer);
         }
 
-        private TypeClauseSyntax ParseOptionalTypeClause()
+        private TypeClauseSyntax? ParseOptionalTypeClause()
         {
             if (Current.Kind != SyntaxKind.ColonToken)
                 return null;
@@ -295,11 +295,11 @@ namespace Compiler.CodeAnalysis.Syntax
             var keyword = MatchToken(SyntaxKind.IfKeyword);
             var condition = ParseExpression();
             var thenStatement = ParseStatement();
-            var elseClause = ParseElseClause();
+            var elseClause = ParseOptionalElseClause();
             return new IfStatementSyntax(_syntaxTree, keyword, condition, thenStatement, elseClause);
         }
 
-        private ElseClauseSyntax ParseElseClause()
+        private ElseClauseSyntax? ParseOptionalElseClause()
         {
             if (Current.Kind != SyntaxKind.ElseKeyword)
             {
@@ -336,7 +336,7 @@ namespace Compiler.CodeAnalysis.Syntax
             var lowerBound = ParseExpression();
             var toKeyword = MatchToken(SyntaxKind.ToKeyword);
             var upperBound = ParseExpression();
-            var stepClause = ParseStepClause();
+            var stepClause = ParseOptionalStepClause();
             var body = ParseStatement();
             return new ForStatementSyntax(_syntaxTree, keyword, identifier, equalsToken, lowerBound, toKeyword, upperBound, body, stepClause);
         }
@@ -364,7 +364,7 @@ namespace Compiler.CodeAnalysis.Syntax
             return new ReturnStatementSyntax(_syntaxTree, keyword, expression);
         }
 
-        private StepClauseSyntax ParseStepClause()
+        private StepClauseSyntax? ParseOptionalStepClause()
         {
             if (Current.Kind != SyntaxKind.StepKeyword)
             {

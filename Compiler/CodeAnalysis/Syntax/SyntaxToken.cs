@@ -10,9 +10,9 @@ namespace Compiler.CodeAnalysis.Syntax
     {
         public int Position { get; }
         public string Text { get; }
-        public object Value { get; }
+        public object? Value { get; }
         public override SyntaxKind Kind { get; }
-        public override TextSpan Span { get; }
+        public override TextSpan Span => new TextSpan(Position, Text.Length);
         public override TextSpan FullSpan
         {
             get
@@ -22,26 +22,27 @@ namespace Compiler.CodeAnalysis.Syntax
                 return TextSpan.FromBounds(start, end);
             }
         }
-        public bool IsMissing => Span.Length == 0;
+        public bool IsMissing { get; }
         public ImmutableArray<SyntaxTrivia> LeadingTrivia { get; }
         public ImmutableArray<SyntaxTrivia> TrailingTrivia { get; }
 
         public SyntaxToken(SyntaxTree syntaxTree,
             SyntaxKind kind,
             int position,
-            string text,
-            object value,
+            string? text,
+            object? value,
             ImmutableArray<SyntaxTrivia> leadingTrivia,
             ImmutableArray<SyntaxTrivia> trailingTrivia)
             : base(syntaxTree)
         {
             Kind = kind;
             Position = position;
-            Text = text;
+            Text = text ?? string.Empty;
             Value = value;
             LeadingTrivia = leadingTrivia;
             TrailingTrivia = trailingTrivia;
-            Span = new TextSpan(position, Text?.Length ?? 0);
+
+            IsMissing = text == null;
         }
 
         public override IEnumerable<SyntaxNode> GetChildren()

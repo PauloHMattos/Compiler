@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 using Compiler.CodeAnalysis.Syntax;
 using Xunit;
 
@@ -14,6 +15,9 @@ namespace Compiler.Tests.CodeAnalysis.Syntax
             var op2Precedence = op2.GetBinaryOperatorPrecedence();
             var op1Text = op1.GetText();
             var op2Text = op2.GetText();
+
+            Debug.Assert(op1Text != null);
+            Debug.Assert(op2Text != null);
 
             var text = $"a {op1Text} b {op2Text} c";
             var expression = ParseExpression(text);
@@ -71,6 +75,9 @@ namespace Compiler.Tests.CodeAnalysis.Syntax
             var unaryText = unaryKind.GetText();
             var binaryText = binaryKind.GetText();
 
+            Debug.Assert(unaryText != null);
+            Debug.Assert(binaryText != null);
+
             var text = $"{unaryText} a {binaryText} b";
             var expression = ParseExpression(text);
 
@@ -113,11 +120,11 @@ namespace Compiler.Tests.CodeAnalysis.Syntax
                 }
             }
         }
-        
+
         private static ExpressionSyntax ParseExpression(string text)
         {
             var syntaxTree = SyntaxTree.Parse(text);
-            var root = syntaxTree.Root; 
+            var root = syntaxTree.Root;
             var member = Assert.Single(root.Members);
             var globalStatement = Assert.IsType<GlobalStatementSyntax>(member);
             return Assert.IsType<ExpressionStatementSyntax>(globalStatement.Statement).Expression;

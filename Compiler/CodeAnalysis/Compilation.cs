@@ -14,30 +14,13 @@ namespace Compiler.CodeAnalysis
 {
     public sealed class Compilation
     {
-        private readonly Compilation _previous;
-        private BoundGlobalScope _globalScope;
+        private readonly Compilation? _previous;
+        private BoundGlobalScope? _globalScope;
         public bool IsScript { get; }
         public ImmutableArray<SyntaxTree> SyntaxTrees { get; }
-        public FunctionSymbol MainFunction => GlobalScope.MainFunction;
+        public FunctionSymbol? MainFunction => GlobalScope.MainFunction;
         public ImmutableArray<FunctionSymbol> Functions => GlobalScope.Functions;
         public ImmutableArray<VariableSymbol> Variables => GlobalScope.Variables;
-
-        private Compilation(bool isScript, Compilation previous, params SyntaxTree[] syntaxTrees)
-        {
-            IsScript = isScript;
-            _previous = previous;
-            SyntaxTrees = syntaxTrees.ToImmutableArray();
-        }
-
-        public static Compilation Create(params SyntaxTree[] syntaxTrees)
-        {
-            return new Compilation(false, null, syntaxTrees);
-        }
-
-        public static Compilation CreateScript(Compilation previous, params SyntaxTree[] syntaxTrees)
-        {
-            return new Compilation(true, previous, syntaxTrees);
-        }
 
         internal BoundGlobalScope GlobalScope
         {
@@ -52,9 +35,26 @@ namespace Compiler.CodeAnalysis
             }
         }
 
+        private Compilation(bool isScript, Compilation? previous, params SyntaxTree[] syntaxTrees)
+        {
+            IsScript = isScript;
+            _previous = previous;
+            SyntaxTrees = syntaxTrees.ToImmutableArray();
+        }
+
+        public static Compilation Create(params SyntaxTree[] syntaxTrees)
+        {
+            return new Compilation(false, null, syntaxTrees);
+        }
+
+        public static Compilation CreateScript(Compilation? previous, params SyntaxTree[] syntaxTrees)
+        {
+            return new Compilation(true, previous, syntaxTrees);
+        }
+
         private BoundProgram GetProgram()
         {
-            var previous = _previous == null ? null : _previous.GetProgram();
+            var previous = _previous?.GetProgram();
             return Binder.BindProgram(IsScript, previous, GlobalScope);
         }
 
@@ -80,7 +80,7 @@ namespace Compiler.CodeAnalysis
 
             if (program.Diagnostics.Any())
             {
-                return new EvaluationResult(program.Diagnostics.ToImmutableArray(), null);
+                return new EvaluationResult(program.Diagnostics, null);
             }
 
             var evaluator = new Evaluator(program, variables);

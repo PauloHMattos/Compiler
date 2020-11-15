@@ -16,8 +16,8 @@ namespace Compiler.CodeAnalysis.Syntax
         private int _position;
         private int _start;
         private SyntaxKind _kind;
-        private object _value;
-        private string _tokenText;
+        private object? _value;
+        private string? _tokenText;
 
         public DiagnosticBag Diagnostics { get; }
 
@@ -61,7 +61,7 @@ namespace Compiler.CodeAnalysis.Syntax
             {
                 _tokenText = _text.ToString(tokenStart, tokenLength);
             }
-            return new SyntaxToken(_syntaxTree, tokenKind, tokenStart, _tokenText, tokenValue, leadingTrivia, trailingTrivia);
+            return new SyntaxToken(_syntaxTree, tokenKind, tokenStart, _tokenText!, tokenValue, leadingTrivia, trailingTrivia);
         }
 
         public void LexToken()

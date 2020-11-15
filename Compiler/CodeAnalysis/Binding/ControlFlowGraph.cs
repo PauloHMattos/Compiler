@@ -1,6 +1,7 @@
 ﻿using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Compiler.CodeAnalysis.Symbols;
@@ -70,9 +71,9 @@ namespace Compiler.CodeAnalysis.Binding
         {
             public BasicBlock From { get; }
             public BasicBlock To { get; }
-            public BoundExpression Condition { get; }
+            public BoundExpression? Condition { get; }
 
-            public BasicBlockBranch(BasicBlock from, BasicBlock to, BoundExpression condition)
+            public BasicBlockBranch(BasicBlock from, BasicBlock to, BoundExpression? condition)
             {
                 From = from;
                 To = to;
@@ -247,7 +248,7 @@ namespace Compiler.CodeAnalysis.Binding
                 return new ControlFlowGraph(_start, _end, blocks, _branches);
             }
 
-            private void Connect(BasicBlock from, BasicBlock to, BoundExpression condition = null)
+            private void Connect(BasicBlock from, BasicBlock to, BoundExpression? condition = null)
             {
                 if (condition is BoundLiteralExpression l)
                 {
@@ -291,6 +292,7 @@ namespace Compiler.CodeAnalysis.Binding
                 }
 
                 var op = BoundUnaryOperator.Bind(SyntaxKind.BangToken, TypeSymbol.Bool);
+                Debug.Assert(op != null);
                 return new BoundUnaryExpression(condition, op);
             }
         }

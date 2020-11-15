@@ -8,7 +8,6 @@ using System.IO;
 using System;
 using System.Text;
 using System.CodeDom.Compiler;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Compiler.Generators
 {
@@ -27,6 +26,12 @@ namespace Compiler.Generators
             var immutableArrayType = compilation.GetTypeByMetadataName("System.Collections.Immutable.ImmutableArray`1");
             var separatedSyntaxListType = compilation.GetTypeByMetadataName("Compiler.CodeAnalysis.Syntax.SeparatedSyntaxList`1");
             var syntaxNodeType = compilation.GetTypeByMetadataName("Compiler.CodeAnalysis.Syntax.SyntaxNode");
+
+            if (immutableArrayType == null || separatedSyntaxListType == null || syntaxNodeType == null)
+            {
+                return;
+            }
+
 
             var types = GetAllTypes(compilation.Assembly);
             var syntaxNodeTypes = types.Where(t => !t.IsAbstract && IsPartial(t) && IsDerivedFrom(t, syntaxNodeType));
@@ -59,7 +64,20 @@ namespace Compiler.Generators
                         {
                             if (IsDerivedFrom(propertyType, syntaxNodeType))
                             {
+                                var canBeNull = property.NullableAnnotation == NullableAnnotation.Annotated;
+                                if (canBeNull)
+                                {
+                                    indentedTextWriter.WriteLine($"if ({property.Name} != null)");
+                                    indentedTextWriter.WriteLine("{");
+                                    indentedTextWriter.Indent++;
+                                }
+
                                 indentedTextWriter.WriteLine($"yield return {property.Name};");
+                                if (canBeNull)
+                                {
+                                    indentedTextWriter.WriteLine("}");
+                                    indentedTextWriter.Indent--;
+                                }
                             }
                             else if (propertyType.TypeArguments.Length == 1 &&
                                      IsDerivedFrom(propertyType.TypeArguments[0], syntaxNodeType) &&
@@ -131,14 +149,15 @@ namespace Compiler.Generators
 
         private bool IsDerivedFrom(ITypeSymbol type, INamedTypeSymbol baseType)
         {
-            while (type != null)
+            var current = type;
+            while (current != null)
             {
-                if (SymbolEqualityComparer.Default.Equals(type, baseType))
+                if (SymbolEqualityComparer.Default.Equals(current, baseType))
                 {
                     return true;
                 }
 
-                type = type.BaseType;
+                current = current.BaseType;
             }
 
             return false;

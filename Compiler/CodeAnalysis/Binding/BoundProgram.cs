@@ -6,17 +6,16 @@ namespace Compiler.CodeAnalysis.Binding
 {
     internal sealed class BoundProgram
     {
-        public BoundProgram Previous { get; }
-        public BoundGlobalScope GlobalScope { get; }
+        public BoundProgram? Previous { get; }
         public ImmutableArray<Diagnostic> Diagnostics { get; }
-        public FunctionSymbol MainFunction { get; }
-        public FunctionSymbol ScriptFunction { get; }
+        public FunctionSymbol? MainFunction { get; }
+        public FunctionSymbol? ScriptFunction { get; }
         public ImmutableDictionary<FunctionSymbol, BoundBlockStatement> Functions { get; }
 
-        public BoundProgram(BoundProgram previous,
+        public BoundProgram(BoundProgram? previous,
                             ImmutableArray<Diagnostic> diagnostics,
-                            FunctionSymbol mainFunction,
-                            FunctionSymbol scriptFunction,
+                            FunctionSymbol? mainFunction,
+                            FunctionSymbol? scriptFunction,
                             ImmutableDictionary<FunctionSymbol, BoundBlockStatement> functions)
         {
             Previous = previous;

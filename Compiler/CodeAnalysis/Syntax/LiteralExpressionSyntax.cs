@@ -8,7 +8,7 @@
         public override SyntaxKind Kind => SyntaxKind.LiteralExpression;
 
         public LiteralExpressionSyntax(SyntaxTree syntaxTree, SyntaxToken literalToken) : 
-            this(syntaxTree, literalToken, literalToken.Value)
+            this(syntaxTree, literalToken, literalToken.Value!)
         {
         }
 

@@ -7,16 +7,16 @@ namespace Compiler.CodeAnalysis.Binding
 {
     internal sealed class BoundScope
     {
-        public BoundScope Parent { get; }
+        public BoundScope? Parent { get; }
         private readonly Dictionary<string, Symbol> _symbols;
 
-        public BoundScope(BoundScope parent)
+        public BoundScope(BoundScope? parent)
         {
             Parent = parent;
             _symbols = new Dictionary<string, Symbol>();
         }
 
-        public Symbol TryLookupSymbol(string name)
+        public Symbol? TryLookupSymbol(string name)
         {
             if (_symbols.TryGetValue(name, out var symbol))
             {

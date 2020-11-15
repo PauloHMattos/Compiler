@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Compiler.CodeAnalysis.Binding;
 using Compiler.CodeAnalysis.Symbols;
 
@@ -12,7 +13,7 @@ namespace Compiler.CodeAnalysis
         private readonly Stack<Dictionary<VariableSymbol, object>> _locals;
         private readonly Dictionary<FunctionSymbol, BoundBlockStatement> _functions;
 
-        private object _lastValue;
+        private object? _lastValue;
 
         public Evaluator(BoundProgram program, Dictionary<VariableSymbol, object> variables)
         {
@@ -33,7 +34,7 @@ namespace Compiler.CodeAnalysis
             }
         }
 
-        public object Evaluate()
+        public object? Evaluate()
         {
             var function = _program.MainFunction ?? _program.ScriptFunction;
             if (function == null)
@@ -45,7 +46,7 @@ namespace Compiler.CodeAnalysis
             return EvaluateStatement(body);
         }
 
-        private object EvaluateStatement(BoundBlockStatement body)
+        private object? EvaluateStatement(BoundBlockStatement body)
         {
             var labelToIndex = new Dictionary<BoundLabel, int>();
             for (var i = 0; i < body.Statements.Length; i++)
@@ -90,16 +91,7 @@ namespace Compiler.CodeAnalysis
                         break;
 
                     case BoundNodeKind.ConditionalGotoStatement:
-                        var conditionalGotoStatement = (BoundConditionalGotoStatement)statement;
-                        var condition = (bool)EvaluateExpression(conditionalGotoStatement.Condition);
-                        if (condition == conditionalGotoStatement.JumpIfTrue)
-                        {
-                            index = labelToIndex[conditionalGotoStatement.Label];
-                        }
-                        else
-                        {
-                            index++;
-                        }
+                        index = EvaluateConditionalGotoStatement(labelToIndex, index, statement);
                         break;
 
                     case BoundNodeKind.ReturnStatement:
@@ -115,6 +107,7 @@ namespace Compiler.CodeAnalysis
         private void EvaluateVariableDeclarationStatement(BoundVariableDeclarationStatement statement)
         {
             var value = EvaluateExpression(statement.Initializer);
+            Debug.Assert(value != null);
             _lastValue = value;
             Assign(statement.Variable, value);
         }
@@ -124,7 +117,23 @@ namespace Compiler.CodeAnalysis
             _lastValue = EvaluateExpression(expressionStatement.Expression);
         }
 
-        private object EvaluateReturnStatement(BoundReturnStatement returnStatement)
+        private int EvaluateConditionalGotoStatement(Dictionary<BoundLabel, int> labelToIndex, int index, BoundStatement statement)
+        {
+            var conditionalGotoStatement = (BoundConditionalGotoStatement)statement;
+            var condition = (bool)EvaluateExpression(conditionalGotoStatement.Condition)!;
+            if (condition == conditionalGotoStatement.JumpIfTrue)
+            {
+                index = labelToIndex[conditionalGotoStatement.Label];
+            }
+            else
+            {
+                index++;
+            }
+
+            return index;
+        }
+
+        private object? EvaluateReturnStatement(BoundReturnStatement returnStatement)
         {
             _lastValue = returnStatement.Expression == null ?
                 null :
@@ -132,7 +141,7 @@ namespace Compiler.CodeAnalysis
             return _lastValue;
         }
 
-        private object EvaluateExpression(BoundExpression expression)
+        private object? EvaluateExpression(BoundExpression expression)
         {
             if (expression.ConstantValue != null)
             {
@@ -148,19 +157,16 @@ namespace Compiler.CodeAnalysis
                     return EvaluateAssignmentExpression((BoundAssignmentExpression)expression);
 
                 case BoundNodeKind.UnaryExpression:
-                    var boundUnaryExpression = (BoundUnaryExpression)expression;
-                    return EvaluateUnaryExpression(boundUnaryExpression);
+                    return EvaluateUnaryExpression((BoundUnaryExpression)expression);
 
                 case BoundNodeKind.BinaryExpression:
-                    var boundBinaryExpression = (BoundBinaryExpression)expression;
-                    return EvaluateBinaryExpression(boundBinaryExpression);
+                    return EvaluateBinaryExpression((BoundBinaryExpression)expression);
 
                 case BoundNodeKind.CallExpression:
                     return EvaluateCallExpression((BoundCallExpression)expression);
 
                 case BoundNodeKind.ConversionExpression:
-                    var boundConversionExpression = (BoundConversionExpression)expression;
-                    return EvaluateConversionExpression(boundConversionExpression);
+                    return EvaluateConversionExpression((BoundConversionExpression)expression);
 
                 default:
                     throw new InvalidOperationException($"Unexpected expression {expression.Kind}");
@@ -169,6 +175,7 @@ namespace Compiler.CodeAnalysis
             
         private static object EvaluateConstantExpression(BoundExpression n)
         {
+            Debug.Assert(n.ConstantValue != null);
             return n.ConstantValue.Value;
         }
 
@@ -186,6 +193,7 @@ namespace Compiler.CodeAnalysis
         private object EvaluateAssignmentExpression(BoundAssignmentExpression assignmentExpression)
         {
             var value = EvaluateExpression(assignmentExpression.Expression);
+            Debug.Assert(value != null);
             Assign(assignmentExpression.Variable, value);
             return value;
         }
@@ -193,6 +201,7 @@ namespace Compiler.CodeAnalysis
         private object EvaluateUnaryExpression(BoundUnaryExpression unaryExpression)
         {
             var operand = EvaluateExpression(unaryExpression.Operand);
+            Debug.Assert(operand != null);
 
             switch (unaryExpression.Operator.Kind)
             {
@@ -213,6 +222,7 @@ namespace Compiler.CodeAnalysis
         {
             var left = EvaluateExpression(binaryExpression.Left);
             var right = EvaluateExpression(binaryExpression.Right);
+            Debug.Assert(left != null && right != null);
 
             switch (binaryExpression.Operator.Kind)
             {
@@ -281,7 +291,7 @@ namespace Compiler.CodeAnalysis
             }
         }
 
-        private object EvaluateCallExpression(BoundCallExpression callExpression)
+        private object? EvaluateCallExpression(BoundCallExpression callExpression)
         {
             if (callExpression.Function == BuiltinFunctions.Input)
             {
@@ -300,6 +310,7 @@ namespace Compiler.CodeAnalysis
             {
                 var parameter = callExpression.Function.Parameters[i];
                 var value = EvaluateExpression(callExpression.Arguments[i]);
+                Debug.Assert(value != null);
                 locals.Add(parameter, value);
             }
 
@@ -326,7 +337,7 @@ namespace Compiler.CodeAnalysis
             }
         }
 
-        private object EvaluateConversionExpression(BoundConversionExpression node)
+        private object? EvaluateConversionExpression(BoundConversionExpression node)
         {
             var value = EvaluateExpression(node.Expression);
             if (node.Type == TypeSymbol.Any)
