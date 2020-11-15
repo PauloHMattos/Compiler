@@ -14,7 +14,7 @@ namespace Compiler.REPL
     {
         private static readonly Compilation emptyCompilation = Compilation.CreateScript(null);
         private bool _loadingSubmission;
-        private Compilation _previous;
+        private Compilation? _previous;
         private bool _showTree;
         private bool _showProgram;
         private readonly Dictionary<VariableSymbol, object> _variables = new Dictionary<VariableSymbol, object>();
@@ -24,7 +24,7 @@ namespace Compiler.REPL
             LoadSubmissions();
         }
 
-        protected override object RenderLine(IReadOnlyList<string> lines, int lineIndex, object state)
+        protected override object? RenderLine(IReadOnlyList<string> lines, int lineIndex, object? state)
         {
             SyntaxTree syntaxTree;
             if (state == null)
