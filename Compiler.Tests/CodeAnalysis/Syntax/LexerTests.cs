@@ -160,7 +160,8 @@ namespace Compiler.Tests.CodeAnalysis.Syntax
             var fixedTokens = Enum.GetValues(typeof(SyntaxKind))
                 .Cast<SyntaxKind>()
                 .Select(k => (kind: k, text: k.GetText()))
-                .Where(t => t.text != null);
+                .Where(t => t.text != null)
+                .Cast<(SyntaxKind, string)>();
 
             var dynamicTokens = new[]
             {
