@@ -9,7 +9,7 @@
         public SyntaxToken ToKeyword { get; }
         public ExpressionSyntax UpperBound { get; }
         public StatementSyntax Body { get; }
-        public StepClauseSyntax StepClause { get; }
+        public StepClauseSyntax? StepClause { get; }
         public override SyntaxKind Kind => SyntaxKind.ForStatement;
 
         public ForStatementSyntax(SyntaxTree syntaxTree, 
@@ -20,7 +20,7 @@
             SyntaxToken toKeyword, 
             ExpressionSyntax upperBound,
             StatementSyntax body,
-            StepClauseSyntax stepClause)
+            StepClauseSyntax? stepClause)
             : base(syntaxTree)
         {
             ForKeyword = forKeyword;

@@ -14,7 +14,7 @@ namespace Compiler.CodeAnalysis.Syntax
             SyntaxTree = syntaxTree;
             Kind = kind;
             Text = text;
-            Span = new TextSpan(position, Text?.Length ?? 0);
+            Span = new TextSpan(position, Text.Length);
         }
     }
 }

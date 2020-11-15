@@ -7,10 +7,10 @@ namespace Compiler.CodeAnalysis.Symbols
     {
         public ImmutableArray<ParameterSymbol> Parameters { get; }
         public TypeSymbol Type { get; }
-        public FunctionDeclarationSyntax Declaration { get; }
+        public FunctionDeclarationSyntax? Declaration { get; }
         public override SymbolKind Kind => SymbolKind.Function;
 
-        public FunctionSymbol(string name, ImmutableArray<ParameterSymbol> parameters, TypeSymbol type, FunctionDeclarationSyntax declaration = null) 
+        public FunctionSymbol(string name, ImmutableArray<ParameterSymbol> parameters, TypeSymbol type, FunctionDeclarationSyntax? declaration = null) 
             : base(name)
         {
             Parameters = parameters;

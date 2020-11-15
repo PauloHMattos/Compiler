@@ -75,7 +75,7 @@ namespace Compiler.CodeAnalysis.Diagnostics
             Report(location, DiagnosticCode.UndefinedVariable.GetDiagnostic(name));
         }
 
-        internal void ReportRequiredTypeNotFound(string name, string metadataName)
+        internal void ReportRequiredTypeNotFound(string? name, string metadataName)
         {
             name = name == null
                 ? $"'{metadataName}'"
@@ -84,7 +84,7 @@ namespace Compiler.CodeAnalysis.Diagnostics
             Report(default, DiagnosticCode.RequiredTypeNotFound.GetDiagnostic(name));
         }
 
-        internal void ReportRequiredTypeAmbiguous(string name, string metadataName, TypeDefinition[] foundTypes)
+        internal void ReportRequiredTypeAmbiguous(string? name, string metadataName, TypeDefinition[] foundTypes)
         {
             var assemblyNames = foundTypes.Select(t => t.Module.Assembly.Name.Name);
             var assemblyNameList = string.Join(", ", assemblyNames);

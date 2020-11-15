@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using Compiler.CodeAnalysis.Binding;
 using Compiler.CodeAnalysis.Diagnostics;
@@ -24,13 +25,13 @@ namespace Compiler.CodeAnalysis.Emit
         private readonly Dictionary<BoundLabel, int> _labels;
         private readonly List<Fixup> _fixups;
 
-        private MethodReference _objectEqualsReference;
-        private MethodReference _consoleReadLineReference;
-        private MethodReference _consoleWriteLineReference;
-        private MethodReference _stringConcatReference;
-        private MethodReference _convertToBooleanReference;
-        private MethodReference _convertToInt32Reference;
-        private MethodReference _convertToStringReference;
+        private readonly MethodReference _objectEqualsReference;
+        private readonly MethodReference _consoleReadLineReference;
+        private readonly MethodReference _consoleWriteLineReference;
+        private readonly MethodReference _stringConcatReference;
+        private readonly MethodReference _convertToBooleanReference;
+        private readonly MethodReference _convertToInt32Reference;
+        private readonly MethodReference _convertToStringReference;
 
         private Emitter(string moduleName, IEnumerable<string> references)
         {
@@ -48,15 +49,7 @@ namespace Compiler.CodeAnalysis.Emit
 
             ReadAssemblies(references);
             ResolveTypes();
-            ResolveMethods();
 
-            var objectType = Import(TypeSymbol.Any);
-            _typeDefinition = new TypeDefinition("", "Program", TypeAttributes.Abstract | TypeAttributes.Sealed, objectType);
-            _assemblyDefinition.MainModule.Types.Add(_typeDefinition);
-        }
-
-        private void ResolveMethods()
-        {
             _objectEqualsReference = ResolveMethod<object>("Equals", new[] { typeof(object), typeof(object) });
             _consoleReadLineReference = ResolveMethod(typeof(Console), "ReadLine", Array.Empty<Type>());
             _consoleWriteLineReference = ResolveMethod(typeof(Console), "WriteLine", new[] { typeof(object) });
@@ -64,6 +57,10 @@ namespace Compiler.CodeAnalysis.Emit
             _convertToBooleanReference = ResolveMethod(typeof(Convert), "ToBoolean", new[] { typeof(object) });
             _convertToInt32Reference = ResolveMethod(typeof(Convert), "ToInt32", new[] { typeof(object) });
             _convertToStringReference = ResolveMethod(typeof(Convert), "ToString", new[] { typeof(object) });
+
+            var objectType = Import(TypeSymbol.Any);
+            _typeDefinition = new TypeDefinition("", "Program", TypeAttributes.Abstract | TypeAttributes.Sealed, objectType);
+            _assemblyDefinition.MainModule.Types.Add(_typeDefinition);
         }
 
         private MethodReference ResolveMethod<T>(string methodName, Type[] parameterTypes)
@@ -73,7 +70,7 @@ namespace Compiler.CodeAnalysis.Emit
 
         private MethodReference ResolveMethod(Type type, string methodName, Type[] parameterTypes)
         {
-            var typeName = type.FullName;
+            string typeName = type.FullName!;
             var foundTypes = _assemblies.SelectMany(a => a.Modules)
                                        .SelectMany(m => m.Types)
                                        .Where(t => t.FullName == typeName)
@@ -82,15 +79,15 @@ namespace Compiler.CodeAnalysis.Emit
             if (foundTypes.Length == 0)
             {
                 _diagnostics.ReportRequiredTypeNotFound(null, typeName);
-                return null;
+                return null!;
             }
             else if (foundTypes.Length > 1)
             {
                 _diagnostics.ReportRequiredTypeAmbiguous(null, typeName, foundTypes);
-                return null;
+                return null!;
             }
 
-            var foundType = foundTypes[0];
+            var foundType = foundTypes[0]!;
             var methods = foundType.Methods.Where(m => m.Name == methodName);
 
             foreach (var method in methods)
@@ -122,8 +119,9 @@ namespace Compiler.CodeAnalysis.Emit
             }
 
             _diagnostics.ReportRequiredMethodNotFound(typeName, methodName, parameterTypes);
-            return null;
+            return null!;
         }
+        
         private void ReadAssemblies(IEnumerable<string> references)
         {
             foreach (var reference in references)
@@ -145,26 +143,43 @@ namespace Compiler.CodeAnalysis.Emit
         {
             foreach (var type in TypeSymbol.GetBuiltInTypes())
             {
-                var metadataName = type.NetType.FullName;
-                var foundTypes = _assemblies.SelectMany(a => a.Modules)
-                                            .SelectMany(a => a.Types)
-                                            .Where(t => t.FullName == metadataName)
-                                            .ToArray();
-
-                if (foundTypes.Length == 1)
+                var typeReference = ResolveType(type);
+                if (typeReference == null)
                 {
-                    var typeReference = _assemblyDefinition.MainModule.ImportReference(foundTypes[0]);
-                    _resolvedTypes.Add(type, typeReference);
+                    continue;
                 }
-                else if (foundTypes.Length == 0)
-                {
-                    _diagnostics.ReportRequiredTypeNotFound(type.Name, metadataName);
-                }
-                else if (foundTypes.Length > 1)
-                {
-                    _diagnostics.ReportRequiredTypeAmbiguous(type.Name, metadataName, foundTypes);
-                }
+                _resolvedTypes.Add(type, typeReference);
             }
+        }
+
+        private TypeReference ResolveType(TypeSymbol type)
+        {
+            if (type.NetType == null)
+            {
+                return null!;
+            }
+
+            string metadataName = type.NetType.FullName!;
+            var foundTypes = _assemblies.SelectMany(a => a.Modules)
+                                        .SelectMany(a => a.Types)
+                                        .Where(t => t.FullName == metadataName)
+                                        .ToArray();
+
+            if (foundTypes.Length == 1)
+            {
+                var typeReference = _assemblyDefinition.MainModule.ImportReference(foundTypes[0]);
+                return typeReference;
+            }
+
+            if (foundTypes.Length == 0)
+            {
+                _diagnostics.ReportRequiredTypeNotFound(type.Name, metadataName);
+            }
+            else if (foundTypes.Length > 1)
+            {
+                _diagnostics.ReportRequiredTypeAmbiguous(type.Name, metadataName, foundTypes);
+            }
+            return null!;
         }
 
         internal static ImmutableArray<Diagnostic> Emit(
@@ -381,6 +396,7 @@ namespace Compiler.CodeAnalysis.Emit
 
         private void EmitConstantExpression(ILProcessor ilProcessor, BoundExpression node)
         {
+            Debug.Assert(node.ConstantValue != null);
             if (node.Type == TypeSymbol.Bool)
             {
                 var value = (bool)node.ConstantValue.Value;
@@ -469,7 +485,7 @@ namespace Compiler.CodeAnalysis.Emit
             // ==(any, any)
             // ==(string, string)
 
-            if (node.Operator.Kind == BoundBinaryOperatorKind.Equals && 
+            if (node.Operator.Kind == BoundBinaryOperatorKind.Equals &&
                 (node.Left.Type == TypeSymbol.Any && node.Right.Type == TypeSymbol.Any ||
                 node.Left.Type == TypeSymbol.String && node.Right.Type == TypeSymbol.String))
             {
@@ -480,7 +496,7 @@ namespace Compiler.CodeAnalysis.Emit
             // !=(any, any)
             // !=(string, string)
 
-            if (node.Operator.Kind == BoundBinaryOperatorKind.NotEquals && 
+            if (node.Operator.Kind == BoundBinaryOperatorKind.NotEquals &&
                 (node.Left.Type == TypeSymbol.Any && node.Right.Type == TypeSymbol.Any ||
                 node.Left.Type == TypeSymbol.String && node.Right.Type == TypeSymbol.String))
             {

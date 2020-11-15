@@ -38,7 +38,7 @@ namespace Compiler.CodeAnalysis.Binding
 
         protected virtual BoundStatement RewriteBlockStatement(BoundBlockStatement node)
         {
-            ImmutableArray<BoundStatement>.Builder builder = null;
+            ImmutableArray<BoundStatement>.Builder? builder = null;
 
             for (var i = 0; i < node.Statements.Length; i++)
             {

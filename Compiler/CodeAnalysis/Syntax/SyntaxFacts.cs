@@ -118,7 +118,7 @@ namespace Compiler.CodeAnalysis.Syntax
             }
         }
 
-        public static string GetText(this SyntaxKind kind)
+        public static string? GetText(this SyntaxKind kind)
         {
             switch (kind)
             {

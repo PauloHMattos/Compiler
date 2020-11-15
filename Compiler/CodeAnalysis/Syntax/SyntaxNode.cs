@@ -65,11 +65,6 @@ namespace Compiler.CodeAnalysis.Syntax
 
         private static void PrintTree(TextWriter writer, SyntaxNode node, string indent = "", bool isLast = true)
         {
-            if (node == null)
-            {
-                return;
-            }
-
             var token = node as SyntaxToken;
             if (token != null)
             {

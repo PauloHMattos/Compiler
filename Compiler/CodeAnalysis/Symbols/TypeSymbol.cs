@@ -12,11 +12,11 @@ namespace Compiler.CodeAnalysis.Symbols
         public static readonly TypeSymbol Int = new TypeSymbol("int", typeof(int));
         public static readonly TypeSymbol String = new TypeSymbol("string", typeof(string));
 
-        public Type NetType { get; }
+        public Type? NetType { get; }
         public override SymbolKind Kind => SymbolKind.Type;
 
 
-        private TypeSymbol(string name, Type netType) : base(name)
+        private TypeSymbol(string name, Type? netType) : base(name)
         {
             NetType = netType;
         }
@@ -36,7 +36,7 @@ namespace Compiler.CodeAnalysis.Symbols
             }
         }
 
-        public static TypeSymbol LookupType(string name)
+        public static TypeSymbol? LookupType(string name)
         {
             switch (name)
             {

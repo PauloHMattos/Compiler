@@ -74,7 +74,8 @@ namespace Compiler.CodeAnalysis.Binding
 
         public static BoundBinaryExpression Binary(BoundExpression left, SyntaxKind kind, BoundExpression right)
         {
-            var op = BoundBinaryOperator.Bind(kind, left.Type, right.Type)!;
+            var op = BoundBinaryOperator.Bind(kind, left.Type, right.Type);
+            Debug.Assert(op != null);
             return new BoundBinaryExpression(left, op, right);
         }
 

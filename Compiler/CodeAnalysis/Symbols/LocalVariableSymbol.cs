@@ -6,7 +6,7 @@ namespace Compiler.CodeAnalysis.Symbols
     {
         public override SymbolKind Kind => SymbolKind.LocalVariable;
 
-        internal LocalVariableSymbol(string name, bool isReadOnly, TypeSymbol type, BoundConstant constant)
+        internal LocalVariableSymbol(string name, bool isReadOnly, TypeSymbol type, BoundConstant? constant)
             : base(name, isReadOnly, type, constant)
         {
         }
