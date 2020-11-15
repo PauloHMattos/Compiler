@@ -9,6 +9,8 @@ namespace Compiler.CodeAnalysis.Binding
         {
             switch (statement.Kind)
             {
+                case BoundNodeKind.NopStatement:
+                    return RewriteNopStatement((BoundNopStatement)statement);
                 case BoundNodeKind.BlockStatement:
                     return RewriteBlockStatement((BoundBlockStatement)statement);
                 case BoundNodeKind.ExpressionStatement:
@@ -36,6 +38,11 @@ namespace Compiler.CodeAnalysis.Binding
             }
         }
 
+        protected virtual BoundStatement RewriteNopStatement(BoundNopStatement node)
+        {
+            return node;
+        }
+
         protected virtual BoundStatement RewriteBlockStatement(BoundBlockStatement node)
         {
             ImmutableArray<BoundStatement>.Builder? builder = null;
@@ -58,11 +65,6 @@ namespace Compiler.CodeAnalysis.Binding
             }
 
             return new BoundBlockStatement(builder.ToImmutable());
-        }
-
-        protected virtual BoundStatement RewriteNopStatement(BoundNopStatement node)
-        {
-            return node;
         }
 
         protected virtual BoundStatement RewriteExpressionStatement(BoundExpressionStatement node)
