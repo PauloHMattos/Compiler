@@ -38,19 +38,18 @@ namespace Compiler.Tests.CodeAnalysis.Authoring
         public void Classifier_Classify_FullStatement()
         {
             var text = @"
-                [// single line comment][
-                ][/*
+                [// single line comment]
+                [/*
                 multi line comment
-                */][var][ ][a][=][10][// trailing comment]
+                */]
+                [var] [a] [=] [10] [// trailing comment]
             ";
 
             var classifications = new List<Classification>()
             {
                 Classification.Comment,
-                Classification.Whitespace,
                 Classification.Comment,
                 Classification.Keyword,
-                Classification.Whitespace,
                 Classification.Identifier,
                 Classification.Text,
                 Classification.Number,
@@ -60,22 +59,69 @@ namespace Compiler.Tests.CodeAnalysis.Authoring
             AssertClassifiedSpan(text, classifications);
         }
 
-        private void AssertClassifiedSpan(string text, List<Classification> expectedClassifications)
+        [Fact]
+        public void Classifier_Classify_OptionalElseStatement()
+        {
+            var text = @"
+                {
+                    [if] a call1()
+                    [else] [call2][(][)]
+                }
+            ";
+
+            var classifications = new List<Classification>()
+            {
+                Classification.Keyword,
+                Classification.Keyword,
+                Classification.Identifier,
+                Classification.Text,
+                Classification.Text,
+            };
+
+            AssertClassifiedSpan(text, classifications);
+        }
+
+        [Fact]
+        public void Classifier_Classify_OptionalStepStatement()
+        {
+            var text = @"
+                {
+                    [for] i = 0 [to] 100 [step] [2]
+                    [{]
+                        
+                    [}]
+                }
+            ";
+
+            var classifications = new List<Classification>()
+            {
+                Classification.Keyword,
+                Classification.Keyword,
+                Classification.Keyword,
+                Classification.Number,
+                Classification.Text,
+                Classification.Text,
+            };
+
+            AssertClassifiedSpan(text, classifications);
+        }
+
+        private static void AssertClassifiedSpan(string text, List<Classification> expectedClassifications)
         {
             var annotatedText = AnnotatedText.Parse(text);
             var syntaxTree = SyntaxTree.Parse(annotatedText.Text);
-            var classifiedSpans = Classifier.Classify(syntaxTree, syntaxTree.Root.FullSpan);
 
-            if (annotatedText.Spans.Length != classifiedSpans.Length)
+            if (annotatedText.Spans.Length != expectedClassifications.Count)
             {
-                throw new InvalidOperationException($"ERROR: Must mark the same number os spans as there are expected classifications {annotatedText.Spans.Length} vs {classifiedSpans.Length}");
+                throw new InvalidOperationException("ERROR: Must mark the same number os spans as there are expected classifications");
             }
 
-            Assert.Equal(expectedClassifications.Count, classifiedSpans.Length);
-            for (var i = 0; i < classifiedSpans.Length; i++)
+            for (var i = 0; i < expectedClassifications.Count; i++)
             {
-                Assert.Equal(annotatedText.Spans[i], classifiedSpans[i].Span);
-                Assert.Equal(expectedClassifications[i], classifiedSpans[i].Classification);
+                var classifiedSpans = Classifier.Classify(syntaxTree, annotatedText.Spans[i]);
+                var classifiedSpan = Assert.Single(classifiedSpans);
+                Assert.Equal(annotatedText.Spans[i], classifiedSpan.Span);
+                Assert.Equal(expectedClassifications[i], classifiedSpan.Classification);
             }
         }
     }
