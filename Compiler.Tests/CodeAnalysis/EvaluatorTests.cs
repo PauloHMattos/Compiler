@@ -135,7 +135,7 @@ namespace Compiler.Tests.CodeAnalysis
             {
                 DiagnosticCode.CannotConvert.GetDiagnostic(TypeSymbol.Int, TypeSymbol.Bool)
             };
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -154,7 +154,7 @@ namespace Compiler.Tests.CodeAnalysis
             {
                 DiagnosticCode.CannotConvert.GetDiagnostic(TypeSymbol.Int, TypeSymbol.Bool)
             };
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -172,7 +172,7 @@ namespace Compiler.Tests.CodeAnalysis
             {
                 DiagnosticCode.CannotConvert.GetDiagnostic(TypeSymbol.Int, TypeSymbol.Bool)
             };
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -190,7 +190,7 @@ namespace Compiler.Tests.CodeAnalysis
             {
                 DiagnosticCode.CannotConvert.GetDiagnostic(TypeSymbol.Bool, TypeSymbol.Int)
             };
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -208,7 +208,7 @@ namespace Compiler.Tests.CodeAnalysis
             {
                 DiagnosticCode.CannotConvert.GetDiagnostic(TypeSymbol.Bool, TypeSymbol.Int)
             };
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -226,7 +226,7 @@ namespace Compiler.Tests.CodeAnalysis
             {
                 DiagnosticCode.CannotConvert.GetDiagnostic(TypeSymbol.Bool, TypeSymbol.Int)
             };
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -244,7 +244,7 @@ namespace Compiler.Tests.CodeAnalysis
                 DiagnosticCode.InvalidBreakOrContinue.GetDiagnostic("break"),
                 DiagnosticCode.InvalidBreakOrContinue.GetDiagnostic("continue")
             };
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -256,7 +256,7 @@ namespace Compiler.Tests.CodeAnalysis
             {
                 DiagnosticCode.UndefinedVariable.GetDiagnostic("x")
             };
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -276,7 +276,7 @@ namespace Compiler.Tests.CodeAnalysis
             {
                 DiagnosticCode.VariableCannotReassigned.GetDiagnostic("x")
             };
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -293,7 +293,7 @@ namespace Compiler.Tests.CodeAnalysis
             {
                 DiagnosticCode.CannotConvert.GetDiagnostic(TypeSymbol.Bool, TypeSymbol.Int)
             };
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -310,7 +310,7 @@ namespace Compiler.Tests.CodeAnalysis
             {
                 DiagnosticCode.CannotConvert.GetDiagnostic(TypeSymbol.Bool, TypeSymbol.Int)
             };
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -323,7 +323,7 @@ namespace Compiler.Tests.CodeAnalysis
                 DiagnosticCode.NotAVariable.GetDiagnostic("print")
             };
 
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -334,7 +334,7 @@ namespace Compiler.Tests.CodeAnalysis
             {
                 DiagnosticCode.UndefinedVariable.GetDiagnostic("x")
             };
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -345,7 +345,7 @@ namespace Compiler.Tests.CodeAnalysis
             {
                 DiagnosticCode.UndefinedUnaryOperator.GetDiagnostic("+", TypeSymbol.Bool)
             };
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -356,7 +356,7 @@ namespace Compiler.Tests.CodeAnalysis
             {
                 DiagnosticCode.UndefinedBinaryOperator.GetDiagnostic("+", TypeSymbol.Int, TypeSymbol.Bool)
             };
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -369,7 +369,7 @@ namespace Compiler.Tests.CodeAnalysis
             {
                 DiagnosticCode.UndefinedBinaryOperator.GetDiagnostic("+=", TypeSymbol.Int, TypeSymbol.Bool)
             };
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
         
         [Fact]
@@ -381,7 +381,7 @@ namespace Compiler.Tests.CodeAnalysis
             {
                 DiagnosticCode.UndefinedVariable.GetDiagnostic("x")
             };
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -398,7 +398,7 @@ namespace Compiler.Tests.CodeAnalysis
             {
                 DiagnosticCode.VariableCannotReassigned.GetDiagnostic("x")
             };
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
 
@@ -420,7 +420,7 @@ namespace Compiler.Tests.CodeAnalysis
             {
                 DiagnosticCode.SymbolAlreadyDeclared.GetDiagnostic("x")
             };
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -433,7 +433,7 @@ namespace Compiler.Tests.CodeAnalysis
                 DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.EndOfFileToken, SyntaxKind.IdentifierToken)
             };
 
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -450,7 +450,7 @@ namespace Compiler.Tests.CodeAnalysis
                 DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.EndOfFileToken, SyntaxKind.CloseBraceToken)
             };
 
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -478,7 +478,7 @@ namespace Compiler.Tests.CodeAnalysis
                 DiagnosticCode.InvalidReturnExpression.GetDiagnostic("test"),
             };
 
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -496,7 +496,7 @@ namespace Compiler.Tests.CodeAnalysis
                 DiagnosticCode.MissingReturnExpression.GetDiagnostic(TypeSymbol.Int),
             };
 
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -513,7 +513,7 @@ namespace Compiler.Tests.CodeAnalysis
                 DiagnosticCode.AllPathsMustReturn.GetDiagnostic(TypeSymbol.Int),
             };
 
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -531,7 +531,7 @@ namespace Compiler.Tests.CodeAnalysis
                 DiagnosticCode.ParameterAlreadyDeclared.GetDiagnostic("a"),
             };
 
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -549,7 +549,7 @@ namespace Compiler.Tests.CodeAnalysis
                 DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.OpenParenthesisToken, SyntaxKind.IdentifierToken),
             };
 
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -566,7 +566,7 @@ namespace Compiler.Tests.CodeAnalysis
                 DiagnosticCode.UndefinedType.GetDiagnostic("invalidtype"),
             };
 
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -585,7 +585,7 @@ namespace Compiler.Tests.CodeAnalysis
                 DiagnosticCode.CannotConvertImplicitly.GetDiagnostic(TypeSymbol.String, TypeSymbol.Int),
             };
 
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -600,7 +600,7 @@ namespace Compiler.Tests.CodeAnalysis
                 DiagnosticCode.WrongArgumentCount.GetDiagnostic("print", 1, 0),
             };
 
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -617,7 +617,7 @@ namespace Compiler.Tests.CodeAnalysis
                 DiagnosticCode.WrongArgumentCount.GetDiagnostic("print", 1, 3),
             };
 
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -630,7 +630,7 @@ namespace Compiler.Tests.CodeAnalysis
                 DiagnosticCode.UndefinedFunction.GetDiagnostic("foo"),
             };
 
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -648,7 +648,7 @@ namespace Compiler.Tests.CodeAnalysis
                 DiagnosticCode.NotAFunction.GetDiagnostic("foo"),
             };
 
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -666,7 +666,7 @@ namespace Compiler.Tests.CodeAnalysis
                 DiagnosticCode.NotAFunction.GetDiagnostic("print"),
             };
 
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -683,7 +683,7 @@ namespace Compiler.Tests.CodeAnalysis
                 DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.CloseParenthesisToken, SyntaxKind.IdentifierToken),
             };
 
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -705,7 +705,7 @@ namespace Compiler.Tests.CodeAnalysis
                 DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.EndOfFileToken, SyntaxKind.CloseBraceToken),
             };
 
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -718,7 +718,7 @@ namespace Compiler.Tests.CodeAnalysis
                 DiagnosticCode.UnterminatedMultilineComment.GetDiagnostic(),
             };
 
-            AssertHasDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics);
         }
 
         private static void AssertValue(string text, object expectedValue)
@@ -729,11 +729,11 @@ namespace Compiler.Tests.CodeAnalysis
             var variables = new Dictionary<VariableSymbol, object>();
             var result = compilation.Evaluate(variables);
 
-            Assert.Empty(result.Diagnostics);
+            Assert.False(result.Diagnostics.HasErrors());
             Assert.Equal(expectedValue, result.Value);
         }
 
-        private void AssertHasDiagnostics(string text, List<string> expectedDiagnostics)
+        private static void AssertDiagnostics(string text, List<string> expectedDiagnostics)
         {
             var annotatedText = AnnotatedText.Parse(text);
             var syntaxTree = SyntaxTree.Parse(annotatedText.Text);

@@ -22,9 +22,14 @@ namespace Compiler.CodeAnalysis.Diagnostics
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        private void Report(in TextLocation location, string message)
+        private void ReportError(in TextLocation location, string message)
         {
-            _diagnostics.Add(new Diagnostic(location, message));
+            _diagnostics.Add(Diagnostic.Error(location, message));
+        }
+
+        private void ReportWarning(in TextLocation location, string message)
+        {
+            _diagnostics.Add(Diagnostic.Warning(location, message));
         }
 
         public void AddRange(IEnumerable<Diagnostic> diagnostics)
@@ -37,42 +42,42 @@ namespace Compiler.CodeAnalysis.Diagnostics
 
         public void ReportBadCharacter(in TextLocation location, in char current)
         {
-            Report(location, DiagnosticCode.BadCharacter.GetDiagnostic(current));
+            ReportError(location, DiagnosticCode.BadCharacter.GetDiagnostic(current));
         }
 
         internal void ReportInvalidReference(string referencePath)
         {
-            Report(new TextLocation(), DiagnosticCode.InvalidReference.GetDiagnostic(referencePath));
+            ReportError(new TextLocation(), DiagnosticCode.InvalidReference.GetDiagnostic(referencePath));
         }
 
         public void ReportInvalidLiteralType(in TextLocation location, string text, TypeSymbol type)
         {
-            Report(location, DiagnosticCode.InvalidLiteralType.GetDiagnostic(text, type));
+            ReportError(location, DiagnosticCode.InvalidLiteralType.GetDiagnostic(text, type));
         }
 
         public void ReportUnterminatedString(in TextLocation location)
         {
-            Report(location, DiagnosticCode.UnterminatedString.GetDiagnostic());
+            ReportError(location, DiagnosticCode.UnterminatedString.GetDiagnostic());
         }
 
         public void ReportUnexpectedToken(in TextLocation location, SyntaxKind actualKind, SyntaxKind expectedKind)
         {
-            Report(location, DiagnosticCode.UnexpectedToken.GetDiagnostic(actualKind, expectedKind));
+            ReportError(location, DiagnosticCode.UnexpectedToken.GetDiagnostic(actualKind, expectedKind));
         }
 
         public void ReportUndefinedUnaryOperator(in TextLocation location, string operatorText, TypeSymbol operandType)
         {
-            Report(location, DiagnosticCode.UndefinedUnaryOperator.GetDiagnostic(operatorText, operandType));
+            ReportError(location, DiagnosticCode.UndefinedUnaryOperator.GetDiagnostic(operatorText, operandType));
         }
 
         public void ReportUndefinedBinaryOperator(in TextLocation location, string operatorText, TypeSymbol leftType, TypeSymbol rightType)
         {
-            Report(location, DiagnosticCode.UndefinedBinaryOperator.GetDiagnostic(operatorText, leftType, rightType));
+            ReportError(location, DiagnosticCode.UndefinedBinaryOperator.GetDiagnostic(operatorText, leftType, rightType));
         }
 
         public void ReportUndefinedVariable(in TextLocation location, string name)
         {
-            Report(location, DiagnosticCode.UndefinedVariable.GetDiagnostic(name));
+            ReportError(location, DiagnosticCode.UndefinedVariable.GetDiagnostic(name));
         }
 
         internal void ReportRequiredTypeNotFound(string? name, string metadataName)
@@ -81,7 +86,7 @@ namespace Compiler.CodeAnalysis.Diagnostics
                 ? $"'{metadataName}'"
                 : $"'{name}' ('{metadataName}')";
 
-            Report(default, DiagnosticCode.RequiredTypeNotFound.GetDiagnostic(name));
+            ReportError(default, DiagnosticCode.RequiredTypeNotFound.GetDiagnostic(name));
         }
 
         internal void ReportRequiredTypeAmbiguous(string? name, string metadataName, TypeDefinition[] foundTypes)
@@ -93,119 +98,118 @@ namespace Compiler.CodeAnalysis.Diagnostics
                 ? $"'{metadataName}'"
                 : $"'{name}' ('{metadataName}')";
 
-            Report(default, DiagnosticCode.RequiredTypeAmbiguous.GetDiagnostic(name, assemblyNameList));
+            ReportError(default, DiagnosticCode.RequiredTypeAmbiguous.GetDiagnostic(name, assemblyNameList));
         }
 
         internal void ReportRequiredMethodNotFound(string typeName, string methodName, Type[] parameterTypes)
         {
             var parameterTypeNameList = string.Join(", ", parameterTypes.Select(t => t.FullName));
-            Report(default, DiagnosticCode.RequiredMethodNotFound.GetDiagnostic(typeName, methodName, parameterTypeNameList));
+            ReportError(default, DiagnosticCode.RequiredMethodNotFound.GetDiagnostic(typeName, methodName, parameterTypeNameList));
         }
-
 
         public void ReportNotAVariable(in TextLocation location, string name)
         {
-            Report(location, DiagnosticCode.NotAVariable.GetDiagnostic(name));
+            ReportError(location, DiagnosticCode.NotAVariable.GetDiagnostic(name));
         }
 
         public void ReportUndefinedType(in TextLocation location, string name)
         {
-            Report(location, DiagnosticCode.UndefinedType.GetDiagnostic(name, name));
+            ReportError(location, DiagnosticCode.UndefinedType.GetDiagnostic(name, name));
         }
 
         public void ReportCannotConvert(in TextLocation location, TypeSymbol fromType, TypeSymbol toType)
         {
-            Report(location, DiagnosticCode.CannotConvert.GetDiagnostic(fromType, toType));
+            ReportError(location, DiagnosticCode.CannotConvert.GetDiagnostic(fromType, toType));
         }
 
         public void ReportCannotConvertImplicitly(in TextLocation location, TypeSymbol fromType, TypeSymbol toType)
         {
-            Report(location, DiagnosticCode.CannotConvertImplicitly.GetDiagnostic(fromType, toType));
+            ReportError(location, DiagnosticCode.CannotConvertImplicitly.GetDiagnostic(fromType, toType));
         }
 
         public void ReportSymbolAlreadyDeclared(in TextLocation location, string name)
         {
-            Report(location, DiagnosticCode.SymbolAlreadyDeclared.GetDiagnostic(name));
+            ReportError(location, DiagnosticCode.SymbolAlreadyDeclared.GetDiagnostic(name));
         }
 
         public void ReportCannotReassigned(in TextLocation location, string name)
         {
-            Report(location, DiagnosticCode.VariableCannotReassigned.GetDiagnostic(name));
+            ReportError(location, DiagnosticCode.VariableCannotReassigned.GetDiagnostic(name));
         }
 
         public void ReportExpressionMustHaveValue(in TextLocation location)
         {
-            Report(location, DiagnosticCode.ExpressionMustHaveValue.GetDiagnostic());
+            ReportError(location, DiagnosticCode.ExpressionMustHaveValue.GetDiagnostic());
         }
 
         public void ReportUndefinedFunction(in TextLocation location, string name)
         {
-            Report(location, DiagnosticCode.UndefinedFunction.GetDiagnostic(name));
+            ReportError(location, DiagnosticCode.UndefinedFunction.GetDiagnostic(name));
         }
 
         public void ReportNotAFunction(TextLocation location, string name)
         {
-            Report(location, DiagnosticCode.NotAFunction.GetDiagnostic(name));
+            ReportError(location, DiagnosticCode.NotAFunction.GetDiagnostic(name));
         }
 
         public void ReportWrongArgumentCount(in TextLocation location, string name, in int expectedCount, in int actualCount)
         {
-            Report(location, DiagnosticCode.WrongArgumentCount.GetDiagnostic(name, expectedCount, actualCount));
+            ReportError(location, DiagnosticCode.WrongArgumentCount.GetDiagnostic(name, expectedCount, actualCount));
         }
 
         public void ReportParameterAlreadyDeclared(in TextLocation location, string parameterName)
         {
-            Report(location, DiagnosticCode.ParameterAlreadyDeclared.GetDiagnostic(parameterName));
+            ReportError(location, DiagnosticCode.ParameterAlreadyDeclared.GetDiagnostic(parameterName));
         }
 
         public void ReportInvalidBreakOrContinue(in TextLocation location, string text)
         {
-            Report(location, DiagnosticCode.InvalidBreakOrContinue.GetDiagnostic(text));
+            ReportError(location, DiagnosticCode.InvalidBreakOrContinue.GetDiagnostic(text));
         }
 
         public void ReportInvalidReturnExpression(in TextLocation location, string functionName)
         {
-            Report(location, DiagnosticCode.InvalidReturnExpression.GetDiagnostic(functionName));
+            ReportError(location, DiagnosticCode.InvalidReturnExpression.GetDiagnostic(functionName));
         }
 
         public void ReportMissingReturnExpression(in TextLocation location, TypeSymbol returnType)
         {
-            Report(location, DiagnosticCode.MissingReturnExpression.GetDiagnostic(returnType));
+            ReportError(location, DiagnosticCode.MissingReturnExpression.GetDiagnostic(returnType));
         }
 
         public void ReportAllPathsMustReturn(in TextLocation location)
         {
-            Report(location, DiagnosticCode.AllPathsMustReturn.GetDiagnostic());
+            ReportError(location, DiagnosticCode.AllPathsMustReturn.GetDiagnostic());
         }
 
         public void ReportInvalidExpressionStatement(in TextLocation location)
         {
-            Report(location, DiagnosticCode.InvalidExpressionStatement.GetDiagnostic());
+            ReportError(location, DiagnosticCode.InvalidExpressionStatement.GetDiagnostic());
         }
 
         public void ReportOnlyOneFileCanHaveGlobalStatements(in TextLocation location)
         {
-            Report(location, DiagnosticCode.OnlyOneFileCanHaveGlobalStatements.GetDiagnostic());
+            ReportError(location, DiagnosticCode.OnlyOneFileCanHaveGlobalStatements.GetDiagnostic());
         }
 
         public void ReportMainMustHaveCorrectSignature(in TextLocation location)
         {
-            Report(location, DiagnosticCode.MainMustHaveCorrectSignature.GetDiagnostic());
+            ReportError(location, DiagnosticCode.MainMustHaveCorrectSignature.GetDiagnostic());
         }
 
         public void ReportCannotMixMainAndGlobalStatements(in TextLocation location)
         {
-            Report(location, DiagnosticCode.CannotMixMainAndGlobalStatements.GetDiagnostic());
+            ReportError(location, DiagnosticCode.CannotMixMainAndGlobalStatements.GetDiagnostic());
         }
 
         internal void ReportInvalidReturnWithValueInGlobalStatements(TextLocation location)
         {
-            Report(location, DiagnosticCode.InvalidReturnWithValueInGlobalStatements.GetDiagnostic());
+            ReportError(location, DiagnosticCode.InvalidReturnWithValueInGlobalStatements.GetDiagnostic());
         }
 
         internal void ReportUnterminatedMultilineComment(TextLocation location)
         {
-            Report(location, DiagnosticCode.UnterminatedMultilineComment.GetDiagnostic());
+            ReportError(location, DiagnosticCode.UnterminatedMultilineComment.GetDiagnostic());
         }
     }
 }

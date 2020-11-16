@@ -188,7 +188,7 @@ namespace Compiler.CodeAnalysis.Emit
             IEnumerable<string> references,
             string outputPath)
         {
-            if (program.Diagnostics.Any())
+            if (program.Diagnostics.HasErrors())
             {
                 return program.Diagnostics;
             }
@@ -198,7 +198,7 @@ namespace Compiler.CodeAnalysis.Emit
 
         private ImmutableArray<Diagnostic> Emit(BoundProgram program, string outputPath)
         {
-            if (_diagnostics.Any())
+            if (_diagnostics.HasErrors())
             {
                 return _diagnostics.ToImmutableArray();
             }

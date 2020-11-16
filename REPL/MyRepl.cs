@@ -7,6 +7,7 @@ using Compiler.CodeAnalysis.Symbols;
 using Compiler.CodeAnalysis.Syntax;
 using Compiler.IO;
 using Compiler.CodeAnalysis.Authoring;
+using Compiler.CodeAnalysis.Diagnostics;
 
 namespace Compiler.REPL
 {
@@ -119,7 +120,7 @@ namespace Compiler.REPL
 
             var result = compilation.Evaluate(_variables);
 
-            if (!result.Diagnostics.Any())
+            if (!result.Diagnostics.HasErrors())
             {
                 if (result.Value != null)
                 {
