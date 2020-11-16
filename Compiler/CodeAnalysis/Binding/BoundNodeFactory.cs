@@ -29,26 +29,17 @@ namespace Compiler.CodeAnalysis.Binding
             return new BoundBlockStatement(syntax, ImmutableArray.Create(statements));
         }
 
-        public static BoundGotoStatement Goto(SyntaxNode syntax, BoundLabelStatement label)
-        {
-            return new BoundGotoStatement(syntax, label.Label);
-        }
-
         public static BoundGotoStatement Goto(SyntaxNode syntax, BoundLabel label)
         {
             return new BoundGotoStatement(syntax, label);
         }
 
-        public static BoundConditionalGotoStatement GotoIf(SyntaxNode syntax, BoundLabelStatement label, BoundExpression condition, bool jumpIfTrue)
-        {
-            return new BoundConditionalGotoStatement(syntax, label.Label, condition, jumpIfTrue);
-        }
+        public static BoundConditionalGotoStatement GotoTrue(SyntaxNode syntax, BoundLabel label, BoundExpression condition)
+            => new BoundConditionalGotoStatement(syntax, label, condition, jumpIfTrue: true);
 
-        public static BoundConditionalGotoStatement GotoTrue(SyntaxNode syntax, BoundLabelStatement label, BoundExpression condition)
-            => GotoIf(syntax, label, condition, jumpIfTrue: true);
 
-        public static BoundConditionalGotoStatement GotoFalse(SyntaxNode syntax, BoundLabelStatement label, BoundExpression condition)
-            => GotoIf(syntax, label, condition, jumpIfTrue: false);
+        public static BoundConditionalGotoStatement GotoFalse(SyntaxNode syntax, BoundLabel label, BoundExpression condition)
+            => new BoundConditionalGotoStatement(syntax, label, condition, jumpIfTrue: false);
 
         public static BoundVariableExpression Variable(SyntaxNode syntax, BoundVariableDeclarationStatement variable)
         {

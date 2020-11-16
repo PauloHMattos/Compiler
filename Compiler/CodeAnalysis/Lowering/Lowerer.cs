@@ -96,12 +96,12 @@ namespace Compiler.CodeAnalysis.Lowering
                 // gotoIfFalse <condition> end
                 // <then>
                 // end:
-                var endLabel = Label(node.Syntax, GenerateNewLabel());
+                var endLabel = GenerateNewLabel();
                 result = Block(
                     node.Syntax,
                     GotoFalse(node.Syntax, endLabel, node.Condition),
                     node.ThenStatement,
-                    endLabel);
+                    Label(node.Syntax, endLabel));
             }
             else
             {
@@ -119,15 +119,15 @@ namespace Compiler.CodeAnalysis.Lowering
                 // <else>
                 // end:
 
-                var elseLabel = Label(node.Syntax, GenerateNewLabel());
-                var endLabel = Label(node.Syntax, GenerateNewLabel());
+                var elseLabel = GenerateNewLabel();
+                var endLabel = GenerateNewLabel();
                 result = Block(node.Syntax,
                                 GotoFalse(node.Syntax, elseLabel, node.Condition),
                                 node.ThenStatement,
                                 Goto(node.Syntax, endLabel),
-                                elseLabel,
+                                Label(node.Syntax, elseLabel),
                                 node.ElseStatement,
-                                endLabel);
+                                Label(node.Syntax, endLabel));
             }
             return RewriteStatement(result);
         }
@@ -147,9 +147,9 @@ namespace Compiler.CodeAnalysis.Lowering
             //      gotoTrue <condition> body
             // break:
 
-            var bodyLabel = Label(node.Syntax, GenerateNewLabel());
+            var bodyLabel = GenerateNewLabel();
             var result = Block(node.Syntax, 
-                               bodyLabel,
+                               Label(node.Syntax, bodyLabel),
                                node.Body,
                                Label(node.Syntax, node.ContinueLabel),
                                GotoTrue(node.Syntax, bodyLabel, node.Condition),
@@ -172,11 +172,11 @@ namespace Compiler.CodeAnalysis.Lowering
             //      gotoTrue <condition> continue
             // break:
 
-            var bodyLabel = Label(node.Syntax, GenerateNewLabel());
+            var bodyLabel = GenerateNewLabel();
 
             var result = Block(node.Syntax, 
                                Goto(node.Syntax, node.ContinueLabel),
-                               bodyLabel,
+                               Label(node.Syntax, bodyLabel),
                                node.Body,
                                Label(node.Syntax, node.ContinueLabel),
                                GotoTrue(node.Syntax, bodyLabel, node.Condition),
