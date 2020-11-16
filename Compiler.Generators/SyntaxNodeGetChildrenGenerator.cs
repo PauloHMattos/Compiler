@@ -75,8 +75,8 @@ namespace Compiler.Generators
                                 indentedTextWriter.WriteLine($"yield return {property.Name};");
                                 if (canBeNull)
                                 {
-                                    indentedTextWriter.WriteLine("}");
                                     indentedTextWriter.Indent--;
+                                    indentedTextWriter.WriteLine("}");
                                 }
                             }
                             else if (propertyType.TypeArguments.Length == 1 &&
