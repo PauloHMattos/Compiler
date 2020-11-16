@@ -1,4 +1,5 @@
 ﻿using Compiler.CodeAnalysis.Symbols;
+using Compiler.CodeAnalysis.Syntax;
 
 namespace Compiler.CodeAnalysis.Binding
 {
@@ -10,7 +11,8 @@ namespace Compiler.CodeAnalysis.Binding
         public override TypeSymbol Type => Operator.ResultType;
         public override BoundConstant? ConstantValue { get; }
 
-        public BoundUnaryExpression(BoundExpression operand, BoundUnaryOperator op)
+        public BoundUnaryExpression(SyntaxNode syntax, BoundExpression operand, BoundUnaryOperator op)
+            : base(syntax)
         {
             Operand = operand;
             Operator = op;

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using Compiler.CodeAnalysis.Syntax;
 
 namespace Compiler.CodeAnalysis.Binding
 {
@@ -7,7 +8,8 @@ namespace Compiler.CodeAnalysis.Binding
         public ImmutableArray<BoundStatement> Statements { get; }
         public override BoundNodeKind Kind => BoundNodeKind.BlockStatement;
 
-        public BoundBlockStatement(ImmutableArray<BoundStatement> statements)
+        public BoundBlockStatement(SyntaxNode syntax, ImmutableArray<BoundStatement> statements)
+            : base(syntax)
         {
             Statements = statements;
         }

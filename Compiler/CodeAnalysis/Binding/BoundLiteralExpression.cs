@@ -1,4 +1,5 @@
 ﻿using Compiler.CodeAnalysis.Symbols;
+using Compiler.CodeAnalysis.Syntax;
 
 namespace Compiler.CodeAnalysis.Binding
 {
@@ -9,7 +10,8 @@ namespace Compiler.CodeAnalysis.Binding
         public override BoundNodeKind Kind => BoundNodeKind.LiteralExpression;
         public override TypeSymbol Type { get; }
 
-        public BoundLiteralExpression(object value)
+        public BoundLiteralExpression(SyntaxNode syntax, object value)
+            : base(syntax)
         {
             Type = TypeSymbol.GetSymbolFrom(value);
             ConstantValue = new BoundConstant(value);

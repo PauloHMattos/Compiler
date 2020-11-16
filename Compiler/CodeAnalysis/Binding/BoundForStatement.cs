@@ -1,4 +1,5 @@
 ﻿using Compiler.CodeAnalysis.Symbols;
+using Compiler.CodeAnalysis.Syntax;
 
 namespace Compiler.CodeAnalysis.Binding
 {
@@ -11,14 +12,14 @@ namespace Compiler.CodeAnalysis.Binding
         public BoundStatement Body { get; }
         public override BoundNodeKind Kind => BoundNodeKind.ForStatement;
 
-        public BoundForStatement(VariableSymbol variable, 
+        public BoundForStatement(SyntaxNode syntax, VariableSymbol variable, 
             BoundExpression lowerBound,
             BoundExpression upperBound, 
             BoundExpression step,
             BoundStatement body, 
             BoundLabel breakLabel, 
             BoundLabel continueLabel)
-            : base(breakLabel, continueLabel)
+            : base(syntax, breakLabel, continueLabel)
         {
             Variable = variable;
             LowerBound = lowerBound;
@@ -26,17 +27,5 @@ namespace Compiler.CodeAnalysis.Binding
             Step = step;
             Body = body;
         }
-    }
-
-    internal abstract class BoundLoopStatement : BoundStatement
-    {
-        protected BoundLoopStatement(BoundLabel breakLabel, BoundLabel continueLabel)
-        {
-            BreakLabel = breakLabel;
-            ContinueLabel = continueLabel;
-        }
-
-        public BoundLabel BreakLabel { get; }
-        public BoundLabel ContinueLabel { get; }
     }
 }

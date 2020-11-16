@@ -1,4 +1,5 @@
 ﻿using Compiler.CodeAnalysis.Symbols;
+using Compiler.CodeAnalysis.Syntax;
 
 namespace Compiler.CodeAnalysis.Binding
 {
@@ -11,7 +12,11 @@ namespace Compiler.CodeAnalysis.Binding
         public override TypeSymbol Type => Operator.ResultType;
         public override BoundConstant? ConstantValue { get; }
 
-        public BoundBinaryExpression(BoundExpression left, BoundBinaryOperator op, BoundExpression right)
+        public BoundBinaryExpression(SyntaxNode syntax,
+                                     BoundExpression left,
+                                     BoundBinaryOperator op,
+                                     BoundExpression right)
+            : base(syntax)
         {
             Left = left;
             Operator = op;

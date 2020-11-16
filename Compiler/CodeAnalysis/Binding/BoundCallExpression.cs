@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using Compiler.CodeAnalysis.Symbols;
+using Compiler.CodeAnalysis.Syntax;
 
 namespace Compiler.CodeAnalysis.Binding
 {
@@ -10,7 +11,8 @@ namespace Compiler.CodeAnalysis.Binding
         public override BoundNodeKind Kind => BoundNodeKind.CallExpression;
         public override TypeSymbol Type => Function.Type;
 
-        public BoundCallExpression(FunctionSymbol function, ImmutableArray<BoundExpression> arguments)
+        public BoundCallExpression(SyntaxNode syntax, FunctionSymbol function, ImmutableArray<BoundExpression> arguments)
+            : base(syntax)
         {
             Function = function;
             Arguments = arguments;

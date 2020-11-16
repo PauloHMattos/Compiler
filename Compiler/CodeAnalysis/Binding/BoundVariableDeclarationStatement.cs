@@ -1,4 +1,5 @@
 ﻿using Compiler.CodeAnalysis.Symbols;
+using Compiler.CodeAnalysis.Syntax;
 
 namespace Compiler.CodeAnalysis.Binding
 {
@@ -8,7 +9,8 @@ namespace Compiler.CodeAnalysis.Binding
         public BoundExpression Initializer { get; }
         public override BoundNodeKind Kind => BoundNodeKind.VariableDeclarationStatement;
 
-        public BoundVariableDeclarationStatement(VariableSymbol variable, BoundExpression initializer)
+        public BoundVariableDeclarationStatement(SyntaxNode syntax, VariableSymbol variable, BoundExpression initializer)
+            : base(syntax)
         {
             Variable = variable;
             Initializer = initializer;

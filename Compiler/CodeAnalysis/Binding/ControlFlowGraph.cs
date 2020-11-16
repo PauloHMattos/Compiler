@@ -285,15 +285,12 @@ namespace Compiler.CodeAnalysis.Binding
 
             private BoundExpression Negate(BoundExpression condition)
             {
-                if (condition is BoundLiteralExpression literal)
+                var negated = BoundNodeFactory.Not(condition.Syntax, condition);
+                if (negated.ConstantValue != null)
                 {
-                    var value = (bool)literal.Value;
-                    return new BoundLiteralExpression(!value);
+                    return new BoundLiteralExpression(condition.Syntax, negated.ConstantValue.Value);
                 }
-
-                var op = BoundUnaryOperator.Bind(SyntaxKind.BangToken, TypeSymbol.Bool);
-                Debug.Assert(op != null);
-                return new BoundUnaryExpression(condition, op);
+                return negated;
             }
         }
 

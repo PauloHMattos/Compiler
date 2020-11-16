@@ -28,12 +28,12 @@ namespace Compiler.CodeAnalysis.Lowering
             return RemoveDeadCode(Flatten(function, result));
         }
 
-        private static BoundBlockStatement RemoveDeadCode(BoundBlockStatement node)
+        private static BoundBlockStatement RemoveDeadCode(BoundBlockStatement statement)
         {
-            var controlFlow = ControlFlowGraph.Create(node);
+            var controlFlow = ControlFlowGraph.Create(statement);
             var reachableStatements = new HashSet<BoundStatement>(controlFlow.Blocks.SelectMany(b => b.Statements));
 
-            var builder = node.Statements.ToBuilder();
+            var builder = statement.Statements.ToBuilder();
             for (int i = builder.Count - 1; i >= 0; i--)
             {
                 if (!reachableStatements.Contains(builder[i]))
@@ -42,7 +42,7 @@ namespace Compiler.CodeAnalysis.Lowering
                 }
             }
 
-            return new BoundBlockStatement(builder.ToImmutable());
+            return new BoundBlockStatement(statement.Syntax, builder.ToImmutable());
         }
 
         private static BoundBlockStatement Flatten(FunctionSymbol function, BoundStatement statement)
@@ -71,10 +71,10 @@ namespace Compiler.CodeAnalysis.Lowering
             if (function.Type == TypeSymbol.Void &&
                 (builder.Count == 0 || CanFallThrough(builder.Last())))
             {
-                builder.Add(new BoundReturnStatement(null));
+                builder.Add(new BoundReturnStatement(statement.Syntax, null));
             }
 
-            return new BoundBlockStatement(builder.ToImmutable());
+            return new BoundBlockStatement(statement.Syntax, builder.ToImmutable());
         }
 
         private static bool CanFallThrough(BoundStatement boundStatement)
@@ -96,8 +96,12 @@ namespace Compiler.CodeAnalysis.Lowering
                 // gotoIfFalse <condition> end
                 // <then>
                 // end:
-                var endLabel = Label(GenerateNewLabel());
-                result = Block(GotoFalse(endLabel, node.Condition), node.ThenStatement, endLabel);
+                var endLabel = Label(node.Syntax, GenerateNewLabel());
+                result = Block(
+                    node.Syntax,
+                    GotoFalse(node.Syntax, endLabel, node.Condition),
+                    node.ThenStatement,
+                    endLabel);
             }
             else
             {
@@ -115,14 +119,15 @@ namespace Compiler.CodeAnalysis.Lowering
                 // <else>
                 // end:
 
-                var elseLabel = Label(GenerateNewLabel());
-                var endLabel = Label(GenerateNewLabel());
-                result = Block(GotoFalse(elseLabel, node.Condition),
-                                   node.ThenStatement,
-                                   Goto(endLabel),
-                                   elseLabel,
-                                   node.ElseStatement,
-                                   endLabel);
+                var elseLabel = Label(node.Syntax, GenerateNewLabel());
+                var endLabel = Label(node.Syntax, GenerateNewLabel());
+                result = Block(node.Syntax,
+                                GotoFalse(node.Syntax, elseLabel, node.Condition),
+                                node.ThenStatement,
+                                Goto(node.Syntax, endLabel),
+                                elseLabel,
+                                node.ElseStatement,
+                                endLabel);
             }
             return RewriteStatement(result);
         }
@@ -142,12 +147,13 @@ namespace Compiler.CodeAnalysis.Lowering
             //      gotoTrue <condition> body
             // break:
 
-            var bodyLabel = Label(GenerateNewLabel());
-            var result = Block(bodyLabel,
+            var bodyLabel = Label(node.Syntax, GenerateNewLabel());
+            var result = Block(node.Syntax, 
+                               bodyLabel,
                                node.Body,
-                               Label(node.ContinueLabel),
-                               GotoTrue(bodyLabel, node.Condition),
-                               Label(node.BreakLabel));
+                               Label(node.Syntax, node.ContinueLabel),
+                               GotoTrue(node.Syntax, bodyLabel, node.Condition),
+                               Label(node.Syntax, node.BreakLabel));
 
             return RewriteStatement(result);
         }
@@ -166,14 +172,15 @@ namespace Compiler.CodeAnalysis.Lowering
             //      gotoTrue <condition> continue
             // break:
 
-            var bodyLabel = Label(GenerateNewLabel());
+            var bodyLabel = Label(node.Syntax, GenerateNewLabel());
 
-            var result = Block(Goto(node.ContinueLabel),
+            var result = Block(node.Syntax, 
+                               Goto(node.Syntax, node.ContinueLabel),
                                bodyLabel,
                                node.Body,
-                               Label(node.ContinueLabel),
-                               GotoTrue(bodyLabel, node.Condition),
-                               Label(node.BreakLabel));
+                               Label(node.Syntax, node.ContinueLabel),
+                               GotoTrue(node.Syntax, bodyLabel, node.Condition),
+                               Label(node.Syntax, node.BreakLabel));
 
             return RewriteStatement(result);
         }
@@ -191,15 +198,25 @@ namespace Compiler.CodeAnalysis.Lowering
             //      continue:
             //      <var> = <var> + <step>
 
-            var lowerBound = VariableDeclaration(node.Variable, node.LowerBound);
-            var upperBound = ConstantDeclaration("upperBound", node.UpperBound);
+            
+            var lowerBound = VariableDeclaration(node.Syntax, node.Variable, node.LowerBound);
+            // Use node.UpperBound.Syntax?
+            var upperBound = ConstantDeclaration(node.Syntax, "upperBound", node.UpperBound);
 
-            var result = Block(lowerBound, 
-                               upperBound, 
-                               While(LessOrEqual(Variable(lowerBound),Variable(upperBound)),
-                                    Block(node.Body,
-                                        Label(node.ContinueLabel),
-                                        Increment(Variable(lowerBound), node.Step)),
+            var result = Block(node.Syntax, 
+                                lowerBound,
+                                upperBound,
+                                While(node.Syntax, 
+                                    LessOrEqual(
+                                    node.Syntax,
+                                    Variable(node.Syntax, lowerBound),
+                                    Variable(node.Syntax, upperBound)),
+                                    Block(node.Syntax, 
+                                        node.Body,
+                                        Label(node.Syntax, node.ContinueLabel),
+                                        Increment(
+                                            node.Syntax, 
+                                            Variable(node.Syntax, lowerBound), node.Step)),
                                     node.BreakLabel,
                                     continueLabel: GenerateNewLabel())
             );
@@ -215,11 +232,11 @@ namespace Compiler.CodeAnalysis.Lowering
                 condition = node.JumpIfTrue ? condition : !condition;
                 if (condition)
                 {
-                    return RewriteStatement(Goto(node.Label));
+                    return RewriteStatement(Goto(node.Syntax, node.Label));
                 }
                 else
                 {
-                    return RewriteStatement(Nop());
+                    return RewriteStatement(Nop(node.Syntax));
                 }
             }
 
@@ -234,13 +251,15 @@ namespace Compiler.CodeAnalysis.Lowering
             //
             // a = (a <op> b)
 
-            var newNode = (BoundCompoundAssignmentExpression) base.RewriteCompoundAssignmentExpression(node);
+            var newNode = (BoundCompoundAssignmentExpression)base.RewriteCompoundAssignmentExpression(node);
 
 
             var result = Assignment(
+                newNode.Syntax, 
                 newNode.Variable,
                 Binary(
-                    Variable(newNode.Variable),
+                    newNode.Syntax, 
+                    Variable(newNode.Syntax, newNode.Variable),
                     newNode.Operator,
                     newNode.Expression
                 )

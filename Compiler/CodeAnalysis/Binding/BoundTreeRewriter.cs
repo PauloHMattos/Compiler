@@ -64,7 +64,7 @@ namespace Compiler.CodeAnalysis.Binding
                 return node;
             }
 
-            return new BoundBlockStatement(builder.ToImmutable());
+            return new BoundBlockStatement(node.Syntax, builder.ToImmutable());
         }
 
         protected virtual BoundStatement RewriteExpressionStatement(BoundExpressionStatement node)
@@ -74,7 +74,7 @@ namespace Compiler.CodeAnalysis.Binding
             {
                 return node;
             }
-            return new BoundExpressionStatement(expression);
+            return new BoundExpressionStatement(node.Syntax, expression);
         }
 
         protected virtual BoundStatement RewriteVariableDeclarationStatement(BoundVariableDeclarationStatement node)
@@ -84,7 +84,7 @@ namespace Compiler.CodeAnalysis.Binding
             {
                 return node;
             }
-            return new BoundVariableDeclarationStatement(node.Variable, initializer);
+            return new BoundVariableDeclarationStatement(node.Syntax, node.Variable, initializer);
         }
 
         protected virtual BoundStatement RewriteIfStatement(BoundIfStatement node)
@@ -98,7 +98,7 @@ namespace Compiler.CodeAnalysis.Binding
             {
                 return node;
             }
-            return new BoundIfStatement(condition, thenStatement, elseStatement);
+            return new BoundIfStatement(node.Syntax, condition, thenStatement, elseStatement);
         }
 
         protected virtual BoundStatement RewriteDoWhileStatement(BoundDoWhileStatement node)
@@ -109,7 +109,7 @@ namespace Compiler.CodeAnalysis.Binding
             {
                 return node;
             }
-            return new BoundDoWhileStatement(condition, body, node.BreakLabel, node.ContinueLabel);
+            return new BoundDoWhileStatement(node.Syntax, condition, body, node.BreakLabel, node.ContinueLabel);
         }
 
         protected virtual BoundStatement RewriteWhileStatement(BoundWhileStatement node)
@@ -120,7 +120,7 @@ namespace Compiler.CodeAnalysis.Binding
             {
                 return node;
             }
-            return new BoundWhileStatement(condition, body, node.BreakLabel, node.ContinueLabel);
+            return new BoundWhileStatement(node.Syntax, condition, body, node.BreakLabel, node.ContinueLabel);
         }
 
         protected virtual BoundStatement RewriteForStatement(BoundForStatement node)
@@ -130,12 +130,12 @@ namespace Compiler.CodeAnalysis.Binding
             var step = RewriteExpression(node.Step);
             var body = RewriteStatement(node.Body);
 
-            if (lowerBound == node.LowerBound && upperBound == node.UpperBound && 
+            if (lowerBound == node.LowerBound && upperBound == node.UpperBound &&
                 step == node.Step && body == node.Body)
             {
                 return node;
             }
-            return new BoundForStatement(node.Variable, lowerBound, upperBound, step, body, node.BreakLabel, node.ContinueLabel);
+            return new BoundForStatement(node.Syntax, node.Variable, lowerBound, upperBound, step, body, node.BreakLabel, node.ContinueLabel);
         }
 
         protected virtual BoundStatement RewriteLabelStatement(BoundLabelStatement node)
@@ -155,7 +155,7 @@ namespace Compiler.CodeAnalysis.Binding
             {
                 return node;
             }
-            return new BoundConditionalGotoStatement(node.Label, condition, node.JumpIfTrue);
+            return new BoundConditionalGotoStatement(node.Syntax, node.Label, condition, node.JumpIfTrue);
         }
 
         protected virtual BoundStatement RewriteReturnStatement(BoundReturnStatement node)
@@ -165,7 +165,7 @@ namespace Compiler.CodeAnalysis.Binding
             {
                 return node;
             }
-            return new BoundReturnStatement(expression);
+            return new BoundReturnStatement(node.Syntax, expression);
         }
 
         public BoundExpression RewriteExpression(BoundExpression expression)
@@ -217,7 +217,7 @@ namespace Compiler.CodeAnalysis.Binding
             {
                 return node;
             }
-            return new BoundAssignmentExpression(node.Variable, expression);
+            return new BoundAssignmentExpression(node.Syntax, node.Variable, expression);
         }
 
         protected virtual BoundExpression RewriteCompoundAssignmentExpression(BoundCompoundAssignmentExpression node)
@@ -227,7 +227,8 @@ namespace Compiler.CodeAnalysis.Binding
             {
                 return node;
             }
-            return new BoundCompoundAssignmentExpression(node.Variable,
+            return new BoundCompoundAssignmentExpression(node.Syntax,
+                                                         node.Variable,
                                                          node.Operator,
                                                          expression);
         }
@@ -239,7 +240,7 @@ namespace Compiler.CodeAnalysis.Binding
             {
                 return node;
             }
-            return new BoundUnaryExpression(expression, node.Operator);
+            return new BoundUnaryExpression(node.Syntax, expression, node.Operator);
         }
 
         protected virtual BoundExpression RewriteBinaryExpression(BoundBinaryExpression node)
@@ -250,7 +251,7 @@ namespace Compiler.CodeAnalysis.Binding
             {
                 return node;
             }
-            return new BoundBinaryExpression(left, node.Operator, right);
+            return new BoundBinaryExpression(node.Syntax, left, node.Operator, right);
         }
 
         private BoundExpression RewriteCallExpression(BoundCallExpression node)
@@ -262,9 +263,10 @@ namespace Compiler.CodeAnalysis.Binding
         {
             var expression = RewriteExpression(node.Expression);
             if (expression == node.Expression)
+            {
                 return node;
-
-            return new BoundConversionExpression(node.Type, expression);
+            }
+            return new BoundConversionExpression(node.Syntax, node.Type, expression);
         }
     }
 }

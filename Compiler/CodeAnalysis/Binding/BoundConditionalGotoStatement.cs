@@ -1,4 +1,6 @@
-﻿namespace Compiler.CodeAnalysis.Binding
+﻿using Compiler.CodeAnalysis.Syntax;
+
+namespace Compiler.CodeAnalysis.Binding
 {
     internal sealed class BoundConditionalGotoStatement : BoundStatement
     {
@@ -7,7 +9,8 @@
         public bool JumpIfTrue { get; }
         public override BoundNodeKind Kind => BoundNodeKind.ConditionalGotoStatement;
 
-        public BoundConditionalGotoStatement(BoundLabel label, BoundExpression condition, bool jumpIfTrue)
+        public BoundConditionalGotoStatement(SyntaxNode syntax, BoundLabel label, BoundExpression condition, bool jumpIfTrue)
+            : base(syntax)
         {
             Label = label;
             Condition = condition;

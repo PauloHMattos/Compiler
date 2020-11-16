@@ -1,4 +1,5 @@
 using Compiler.CodeAnalysis.Symbols;
+using Compiler.CodeAnalysis.Syntax;
 
 namespace Compiler.CodeAnalysis.Binding
 {
@@ -10,7 +11,11 @@ namespace Compiler.CodeAnalysis.Binding
         public BoundBinaryOperator Operator {get; }
         public BoundExpression Expression { get; }
 
-        public BoundCompoundAssignmentExpression(VariableSymbol variable, BoundBinaryOperator op, BoundExpression expression)
+        public BoundCompoundAssignmentExpression(SyntaxNode syntax,
+                                                 VariableSymbol variable,
+                                                 BoundBinaryOperator op,
+                                                 BoundExpression expression)
+            : base(syntax)
         {
             Variable = variable;
             Operator = op;
