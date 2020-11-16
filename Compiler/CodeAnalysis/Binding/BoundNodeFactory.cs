@@ -52,7 +52,12 @@ namespace Compiler.CodeAnalysis.Binding
 
         public static BoundVariableExpression Variable(BoundVariableDeclarationStatement variable)
         {
-            return new BoundVariableExpression(variable.Variable);
+            return Variable(variable.Variable);
+        }
+        
+        public static BoundVariableExpression Variable(VariableSymbol variable)
+        {
+            return new BoundVariableExpression(variable);
         }
 
         public static BoundVariableDeclarationStatement VariableDeclaration(VariableSymbol symbol, BoundExpression initializer)
@@ -72,10 +77,20 @@ namespace Compiler.CodeAnalysis.Binding
             return new BoundVariableDeclarationStatement(local, initializer);
         }
 
+        public static BoundAssignmentExpression Assignment(VariableSymbol variable, BoundExpression expression)
+        {
+            return new BoundAssignmentExpression(variable, expression);
+        }
+
         public static BoundBinaryExpression Binary(BoundExpression left, SyntaxKind kind, BoundExpression right)
         {
             var op = BoundBinaryOperator.Bind(kind, left.Type, right.Type);
             Debug.Assert(op != null);
+            return Binary(left, op, right);
+        }
+        
+        public static BoundBinaryExpression Binary(BoundExpression left, BoundBinaryOperator op, BoundExpression right)
+        {
             return new BoundBinaryExpression(left, op, right);
         }
 

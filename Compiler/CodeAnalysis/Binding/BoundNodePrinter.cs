@@ -73,6 +73,9 @@ namespace Compiler.CodeAnalysis.Binding
                 case BoundNodeKind.AssignmentExpression:
                     WriteAssignmentExpression((BoundAssignmentExpression)node, writer);
                     break;
+                case BoundNodeKind.CompoundAssignmentExpression:
+                    WriteCompoundAssignmentExpression((BoundCompoundAssignmentExpression)node, writer);
+                    break;
                 case BoundNodeKind.UnaryExpression:
                     WriteUnaryExpression((BoundUnaryExpression)node, writer);
                     break;
@@ -314,6 +317,16 @@ namespace Compiler.CodeAnalysis.Binding
         {
             writer.WriteIdentifier(node.Variable.Name);
             writer.WriteSpace();
+            writer.WritePunctuation(SyntaxKind.EqualsToken);
+            writer.WriteSpace();
+            node.Expression.WriteTo(writer);
+        }
+
+        private static void WriteCompoundAssignmentExpression(BoundCompoundAssignmentExpression node, IndentedTextWriter writer)
+        {
+            writer.WriteIdentifier(node.Variable.Name);
+            writer.WriteSpace();
+            writer.WritePunctuation(node.Operator.SyntaxKind);
             writer.WritePunctuation(SyntaxKind.EqualsToken);
             writer.WriteSpace();
             node.Expression.WriteTo(writer);

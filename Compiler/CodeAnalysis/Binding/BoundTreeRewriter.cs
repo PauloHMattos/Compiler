@@ -220,13 +220,16 @@ namespace Compiler.CodeAnalysis.Binding
             return new BoundAssignmentExpression(node.Variable, expression);
         }
 
-        private BoundExpression RewriteCompoundAssignmentExpression(BoundCompoundAssignmentExpression node)
+        protected virtual BoundExpression RewriteCompoundAssignmentExpression(BoundCompoundAssignmentExpression node)
         {
-            var boundVariableExpression = new BoundVariableExpression(node.Variable);
-            var boundBinaryExpression = new BoundBinaryExpression(boundVariableExpression, node.Operator, node.Expression);
-            var boundAssignmentExpression = new BoundAssignmentExpression(node.Variable, boundBinaryExpression);
-
-            return RewriteAssignmentExpression(boundAssignmentExpression);
+            var expression = RewriteExpression(node.Expression);
+            if (expression == node.Expression)
+            {
+                return node;
+            }
+            return new BoundCompoundAssignmentExpression(node.Variable,
+                                                         node.Operator,
+                                                         expression);
         }
 
         protected virtual BoundExpression RewriteUnaryExpression(BoundUnaryExpression node)

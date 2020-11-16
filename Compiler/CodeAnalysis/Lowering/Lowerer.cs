@@ -225,5 +225,28 @@ namespace Compiler.CodeAnalysis.Lowering
 
             return base.RewriteConditionalGotoStatement(node);
         }
+
+        protected override BoundExpression RewriteCompoundAssignmentExpression(BoundCompoundAssignmentExpression node)
+        {
+            // a <op>= b
+            //
+            // --->
+            //
+            // a = (a <op> b)
+
+            var newNode = (BoundCompoundAssignmentExpression) base.RewriteCompoundAssignmentExpression(node);
+
+
+            var result = Assignment(
+                newNode.Variable,
+                Binary(
+                    Variable(newNode.Variable),
+                    newNode.Operator,
+                    newNode.Expression
+                )
+            );
+
+            return result;
+        }
     }
 }
