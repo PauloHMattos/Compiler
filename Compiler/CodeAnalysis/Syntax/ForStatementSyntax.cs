@@ -1,6 +1,6 @@
 ﻿namespace Compiler.CodeAnalysis.Syntax
 {
-    internal sealed partial class ForStatementSyntax : StatementSyntax
+    public sealed partial class ForStatementSyntax : StatementSyntax
     {
         public SyntaxToken ForKeyword { get; }
         public SyntaxToken Identifier { get; }
@@ -12,7 +12,7 @@
         public StatementSyntax Body { get; }
         public override SyntaxKind Kind => SyntaxKind.ForStatement;
 
-        public ForStatementSyntax(SyntaxTree syntaxTree, 
+        internal ForStatementSyntax(SyntaxTree syntaxTree, 
             SyntaxToken forKeyword, 
             SyntaxToken identifier,
             SyntaxToken equalsToken, 

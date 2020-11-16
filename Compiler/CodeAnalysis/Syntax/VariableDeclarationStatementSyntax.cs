@@ -9,7 +9,7 @@
         public ExpressionSyntax Initializer { get; }
         public override SyntaxKind Kind => SyntaxKind.VariableDeclarationStatement;
 
-        public VariableDeclarationStatementSyntax(SyntaxTree syntaxTree, 
+        internal VariableDeclarationStatementSyntax(SyntaxTree syntaxTree, 
             SyntaxToken keyword, 
             SyntaxToken identifier, 
             TypeClauseSyntax? typeClause, 

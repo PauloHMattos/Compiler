@@ -9,7 +9,7 @@ namespace Compiler.CodeAnalysis.Syntax
         public SyntaxToken CloseBraceToken { get; }
         public override SyntaxKind Kind => SyntaxKind.BlockStatement;
 
-        public BlockStatementSyntax(SyntaxTree syntaxTree, 
+        internal BlockStatementSyntax(SyntaxTree syntaxTree, 
             SyntaxToken openBraceToken, 
             ImmutableArray<StatementSyntax> statements, 
             SyntaxToken closeBraceToken)

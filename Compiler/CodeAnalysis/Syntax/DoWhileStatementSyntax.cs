@@ -1,6 +1,6 @@
 ﻿namespace Compiler.CodeAnalysis.Syntax
 {
-    internal partial class DoWhileStatementSyntax : StatementSyntax
+    public partial class DoWhileStatementSyntax : StatementSyntax
     {
         public SyntaxToken DoKeyword { get; }
         public StatementSyntax Body { get; }
@@ -8,7 +8,7 @@
         public ExpressionSyntax Condition { get; }
         public override SyntaxKind Kind => SyntaxKind.DoWhileStatement;
 
-        public DoWhileStatementSyntax(SyntaxTree syntaxTree, 
+        internal DoWhileStatementSyntax(SyntaxTree syntaxTree, 
             SyntaxToken doKeyword, 
             StatementSyntax body, 
             SyntaxToken whileKeyword, 

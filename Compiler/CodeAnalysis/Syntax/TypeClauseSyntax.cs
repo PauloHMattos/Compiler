@@ -6,7 +6,7 @@
         public SyntaxToken Identifier { get; }
         public override SyntaxKind Kind => SyntaxKind.TypeClause;
 
-        public TypeClauseSyntax(SyntaxTree syntaxTree, 
+        internal TypeClauseSyntax(SyntaxTree syntaxTree, 
             SyntaxToken colonToken, 
             SyntaxToken identifier)
             : base(syntaxTree)

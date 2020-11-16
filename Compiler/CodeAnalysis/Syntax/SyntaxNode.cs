@@ -35,7 +35,7 @@ namespace Compiler.CodeAnalysis.Syntax
 
         public TextLocation Location => new TextLocation(SyntaxTree.Text, Span);
 
-        protected SyntaxNode(SyntaxTree syntaxTree)
+        private protected SyntaxNode(SyntaxTree syntaxTree)
         {
             SyntaxTree = syntaxTree;
         }

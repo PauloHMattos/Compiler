@@ -6,7 +6,7 @@
         public TypeClauseSyntax Type { get; }
         public override SyntaxKind Kind => SyntaxKind.Parameter;
 
-        public ParameterSyntax(SyntaxTree syntaxTree, 
+        internal ParameterSyntax(SyntaxTree syntaxTree, 
             SyntaxToken identifier, 
             TypeClauseSyntax type)
             : base(syntaxTree)

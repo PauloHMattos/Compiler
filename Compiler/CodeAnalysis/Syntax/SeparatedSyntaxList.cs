@@ -15,7 +15,7 @@ namespace Compiler.CodeAnalysis.Syntax
     {
         private readonly ImmutableArray<SyntaxNode> _nodesAndSeparators;
 
-        public SeparatedSyntaxList(ImmutableArray<SyntaxNode> nodesAndSeparators)
+        internal SeparatedSyntaxList(ImmutableArray<SyntaxNode> nodesAndSeparators)
         {
             _nodesAndSeparators = nodesAndSeparators;
         }

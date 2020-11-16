@@ -26,7 +26,7 @@ namespace Compiler.CodeAnalysis.Syntax
         public ImmutableArray<SyntaxTrivia> LeadingTrivia { get; }
         public ImmutableArray<SyntaxTrivia> TrailingTrivia { get; }
 
-        public SyntaxToken(SyntaxTree syntaxTree,
+        internal SyntaxToken(SyntaxTree syntaxTree,
             SyntaxKind kind,
             int position,
             string? text,

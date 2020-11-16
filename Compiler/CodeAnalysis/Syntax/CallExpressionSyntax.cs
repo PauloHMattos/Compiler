@@ -1,6 +1,6 @@
 ﻿namespace Compiler.CodeAnalysis.Syntax
 {
-    internal partial class CallExpressionSyntax : ExpressionSyntax
+    public partial class CallExpressionSyntax : ExpressionSyntax
     {
         public SyntaxToken Identifier { get; }
         public SyntaxToken OpenParenthesisToken { get; }
@@ -8,7 +8,7 @@
         public SyntaxToken CloseParenthesisToken { get; }
         public override SyntaxKind Kind => SyntaxKind.CallExpression;
 
-        public CallExpressionSyntax(SyntaxTree syntaxTree, 
+        internal CallExpressionSyntax(SyntaxTree syntaxTree, 
             SyntaxToken identifier, 
             SyntaxToken openParenthesisToken, 
             SeparatedSyntaxList<ExpressionSyntax> arguments, 

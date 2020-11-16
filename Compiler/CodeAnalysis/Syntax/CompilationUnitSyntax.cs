@@ -8,7 +8,7 @@ namespace Compiler.CodeAnalysis.Syntax
         public SyntaxToken EndOfFileToken { get; }
         public override SyntaxKind Kind => SyntaxKind.CompilationUnit;
 
-        public CompilationUnitSyntax(SyntaxTree syntaxTree, 
+        internal CompilationUnitSyntax(SyntaxTree syntaxTree, 
             ImmutableArray<MemberSyntax> members, 
             SyntaxToken endOfFileToken)
             : base(syntaxTree)

@@ -7,12 +7,12 @@
 
         public override SyntaxKind Kind => SyntaxKind.LiteralExpression;
 
-        public LiteralExpressionSyntax(SyntaxTree syntaxTree, SyntaxToken literalToken) : 
+        internal LiteralExpressionSyntax(SyntaxTree syntaxTree, SyntaxToken literalToken) : 
             this(syntaxTree, literalToken, literalToken.Value!)
         {
         }
 
-        public LiteralExpressionSyntax(SyntaxTree syntaxTree, 
+        internal LiteralExpressionSyntax(SyntaxTree syntaxTree, 
             SyntaxToken literalToken, 
             object value)
             : base(syntaxTree)

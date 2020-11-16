@@ -7,7 +7,7 @@
         public ExpressionSyntax Right { get; }
         public override SyntaxKind Kind => SyntaxKind.BinaryExpression;
 
-        public BinaryExpressionSyntax(SyntaxTree syntaxTree, 
+        internal BinaryExpressionSyntax(SyntaxTree syntaxTree, 
             ExpressionSyntax left, 
             SyntaxToken operatorToken, 
             ExpressionSyntax right)

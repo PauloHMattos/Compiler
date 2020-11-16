@@ -11,7 +11,7 @@
         public BlockStatementSyntax Body { get; }
         public override SyntaxKind Kind => SyntaxKind.FunctionDeclaration;
 
-        public FunctionDeclarationSyntax(SyntaxTree syntaxTree, 
+        internal FunctionDeclarationSyntax(SyntaxTree syntaxTree, 
             SyntaxToken functionKeyword, 
             SyntaxToken identifier, 
             SyntaxToken openParenthesisToken, 

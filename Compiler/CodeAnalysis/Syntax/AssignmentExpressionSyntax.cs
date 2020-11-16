@@ -7,7 +7,7 @@
         public ExpressionSyntax Expression { get; }
         public override SyntaxKind Kind => SyntaxKind.AssignmentExpression;
 
-        public AssignmentExpressionSyntax(SyntaxTree syntaxTree, 
+        internal AssignmentExpressionSyntax(SyntaxTree syntaxTree, 
             SyntaxToken identifierToken, 
             SyntaxToken assignmentToken, 
             ExpressionSyntax expression)

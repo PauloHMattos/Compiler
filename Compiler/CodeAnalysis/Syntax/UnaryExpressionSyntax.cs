@@ -6,7 +6,7 @@
         public ExpressionSyntax Operand { get; }
         public override SyntaxKind Kind => SyntaxKind.UnaryExpression;
 
-        public UnaryExpressionSyntax(SyntaxTree syntaxTree, 
+        internal UnaryExpressionSyntax(SyntaxTree syntaxTree, 
             SyntaxToken operatorToken, 
             ExpressionSyntax operand)
             : base(syntaxTree)

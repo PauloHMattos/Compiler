@@ -6,7 +6,7 @@
         public ExpressionSyntax? Expression { get; }
         public override SyntaxKind Kind => SyntaxKind.ReturnStatement;
 
-        public ReturnStatementSyntax(SyntaxTree syntaxTree, 
+        internal ReturnStatementSyntax(SyntaxTree syntaxTree, 
             SyntaxToken returnKeyword, 
             ExpressionSyntax? expression)
             : base(syntaxTree)

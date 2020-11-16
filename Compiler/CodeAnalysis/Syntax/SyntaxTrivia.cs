@@ -9,7 +9,7 @@ namespace Compiler.CodeAnalysis.Syntax
         public TextSpan Span { get; }
         public string Text { get; }
 
-        public SyntaxTrivia(SyntaxTree syntaxTree, SyntaxKind kind, int position, string text)
+        internal SyntaxTrivia(SyntaxTree syntaxTree, SyntaxKind kind, int position, string text)
         {
             SyntaxTree = syntaxTree;
             Kind = kind;

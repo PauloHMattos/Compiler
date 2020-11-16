@@ -8,7 +8,7 @@
         public ElseClauseSyntax? ElseClause { get; }
         public override SyntaxKind Kind => SyntaxKind.IfStatement;
 
-        public IfStatementSyntax(SyntaxTree syntaxTree, 
+        internal IfStatementSyntax(SyntaxTree syntaxTree, 
             SyntaxToken ifKeyword, 
             ExpressionSyntax condition, 
             StatementSyntax thenStatement, 

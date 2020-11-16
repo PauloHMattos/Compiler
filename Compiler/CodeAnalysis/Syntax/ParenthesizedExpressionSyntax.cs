@@ -7,7 +7,7 @@
         public SyntaxToken CloseParenthesisToken { get; }
         public override SyntaxKind Kind => SyntaxKind.ParenthesizedExpression;
 
-        public ParenthesizedExpressionSyntax(SyntaxTree syntaxTree, 
+        internal ParenthesizedExpressionSyntax(SyntaxTree syntaxTree, 
             SyntaxToken openParenthesisToken, 
             ExpressionSyntax expression, 
             SyntaxToken closeParenthesisToken)
