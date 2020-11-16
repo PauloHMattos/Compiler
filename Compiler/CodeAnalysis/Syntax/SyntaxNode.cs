@@ -11,6 +11,7 @@ namespace Compiler.CodeAnalysis.Syntax
     {
         public abstract SyntaxKind Kind { get; }
         public SyntaxTree SyntaxTree { get; }
+        public SyntaxNode? Parent => SyntaxTree.GetParent(this);
         public virtual TextSpan Span
         {
             get
