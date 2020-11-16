@@ -50,6 +50,21 @@ namespace Compiler.CodeAnalysis.Syntax
             return GetChildren().Last().GetLastToken();
         }
 
+        public IEnumerable<SyntaxNode> AncestorsAndSelf()
+        {
+            var node = this;
+            while (node != null)
+            {
+                yield return node;
+                node = node.Parent;
+            }
+        }
+
+        public IEnumerable<SyntaxNode> Ancestors()
+        {
+            return AncestorsAndSelf().Skip(1);
+        }
+
         public abstract IEnumerable<SyntaxNode> GetChildren();
 
         public void WriteTo(TextWriter writer)
@@ -105,11 +120,11 @@ namespace Compiler.CodeAnalysis.Syntax
                 {
                     var isLastTrailingTrivia = trivia == token.TrailingTrivia.Last();
                     var triviaMarker = isLast && isLastTrailingTrivia ? "└──" : "├──";
-                    
+
                     writer.SetForeground(ConsoleColor.DarkGray);
                     writer.Write(indent);
                     writer.Write(triviaMarker);
-                    
+
                     writer.SetForeground(ConsoleColor.DarkGreen);
                     writer.WriteLine($"T: {trivia.Kind}");
                 }
