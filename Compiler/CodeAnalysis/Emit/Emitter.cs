@@ -22,6 +22,7 @@ namespace Compiler.CodeAnalysis.Emit
         private readonly TypeDefinition _typeDefinition;
         private readonly List<AssemblyDefinition> _assemblies;
         private readonly Dictionary<TypeSymbol, TypeReference> _resolvedTypes;
+        private readonly Dictionary<EnumSymbol, TypeDefinition> _enums;
         private readonly Dictionary<FunctionSymbol, MethodDefinition> _methods;
         private readonly Dictionary<VariableSymbol, VariableDefinition> _locals;
         private readonly Dictionary<BoundLabel, int> _labels;
@@ -42,6 +43,7 @@ namespace Compiler.CodeAnalysis.Emit
             _diagnostics = new DiagnosticBag();
             _assemblies = new List<AssemblyDefinition>();
             _resolvedTypes = new Dictionary<TypeSymbol, TypeReference>();
+            _enums = new Dictionary<EnumSymbol, TypeDefinition>();
             _methods = new Dictionary<FunctionSymbol, MethodDefinition>();
             _locals = new Dictionary<VariableSymbol, VariableDefinition>();
 
@@ -147,7 +149,7 @@ namespace Compiler.CodeAnalysis.Emit
 
         private void ResolveTypes()
         {
-            foreach (var type in TypeSymbol.GetBuiltInTypes())
+            foreach (var type in TypeSymbol.GetBuiltInTypes().Concat(TypeSymbol.GetBaseTypes()))
             {
                 var typeReference = ResolveType(type);
                 if (typeReference == null)
@@ -157,7 +159,7 @@ namespace Compiler.CodeAnalysis.Emit
                 _resolvedTypes.Add(type, typeReference);
             }
         }
-
+        
         private TypeReference ResolveType(TypeSymbol type)
         {
             if (type.NetType == null)
@@ -204,12 +206,14 @@ namespace Compiler.CodeAnalysis.Emit
 
         private ImmutableArray<Diagnostic> Emit(BoundProgram program, string outputPath)
         {
+            _diagnostics.AddRange(program.Diagnostics);
             if (_diagnostics.HasErrors())
             {
                 return _diagnostics.ToImmutableArray();
             }
 
             EmitFunctionDeclarations(program.Functions);
+            EmitEnumDeclarations(program.Enums);
 
             if (program.MainFunction != null)
             {
@@ -252,11 +256,42 @@ namespace Compiler.CodeAnalysis.Emit
             }
         }
 
+        private void EmitEnumDeclarations(ImmutableArray<EnumSymbol> enums)
+        {
+            foreach (var enumSymbol in enums)
+            {
+                EmitEnumDeclaration(enumSymbol);
+            }
+        }
+
+        private void EmitEnumDeclaration(EnumSymbol enumSymbol)
+        {
+            const TypeAttributes _enumAttributes = TypeAttributes.Class | TypeAttributes.NotPublic | TypeAttributes.AnsiClass | TypeAttributes.Sealed;
+            const FieldAttributes _enumFieldAttributes = FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.Literal | FieldAttributes.HasDefault;
+            const FieldAttributes _enumSpecialAttributes = FieldAttributes.Public | FieldAttributes.SpecialName | FieldAttributes.RTSpecialName;
+            
+            var enumType = new TypeDefinition("", enumSymbol.Name, _enumAttributes, Import(TypeSymbol.Enum));
+            _assemblyDefinition.MainModule.Types.Add(enumType);
+            _enums.Add(enumSymbol, enumType);
+            _resolvedTypes.Add(enumSymbol, enumType);
+
+            var specialField = new FieldDefinition("value__", _enumSpecialAttributes, Import(TypeSymbol.Int));
+            enumType.Fields.Add(specialField);
+            foreach (var value in enumSymbol.Values)
+            {
+                var valueField = new FieldDefinition(value.Name, _enumFieldAttributes, enumType)
+                {
+                    Constant = value.Constant.Value
+                };
+                enumType.Fields.Add(valueField);
+            }
+        }
+
         private TypeReference Import(TypeSymbol type)
         {
             return _resolvedTypes[type];
         }
-
+        
         private void EmitFunctionDeclaration(FunctionSymbol function)
         {
             var functionType = Import(function.Type);

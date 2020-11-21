@@ -5,7 +5,11 @@ namespace Compiler.CodeAnalysis.Symbols
 {
     public class TypeSymbol : Symbol
     {
+        // Special types
         public static readonly TypeSymbol Error = new TypeSymbol("?", null, null);
+        // Base types
+        public static readonly TypeSymbol Enum = new TypeSymbol("enum", null, typeof(Enum));
+        // Built-in types
         public static readonly TypeSymbol Any = new TypeSymbol("any", null, typeof(object));
         public static readonly TypeSymbol Void = new TypeSymbol("void", null, typeof(void));
         public static readonly TypeSymbol Bool = new TypeSymbol("bool", default(bool), typeof(bool));
@@ -17,12 +21,12 @@ namespace Compiler.CodeAnalysis.Symbols
         public override SymbolKind Kind => SymbolKind.Type;
 
 
-        private TypeSymbol(string name, object? defaultValue, Type? netType) : base(name)
+        protected TypeSymbol(string name, object? defaultValue, Type? netType) : base(name)
         {
             NetType = netType;
             DefaultValue = defaultValue;
         }
-
+        
         public static TypeSymbol GetSymbolFrom(object value)
         {
             switch (value)
@@ -62,6 +66,11 @@ namespace Compiler.CodeAnalysis.Symbols
             yield return Bool;
             yield return String;
             yield return Void;
+        }
+        
+        public static IEnumerable<TypeSymbol> GetBaseTypes()
+        {
+            yield return Enum;
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using Compiler.CodeAnalysis.Diagnostics;
 using Compiler.CodeAnalysis.Text;
@@ -152,7 +153,14 @@ namespace Compiler.CodeAnalysis.Syntax
         private MemberSyntax ParseMember()
         {
             if (Current.Kind == SyntaxKind.FunctionKeyword)
+            {
                 return ParseFunctionDeclaration();
+            }
+
+            if (Current.Kind == SyntaxKind.EnumKeyword)
+            {
+                return ParseEnumDeclaration();
+            }
 
             return ParseGlobalStatement();
         }
@@ -171,18 +179,63 @@ namespace Compiler.CodeAnalysis.Syntax
 
         private SeparatedSyntaxList<ParameterSyntax> ParseParameterList()
         {
+            return ParseList(SyntaxKind.CloseParenthesisToken, SyntaxKind.CommaToken, ParseParameter);
+        }
+
+        private ParameterSyntax ParseParameter()
+        {
+            var identifier = MatchToken(SyntaxKind.IdentifierToken);
+            var type = ParseTypeClause();
+            return new ParameterSyntax(_syntaxTree, identifier, type);
+        }
+
+        private MemberSyntax ParseEnumDeclaration()
+        {
+            var enumKeyword = MatchToken(SyntaxKind.EnumKeyword);
+            var identifier = MatchToken(SyntaxKind.IdentifierToken);
+            var openBraceToken = MatchToken(SyntaxKind.OpenBraceToken);
+            var values = ParseEnumValueList();
+            var closeBraceToken = MatchToken(SyntaxKind.CloseBraceToken);
+            return new EnumDeclarationSyntax(_syntaxTree, enumKeyword, identifier, openBraceToken, values, closeBraceToken);
+        }
+
+        private SeparatedSyntaxList<EnumSyntax> ParseEnumValueList()
+        {
+            return ParseList(SyntaxKind.CloseBraceToken, SyntaxKind.CommaToken, ParseEnum);
+        }
+
+        private EnumSyntax ParseEnum()
+        {
+            var identifier = MatchToken(SyntaxKind.IdentifierToken);
+            var valueClause = ParseOptionalEnumValueClause();
+            return new EnumSyntax(_syntaxTree, identifier, valueClause);
+        }
+
+        private EnumValueClauseSyntax? ParseOptionalEnumValueClause()
+        {
+            if (Current.Kind == SyntaxKind.EqualsToken)
+            {
+                var equalsToken = MatchToken(SyntaxKind.EqualsToken);
+                var expression = ParseBinaryExpression();
+                return new EnumValueClauseSyntax(_syntaxTree, equalsToken, expression);
+            }
+            return null;
+        }
+
+        private SeparatedSyntaxList<T> ParseList<T>(SyntaxKind endTokenKind, SyntaxKind separatorKind, Func<T> parseMethod) where T : SyntaxNode
+        {
             var nodesAndSeparators = ImmutableArray.CreateBuilder<SyntaxNode>();
             var parseNextArgument = true;
             while (parseNextArgument &&
-                   Current.Kind != SyntaxKind.CloseParenthesisToken &&
+                   Current.Kind != endTokenKind &&
                    Current.Kind != SyntaxKind.EndOfFileToken)
             {
-                var parameter = ParseParameter();
+                var parameter = parseMethod.Invoke();
                 nodesAndSeparators.Add(parameter);
 
-                if (Current.Kind == SyntaxKind.CommaToken)
+                if (Current.Kind == separatorKind)
                 {
-                    var comma = MatchToken(SyntaxKind.CommaToken);
+                    var comma = MatchToken(separatorKind);
                     nodesAndSeparators.Add(comma);
                 }
                 else
@@ -191,14 +244,7 @@ namespace Compiler.CodeAnalysis.Syntax
                 }
             }
 
-            return new SeparatedSyntaxList<ParameterSyntax>(nodesAndSeparators.ToImmutable());
-        }
-
-        private ParameterSyntax ParseParameter()
-        {
-            var identifier = MatchToken(SyntaxKind.IdentifierToken);
-            var type = ParseTypeClause();
-            return new ParameterSyntax(_syntaxTree, identifier, type);
+            return new SeparatedSyntaxList<T>(nodesAndSeparators.ToImmutable());
         }
 
         private MemberSyntax ParseGlobalStatement()

@@ -6,7 +6,7 @@ namespace Compiler.CodeAnalysis.Symbols
     {
         public bool IsReadOnly { get; }
         public TypeSymbol Type { get; }
-        internal BoundConstant? Constant { get; }
+        internal virtual BoundConstant? Constant { get; }
 
         internal VariableSymbol(string name, bool isReadOnly, TypeSymbol type, BoundConstant? constant) : base(name)
         {

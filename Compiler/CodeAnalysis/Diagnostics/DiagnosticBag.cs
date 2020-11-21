@@ -162,6 +162,16 @@ namespace Compiler.CodeAnalysis.Diagnostics
             ReportError(location, DiagnosticCode.ParameterAlreadyDeclared.GetDiagnostic(parameterName));
         }
 
+        public void ReportMemberAlreadyDeclared(in TextLocation location, string typeName, string memberName)
+        {
+            ReportError(location, DiagnosticCode.AlreadyDeclaredMember.GetDiagnostic(typeName, memberName));
+        }
+
+        public void ReportEnumerationAlreadyContainsValue(in TextLocation location, string repeatedEnumName, int value, string originalName)
+        {
+            ReportWarning(location, DiagnosticCode.EnumerationAlreadyContainsValue.GetDiagnostic(repeatedEnumName, value, originalName));
+        }
+
         public void ReportInvalidBreakOrContinue(in TextLocation location, string text)
         {
             ReportError(location, DiagnosticCode.InvalidBreakOrContinue.GetDiagnostic(text));

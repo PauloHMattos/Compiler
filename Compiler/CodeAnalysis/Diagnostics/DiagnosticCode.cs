@@ -36,7 +36,9 @@ namespace Compiler.CodeAnalysis.Diagnostics
         RequiredTypeNotFound,
         RequiredTypeAmbiguous,
         RequiredMethodNotFound,
-        UnterminatedMultilineComment
+        UnterminatedMultilineComment,
+        AlreadyDeclaredMember,
+        EnumerationAlreadyContainsValue
     }
 
 
@@ -77,6 +79,8 @@ namespace Compiler.CodeAnalysis.Diagnostics
             {DiagnosticCode.RequiredTypeAmbiguous, "The required type {0} was found in multiple references: {1}"},
             {DiagnosticCode.RequiredMethodNotFound, "The required method '{0}.{1}({2})' cannot be resolved among the given references."},
             {DiagnosticCode.UnterminatedMultilineComment, "Unterminated multi-line comment."},
+            {DiagnosticCode.AlreadyDeclaredMember, "The type '{0}' already contains a definition for '{1}'."},
+            {DiagnosticCode.EnumerationAlreadyContainsValue, "The enumeration member '{0}' has the same constant value '{1}' as the member '{2}'."},
         };
 
         public static string GetDiagnostic(this DiagnosticCode code, params object[] arguments)

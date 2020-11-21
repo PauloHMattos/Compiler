@@ -1,0 +1,10 @@
+enum Test
+{
+    A,
+    A1 = 10,
+    A2 = 0
+}
+
+function main()
+{
+}
