@@ -26,9 +26,9 @@ jobs:
         # The name of the SonarQube organization
         sonarOrganization: paulohmattos
         # Optional command arguments to dotnet test
-        dotnetTestArguments: --logger trx --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+        dotnetTestArguments: /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
         # Optional extra command arguments the the SonarScanner 'begin' command
-        sonarBeginArguments: /d:sonar.cs.opencover.reportsPaths="**/TestResults/**/coverage.opencover.xml" -d:sonar.cs.vstest.reportsPaths="**/TestResults/*.trx"
+        sonarBeginArguments: /d:sonar.verbose="true" /d:sonar.language="cs" /d:sonar.cs.opencover.reportsPaths="**/*opencover.xml"
         # The SonarQube server URL. For SonarCloud, don't set this setting.
         #sonarHostname: # optional, default is https://sonarcloud.io
 
