@@ -37,6 +37,7 @@
         BreakKeyword,
         FunctionKeyword,
         ReturnKeyword,
+        DefaultKeyword,
 
         // Literals
         NumberToken,

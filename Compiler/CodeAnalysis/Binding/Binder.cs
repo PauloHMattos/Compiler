@@ -323,12 +323,58 @@ namespace Compiler.CodeAnalysis.Binding
         {
             var isReadOnly = syntax.Keyword.Kind == SyntaxKind.ConstKeyword;
             var type = BindTypeClause(syntax.TypeClause);
-            var initializer = BindExpression(syntax.Initializer);
-            var variableType = type ?? initializer.Type;
-            var variable = BindVariableDeclaration(syntax.Identifier, isReadOnly, variableType, initializer.ConstantValue);
-            var convertedInitializer = BindConversion(syntax.Initializer.Location, initializer, variableType, false);
 
-            return new BoundVariableDeclarationStatement(syntax, variable, convertedInitializer);
+            if (syntax.Initializer != null && syntax.Initializer.Kind != SyntaxKind.DefaultKeyword)
+            {
+                var initializer = BindExpression(syntax.Initializer);
+                var variableType = type ?? initializer.Type;
+                var variable = BindVariableDeclaration(syntax.Identifier, isReadOnly, variableType, initializer.ConstantValue);
+                var convertedInitializer = BindConversion(syntax.Initializer.Location, initializer, variableType);
+
+                return new BoundVariableDeclarationStatement(syntax, variable, convertedInitializer);
+            }
+            else if (type != null)
+            {
+                var initializer = syntax.Initializer?.Kind == SyntaxKind.DefaultKeyword
+                    ? BindDefaultExpression((DefaultKeywordSyntax)syntax.Initializer, syntax.TypeClause)
+                    : BindSyntheticDefaultExpression(syntax, syntax.TypeClause);
+                var variableType = type;
+                var variable = BindVariableDeclaration(syntax.Identifier, isReadOnly, variableType);
+                var convertedInitializer = BindConversion(syntax.TypeClause!.Location, initializer!, variableType);
+
+                return new BoundVariableDeclarationStatement(syntax, variable, convertedInitializer);
+            }
+            else
+            {
+                Diagnostics.ReportUndefinedType(syntax.TypeClause?.Location ?? syntax.Identifier.Location, syntax.TypeClause?.Identifier.Text ?? syntax.Identifier.Text);
+                return new BoundExpressionStatement(syntax, new BoundErrorExpression(syntax));
+            }
+        }
+
+        [return: NotNullIfNotNull("typeSyntax")]
+        private BoundLiteralExpression BindSyntheticDefaultExpression(VariableDeclarationStatementSyntax syntax, TypeClauseSyntax? typeSyntax)
+        {
+            var syntaxToken = new SyntaxToken(syntax.SyntaxTree, SyntaxKind.DefaultKeyword, syntax.Span.End, null, null, ImmutableArray<SyntaxTrivia>.Empty, ImmutableArray<SyntaxTrivia>.Empty);
+            var syntaxNode = new DefaultKeywordSyntax(syntax.SyntaxTree, syntaxToken);
+
+            return BindDefaultExpression(syntaxNode, typeSyntax)!;
+        }
+
+        [return: NotNullIfNotNull("typeSyntax")]
+        private BoundLiteralExpression? BindDefaultExpression(DefaultKeywordSyntax syntax, TypeClauseSyntax? typeSyntax)
+        {
+            if (typeSyntax == null)
+            {
+                return null;
+            }
+
+            var type = TypeSymbol.LookupType(typeSyntax.Identifier.Text);
+            if (type == null)
+            {
+                Diagnostics.ReportUndefinedType(typeSyntax.Identifier.Location, typeSyntax.Identifier.Text);
+                type = TypeSymbol.Error;
+            }
+            return new BoundLiteralExpression(syntax, type.DefaultValue!);
         }
 
         [return: NotNullIfNotNull("syntax")]
@@ -707,13 +753,13 @@ namespace Compiler.CodeAnalysis.Binding
             return new BoundCallExpression(syntax, function, boundArguments.ToImmutable());
         }
 
-        private BoundExpression BindConversion(ExpressionSyntax syntax, TypeSymbol type, bool allowExplicit)
+        private BoundExpression BindConversion(ExpressionSyntax syntax, TypeSymbol type, bool allowExplicit = false)
         {
             var expression = BindExpression(syntax);
             return BindConversion(syntax.Location, expression, type, allowExplicit);
         }
 
-        private BoundExpression BindConversion(TextLocation diagnosticLocation, BoundExpression expression, TypeSymbol type, bool allowExplicit)
+        private BoundExpression BindConversion(TextLocation diagnosticLocation, BoundExpression expression, TypeSymbol type, bool allowExplicit = false)
         {
             var conversion = Conversion.Classify(expression.Type, type);
 

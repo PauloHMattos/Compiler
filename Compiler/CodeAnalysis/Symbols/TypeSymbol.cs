@@ -5,20 +5,22 @@ namespace Compiler.CodeAnalysis.Symbols
 {
     public class TypeSymbol : Symbol
     {
-        public static readonly TypeSymbol Error = new TypeSymbol("?", null);
-        public static readonly TypeSymbol Any = new TypeSymbol("any", typeof(object));
-        public static readonly TypeSymbol Void = new TypeSymbol("void", typeof(void));
-        public static readonly TypeSymbol Bool = new TypeSymbol("bool", typeof(bool));
-        public static readonly TypeSymbol Int = new TypeSymbol("int", typeof(int));
-        public static readonly TypeSymbol String = new TypeSymbol("string", typeof(string));
+        public static readonly TypeSymbol Error = new TypeSymbol("?", null, null);
+        public static readonly TypeSymbol Any = new TypeSymbol("any", null, typeof(object));
+        public static readonly TypeSymbol Void = new TypeSymbol("void", null, typeof(void));
+        public static readonly TypeSymbol Bool = new TypeSymbol("bool", default(bool), typeof(bool));
+        public static readonly TypeSymbol Int = new TypeSymbol("int", default(int), typeof(int));
+        public static readonly TypeSymbol String = new TypeSymbol("string", string.Empty, typeof(string));
 
         public Type? NetType { get; }
+        public object? DefaultValue { get; }
         public override SymbolKind Kind => SymbolKind.Type;
 
 
-        private TypeSymbol(string name, Type? netType) : base(name)
+        private TypeSymbol(string name, object? defaultValue, Type? netType) : base(name)
         {
             NetType = netType;
+            DefaultValue = defaultValue;
         }
 
         public static TypeSymbol GetSymbolFrom(object value)

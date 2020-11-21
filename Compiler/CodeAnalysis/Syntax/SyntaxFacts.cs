@@ -113,6 +113,8 @@ namespace Compiler.CodeAnalysis.Syntax
                     return SyntaxKind.FunctionKeyword;
                 case "return":
                     return SyntaxKind.ReturnKeyword;
+                case "default":
+                    return SyntaxKind.DefaultKeyword;
                 default:
                     return SyntaxKind.IdentifierToken;
             }
@@ -164,6 +166,8 @@ namespace Compiler.CodeAnalysis.Syntax
                     return "function";
                 case SyntaxKind.ReturnKeyword:
                     return "return";
+                case SyntaxKind.DefaultKeyword:
+                    return "default";
                 case SyntaxKind.PlusToken: 
                     return "+";
                 case SyntaxKind.PlusEqualsToken: 

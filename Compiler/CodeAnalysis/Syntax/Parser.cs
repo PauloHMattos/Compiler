@@ -243,9 +243,24 @@ namespace Compiler.CodeAnalysis.Syntax
             var keyword = MatchToken(expectedToken);
             var identifier = MatchToken(SyntaxKind.IdentifierToken);
             var typeClause = ParseOptionalTypeClause();
-            var equals = MatchToken(SyntaxKind.EqualsToken);
-            var initializer = ParseExpression();
-            return new VariableDeclarationStatementSyntax(_syntaxTree, keyword, identifier, typeClause, equals, initializer);
+
+            // A type can be omitted when it can be inferred from the initializer
+            // An initializer can be omitted when a type is present AND the variable is not read-only
+
+            // A variable that is read-only must be initialized
+            if (typeClause == null ||
+                Current.Kind == SyntaxKind.EqualsToken ||
+                expectedToken == SyntaxKind.ConstKeyword)
+            {
+                var equals = MatchToken(SyntaxKind.EqualsToken);
+                var initializer = ParseExpression();
+
+                return new VariableDeclarationStatementSyntax(_syntaxTree, keyword, identifier, typeClause, equals, initializer);
+            }
+            else
+            {
+                return new VariableDeclarationStatementSyntax(_syntaxTree, keyword, identifier, typeClause, null, null);
+            }
         }
 
         private TypeClauseSyntax? ParseOptionalTypeClause()
@@ -410,7 +425,6 @@ namespace Compiler.CodeAnalysis.Syntax
                         var right = ParseAssignmentExpression();
                         return new AssignmentExpressionSyntax(_syntaxTree, identifierToken, operatorToken, right);
                 }
-
             }
             return ParseBinaryExpression();
         }
@@ -463,6 +477,9 @@ namespace Compiler.CodeAnalysis.Syntax
                 case SyntaxKind.StringToken:
                     return ParseStringLiteral();
 
+                case SyntaxKind.DefaultKeyword:
+                    return ParseDefaultLiteral();
+
                 default:
                     return ParseNameOrCallExpression();
             }
@@ -480,6 +497,12 @@ namespace Compiler.CodeAnalysis.Syntax
             return new LiteralExpressionSyntax(_syntaxTree, stringToken);
         }
 
+        private ExpressionSyntax ParseDefaultLiteral()
+        {
+            var defaultKeywordToken = MatchToken(SyntaxKind.DefaultKeyword);
+            return new DefaultKeywordSyntax(_syntaxTree, defaultKeywordToken);
+        }
+
         private ExpressionSyntax ParseParenthesizedExpression()
         {
             var left = MatchToken(SyntaxKind.OpenParenthesisToken);
@@ -491,8 +514,7 @@ namespace Compiler.CodeAnalysis.Syntax
         private ExpressionSyntax ParseBooleanLiteral()
         {
             var isTrue = Current.Kind == SyntaxKind.TrueKeyword;
-            var keywordToken = isTrue ?
-                                        MatchToken(SyntaxKind.TrueKeyword) :
+            var keywordToken = isTrue ? MatchToken(SyntaxKind.TrueKeyword) :
                                         MatchToken(SyntaxKind.FalseKeyword);
             return new LiteralExpressionSyntax(_syntaxTree, keywordToken, isTrue);
         }
@@ -500,8 +522,9 @@ namespace Compiler.CodeAnalysis.Syntax
         private ExpressionSyntax ParseNameOrCallExpression()
         {
             if (Peek(0).Kind == SyntaxKind.IdentifierToken && Peek(1).Kind == SyntaxKind.OpenParenthesisToken)
+            {
                 return ParseCallExpression();
-
+            }
             return ParseNameExpression();
         }
 

@@ -66,6 +66,12 @@ namespace Compiler.Tests.CodeAnalysis
         [InlineData("true ^ false", true)]
         [InlineData("false ^ true", true)]
         [InlineData("true ^ true", false)]
+        [InlineData("{ var i : int return i }", 0)]
+        [InlineData("{ var i : int = default return i }", 0)]
+        [InlineData("{ var s : string return s }", "")]
+        [InlineData("{ var s : string = default return s }", "")]
+        [InlineData("{ var b : bool return b }", false)]
+        [InlineData("{ var b : bool = default return b }", false)]
         [InlineData("{ var a = 1 return a }", 1)]
         [InlineData("{ var a = true return a }", true)]
         [InlineData("{ const a = 1 return a }", 1)]
@@ -400,7 +406,6 @@ namespace Compiler.Tests.CodeAnalysis
             };
             AssertDiagnostics(text, diagnostics);
         }
-
 
         [Fact]
         public void Evaluator_VariableDeclaration_Reports_Redeclaration()
