@@ -3,6 +3,7 @@ using System.CodeDom.Compiler;
 using System.IO;
 using Compiler.CodeAnalysis.Symbols;
 using Compiler.CodeAnalysis.Syntax;
+using Compiler.CodeAnalysis.Text;
 using Compiler.IO;
 
 namespace Compiler.CodeAnalysis.Binding
@@ -30,6 +31,9 @@ namespace Compiler.CodeAnalysis.Binding
                     break;
                 case BoundNodeKind.NopStatement:
                     WriteNopStatement((BoundNopStatement)node, writer);
+                    break;
+                case BoundNodeKind.SequencePointStatement:
+                    WriteSequencePointStatement((BoundSequencePointStatement)node, writer);
                     break;
                 case BoundNodeKind.VariableDeclarationStatement:
                     WriteVariableDeclarationStatement((BoundVariableDeclarationStatement)node, writer);
@@ -91,6 +95,27 @@ namespace Compiler.CodeAnalysis.Binding
                 default:
                     throw new InvalidOperationException($"Unexpected node {node.Kind}");
             }
+        }
+
+        private static void WriteSequencePointStatement(BoundSequencePointStatement node, IndentedTextWriter writer)
+        {
+            var sourceText = node.Location.Text;
+            var span = node.Location.Span;
+            var startLine = sourceText.GetLineIndex(span.Start);
+            var endLine = sourceText.GetLineIndex(span.End - 1);
+
+            for (var i = startLine; i <= endLine; i++)
+            {
+                var line = sourceText.Lines[i];
+                var start = Math.Max(line.Start, span.Start);
+                var end = Math.Min(line.End, span.End);
+                var lineSpan = TextSpan.FromBounds(start, end);
+                var text = node.Location.Text.ToString(lineSpan);
+                writer.WriteComment(text);
+            }
+            writer.WriteLine();
+
+            node.Statement.WriteTo(writer);
         }
 
         private static void WriteNopStatement(BoundNopStatement node, IndentedTextWriter writer)

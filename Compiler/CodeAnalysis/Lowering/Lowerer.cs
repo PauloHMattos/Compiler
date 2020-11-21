@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Compiler.CodeAnalysis.Binding;
@@ -224,25 +225,6 @@ namespace Compiler.CodeAnalysis.Lowering
             return RewriteStatement(result);
         }
 
-        protected override BoundStatement RewriteConditionalGotoStatement(BoundConditionalGotoStatement node)
-        {
-            if (node.Condition.ConstantValue != null)
-            {
-                var condition = (bool)node.Condition.ConstantValue.Value;
-                condition = node.JumpIfTrue ? condition : !condition;
-                if (condition)
-                {
-                    return RewriteStatement(Goto(node.Syntax, node.Label));
-                }
-                else
-                {
-                    return RewriteStatement(Nop(node.Syntax));
-                }
-            }
-
-            return base.RewriteConditionalGotoStatement(node);
-        }
-
         protected override BoundExpression RewriteCompoundAssignmentExpression(BoundCompoundAssignmentExpression node)
         {
             // a <op>= b
@@ -266,6 +248,19 @@ namespace Compiler.CodeAnalysis.Lowering
             );
 
             return result;
+        }
+
+
+        protected override BoundStatement RewriteExpressionStatement(BoundExpressionStatement node)
+        {
+            var rewrittenNode = base.RewriteExpressionStatement(node);
+            return new BoundSequencePointStatement(rewrittenNode.Syntax, rewrittenNode, rewrittenNode.Syntax.Location);
+        }
+
+        protected override BoundStatement RewriteVariableDeclarationStatement(BoundVariableDeclarationStatement node)
+        {
+            var rewrittenNode = base.RewriteVariableDeclarationStatement(node);
+            return new BoundSequencePointStatement(rewrittenNode.Syntax, rewrittenNode, rewrittenNode.Syntax.Location);
         }
     }
 }

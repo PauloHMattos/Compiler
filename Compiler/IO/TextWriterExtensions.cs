@@ -81,6 +81,30 @@ namespace Compiler.IO
             writer.Write(text);
             writer.ResetColor();
         }
+        
+        public static void WriteComment(this TextWriter writer, string text, bool multiLine = false)
+        {
+            writer.SetForeground(ConsoleColor.DarkGreen);
+            
+            if (multiLine)
+            {
+                writer.WriteLine("/*");
+            }
+            else
+            {
+                writer.Write("// ");
+            }
+
+            writer.Write(text);
+
+            if (multiLine)
+            {
+                writer.WriteLine("*/");
+            }
+            
+            writer.ResetColor();
+        }
+
         public static void WriteSpace(this TextWriter writer)
         {
             writer.WritePunctuation(" ");

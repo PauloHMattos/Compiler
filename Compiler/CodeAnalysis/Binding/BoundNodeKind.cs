@@ -5,6 +5,7 @@
         // Statements
         BlockStatement,
         NopStatement,
+        SequencePointStatement,
         ExpressionStatement,
         VariableDeclarationStatement,
         IfStatement,

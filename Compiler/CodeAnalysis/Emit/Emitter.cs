@@ -2,11 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using Compiler.CodeAnalysis.Binding;
 using Compiler.CodeAnalysis.Diagnostics;
 using Compiler.CodeAnalysis.Symbols;
 using Compiler.CodeAnalysis.Syntax;
+using Compiler.CodeAnalysis.Text;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Cecil.Rocks;
@@ -23,6 +25,7 @@ namespace Compiler.CodeAnalysis.Emit
         private readonly Dictionary<FunctionSymbol, MethodDefinition> _methods;
         private readonly Dictionary<VariableSymbol, VariableDefinition> _locals;
         private readonly Dictionary<BoundLabel, int> _labels;
+        private readonly Dictionary<SourceText, Document> _documents;
         private readonly List<Fixup> _fixups;
 
         private readonly MethodReference _objectEqualsReference;
@@ -32,6 +35,7 @@ namespace Compiler.CodeAnalysis.Emit
         private readonly MethodReference _convertToBooleanReference;
         private readonly MethodReference _convertToInt32Reference;
         private readonly MethodReference _convertToStringReference;
+        private readonly MethodReference _debuggableAttributeCtorReference;
 
         private Emitter(string moduleName, IEnumerable<string> references)
         {
@@ -43,6 +47,7 @@ namespace Compiler.CodeAnalysis.Emit
 
             _labels = new Dictionary<BoundLabel, int>();
             _fixups = new List<Fixup>();
+            _documents = new Dictionary<SourceText, Document>();
 
             var assemblyName = new AssemblyNameDefinition(moduleName, new Version("1.0"));
             _assemblyDefinition = AssemblyDefinition.CreateAssembly(assemblyName, moduleName, ModuleKind.Console);
@@ -50,13 +55,14 @@ namespace Compiler.CodeAnalysis.Emit
             ReadAssemblies(references);
             ResolveTypes();
 
-            _objectEqualsReference = ResolveMethod<object>("Equals", new[] { typeof(object), typeof(object) });
-            _consoleReadLineReference = ResolveMethod(typeof(Console), "ReadLine", Array.Empty<Type>());
-            _consoleWriteLineReference = ResolveMethod(typeof(Console), "WriteLine", new[] { typeof(object) });
-            _stringConcatReference = ResolveMethod<string>("Concat", new[] { typeof(string), typeof(string) });
-            _convertToBooleanReference = ResolveMethod(typeof(Convert), "ToBoolean", new[] { typeof(object) });
-            _convertToInt32Reference = ResolveMethod(typeof(Convert), "ToInt32", new[] { typeof(object) });
-            _convertToStringReference = ResolveMethod(typeof(Convert), "ToString", new[] { typeof(object) });
+            _objectEqualsReference = ResolveMethod<object>(nameof(object.Equals), new[] { typeof(object), typeof(object) });
+            _consoleReadLineReference = ResolveMethod(typeof(Console), nameof(Console.ReadLine), Array.Empty<Type>());
+            _consoleWriteLineReference = ResolveMethod(typeof(Console), nameof(Console.WriteLine), new[] { typeof(object) });
+            _stringConcatReference = ResolveMethod<string>(nameof(string.Concat), new[] { typeof(string), typeof(string) });
+            _convertToBooleanReference = ResolveMethod(typeof(Convert), nameof(Convert.ToBoolean), new[] { typeof(object) });
+            _convertToInt32Reference = ResolveMethod(typeof(Convert), nameof(Convert.ToInt32), new[] { typeof(object) });
+            _convertToStringReference = ResolveMethod(typeof(Convert), nameof(Convert.ToString), new[] { typeof(object) });
+            _debuggableAttributeCtorReference = ResolveMethod<DebuggableAttribute>(".ctor", new [] { typeof(bool), typeof(bool) });
 
             var objectType = Import(TypeSymbol.Any);
             _typeDefinition = new TypeDefinition("", "Program", TypeAttributes.Abstract | TypeAttributes.Sealed, objectType);
@@ -210,7 +216,27 @@ namespace Compiler.CodeAnalysis.Emit
                 _assemblyDefinition.EntryPoint = _methods[program.MainFunction];
             }
 
-            _assemblyDefinition.Write(outputPath);
+            // TODO: We should not emit this attribute unless we produce a debug build
+            var debuggableAttribute = new CustomAttribute(_debuggableAttributeCtorReference);
+            debuggableAttribute.ConstructorArguments.Add(new CustomAttributeArgument(Import(TypeSymbol.Bool), true));
+            debuggableAttribute.ConstructorArguments.Add(new CustomAttributeArgument(Import(TypeSymbol.Bool), true));
+            _assemblyDefinition.CustomAttributes.Add(debuggableAttribute);
+
+            // TODO: We should not be computing paths here
+            var symbolsPath = Path.ChangeExtension(outputPath, ".pdb");
+
+            // TODO: We should support not emitting symbols
+            using (var outputStream = File.Create(outputPath))
+            using (var symbolStream = File.Create(symbolsPath))
+            {
+                var writerParameters = new WriterParameters
+                {
+                    WriteSymbols = true,
+                    SymbolStream = symbolStream,
+                    SymbolWriterProvider = new PortablePdbWriterProvider()
+                };
+                _assemblyDefinition.Write(outputStream, writerParameters);
+            }
             return _diagnostics.ToImmutableArray();
         }
 
@@ -272,6 +298,17 @@ namespace Compiler.CodeAnalysis.Emit
             }
 
             method.Body.Optimize();
+
+            // TODO: Only emit this when emitting symbols
+            method.DebugInformation.Scope = new ScopeDebugInformation(method.Body.Instructions.First(), method.Body.Instructions.Last());
+
+            foreach (var local in _locals)
+            {
+                var symbol = local.Key;
+                var definition = local.Value;
+                var debugInfo = new VariableDebugInformation(definition, symbol.Name);
+                method.DebugInformation.Scope.Variables.Add(debugInfo);
+            }
         }
 
         private void EmitStatement(ILProcessor ilProcessor, BoundStatement node)
@@ -280,6 +317,9 @@ namespace Compiler.CodeAnalysis.Emit
             {
                 case BoundNodeKind.NopStatement:
                     EmitNopStatement(ilProcessor, (BoundNopStatement)node);
+                    break;
+                case BoundNodeKind.SequencePointStatement:
+                    EmitSequencePointStatement(ilProcessor, (BoundSequencePointStatement)node);
                     break;
                 case BoundNodeKind.VariableDeclarationStatement:
                     EmitVariableDeclaration(ilProcessor, (BoundVariableDeclarationStatement)node);
@@ -302,6 +342,35 @@ namespace Compiler.CodeAnalysis.Emit
                 default:
                     throw new InvalidOperationException($"Unexpected node kind {node.Kind}");
             }
+        }
+
+        private void EmitSequencePointStatement(ILProcessor ilProcessor, BoundSequencePointStatement node)
+        {
+            var index = ilProcessor.Body.Instructions.Count;
+            EmitStatement(ilProcessor, node.Statement);
+            var instruction = ilProcessor.Body.Instructions[index];
+
+            var document = GetDocument(node.Location.Text);
+            var sequencePoint = new SequencePoint(instruction, document)
+            {
+                StartLine = node.Location.StartLine + 1,
+                EndLine = node.Location.EndLine + 1,
+                StartColumn = node.Location.StartCharacter + 1,
+                EndColumn = node.Location.EndCharacter + 1
+            };
+
+            ilProcessor.Body.Method.DebugInformation.SequencePoints.Add(sequencePoint);
+        }
+
+        private Document GetDocument(SourceText sourceText)
+        {
+            if (!_documents.TryGetValue(sourceText, out var document))
+            {
+                var fullPath = Path.GetFullPath(sourceText.FileName);
+                document = new Document(fullPath);
+                _documents.Add(sourceText, document);
+            }
+            return document;
         }
 
         private void EmitNopStatement(ILProcessor ilProcessor, BoundNopStatement node)

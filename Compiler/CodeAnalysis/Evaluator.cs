@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Compiler.CodeAnalysis.Binding;
 using Compiler.CodeAnalysis.Symbols;
 
@@ -61,10 +62,19 @@ namespace Compiler.CodeAnalysis
                 labelToIndex.Add(labelStatement.Label, i + 1);
             }
 
-            var index = 0;
-            while (index < body.Statements.Length)
+            var statements = body.Statements.ToArray();
+            for (int i = 0; i < statements.Length; i++)
             {
-                var statement = body.Statements[index];
+                if (statements[i] is BoundSequencePointStatement s)
+                {
+                    statements[i] = s.Statement;
+                }
+            }
+
+            var index = 0;
+            while (index < statements.Length)
+            {
+                var statement = statements[index];
                 switch (statement.Kind)
                 {
                     case BoundNodeKind.NopStatement:

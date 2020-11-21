@@ -117,6 +117,7 @@ namespace Compiler.CodeAnalysis.Binding
                             StartBlock();
                             break;
                         case BoundNodeKind.NopStatement:
+                        case BoundNodeKind.SequencePointStatement:
                         case BoundNodeKind.VariableDeclarationStatement:
                         case BoundNodeKind.ExpressionStatement:
                             _statements.Add(statement);
@@ -217,6 +218,7 @@ namespace Compiler.CodeAnalysis.Binding
                                 Connect(current, _end);
                                 break;
                             case BoundNodeKind.NopStatement:
+                            case BoundNodeKind.SequencePointStatement:
                             case BoundNodeKind.VariableDeclarationStatement:
                             case BoundNodeKind.LabelStatement:
                             case BoundNodeKind.ExpressionStatement:

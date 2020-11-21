@@ -11,6 +11,8 @@ namespace Compiler.CodeAnalysis.Binding
             {
                 case BoundNodeKind.NopStatement:
                     return RewriteNopStatement((BoundNopStatement)statement);
+                case BoundNodeKind.SequencePointStatement:
+                    return RewriteSequencePointStatement((BoundSequencePointStatement)statement);
                 case BoundNodeKind.BlockStatement:
                     return RewriteBlockStatement((BoundBlockStatement)statement);
                 case BoundNodeKind.ExpressionStatement:
@@ -41,6 +43,16 @@ namespace Compiler.CodeAnalysis.Binding
         protected virtual BoundStatement RewriteNopStatement(BoundNopStatement node)
         {
             return node;
+        }
+
+        private BoundStatement RewriteSequencePointStatement(BoundSequencePointStatement node)
+        {
+            var statement = RewriteStatement(node.Statement);
+            if (statement == node.Statement)
+            {
+                return node;
+            }
+            return new BoundSequencePointStatement(node.Syntax, statement, node.Location);
         }
 
         protected virtual BoundStatement RewriteBlockStatement(BoundBlockStatement node)

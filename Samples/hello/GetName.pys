@@ -4,3 +4,10 @@ function GetName(question : string) : string
     var name = input()
     return name
 }
+
+function GetAge(question : string) : int
+{
+    print(question)
+    var age = int(input())
+    return age
+}

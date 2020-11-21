@@ -1,5 +1,7 @@
 function main()
 {
     var name = GetName("- What is your name?")
-    print("Hello, " + name)
+    var age = GetAge("- What is your age?")
+    print(name + " is " + string(age) + " years old")
+    input()
 }
