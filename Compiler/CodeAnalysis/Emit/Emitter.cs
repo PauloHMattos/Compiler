@@ -22,6 +22,7 @@ namespace Compiler.CodeAnalysis.Emit
         private readonly TypeDefinition _typeDefinition;
         private readonly List<AssemblyDefinition> _assemblies;
         private readonly Dictionary<TypeSymbol, TypeReference> _resolvedTypes;
+        private readonly Dictionary<TypeSymbol, TypeDefinition> _enums;
         private readonly Dictionary<FunctionSymbol, MethodDefinition> _methods;
         private readonly Dictionary<VariableSymbol, VariableDefinition> _locals;
         private readonly Dictionary<BoundLabel, int> _labels;
@@ -42,6 +43,7 @@ namespace Compiler.CodeAnalysis.Emit
             _diagnostics = new DiagnosticBag();
             _assemblies = new List<AssemblyDefinition>();
             _resolvedTypes = new Dictionary<TypeSymbol, TypeReference>();
+            _enums = new Dictionary<TypeSymbol, TypeDefinition>();
             _methods = new Dictionary<FunctionSymbol, MethodDefinition>();
             _locals = new Dictionary<VariableSymbol, VariableDefinition>();
 
@@ -147,7 +149,7 @@ namespace Compiler.CodeAnalysis.Emit
 
         private void ResolveTypes()
         {
-            foreach (var type in TypeSymbol.GetBuiltInTypes())
+            foreach (var type in TypeSymbol.GetBuiltInTypes().Concat(TypeSymbol.GetBaseTypes()))
             {
                 var typeReference = ResolveType(type);
                 if (typeReference == null)
@@ -157,7 +159,7 @@ namespace Compiler.CodeAnalysis.Emit
                 _resolvedTypes.Add(type, typeReference);
             }
         }
-
+        
         private TypeReference ResolveType(TypeSymbol type)
         {
             if (type.NetType == null)
@@ -204,11 +206,13 @@ namespace Compiler.CodeAnalysis.Emit
 
         private ImmutableArray<Diagnostic> Emit(BoundProgram program, string outputPath)
         {
+            _diagnostics.AddRange(program.Diagnostics);
             if (_diagnostics.HasErrors())
             {
                 return _diagnostics.ToImmutableArray();
             }
 
+            EmitEnumDeclarations(program.Enums);
             EmitFunctionDeclarations(program.Functions);
 
             if (program.MainFunction != null)
@@ -252,11 +256,42 @@ namespace Compiler.CodeAnalysis.Emit
             }
         }
 
+        private void EmitEnumDeclarations(ImmutableArray<EnumSymbol> enums)
+        {
+            foreach (var enumSymbol in enums)
+            {
+                EmitEnumDeclaration(enumSymbol);
+            }
+        }
+
+        private void EmitEnumDeclaration(EnumSymbol enumSymbol)
+        {
+            const TypeAttributes _enumAttributes = TypeAttributes.Class | TypeAttributes.NotPublic | TypeAttributes.AnsiClass | TypeAttributes.Sealed;
+            const FieldAttributes _enumFieldAttributes = FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.Literal | FieldAttributes.HasDefault;
+            const FieldAttributes _enumSpecialAttributes = FieldAttributes.Public | FieldAttributes.SpecialName | FieldAttributes.RTSpecialName;
+            
+            var enumType = new TypeDefinition("", enumSymbol.Name, _enumAttributes, Import(TypeSymbol.Enum));
+            _assemblyDefinition.MainModule.Types.Add(enumType);
+            _enums.Add(enumSymbol, enumType);
+            _resolvedTypes.Add(enumSymbol, enumType);
+
+            var specialField = new FieldDefinition("value__", _enumSpecialAttributes, Import(TypeSymbol.Int));
+            enumType.Fields.Add(specialField);
+            foreach (var value in enumSymbol.Values)
+            {
+                var valueField = new FieldDefinition(value.Name, _enumFieldAttributes, enumType)
+                {
+                    Constant = value.Constant.Value
+                };
+                enumType.Fields.Add(valueField);
+            }
+        }
+
         private TypeReference Import(TypeSymbol type)
         {
             return _resolvedTypes[type];
         }
-
+        
         private void EmitFunctionDeclaration(FunctionSymbol function)
         {
             var functionType = Import(function.Type);
@@ -458,9 +493,28 @@ namespace Compiler.CodeAnalysis.Emit
                 case BoundNodeKind.ConversionExpression:
                     EmitConversionExpression(ilProcessor, (BoundConversionExpression)node);
                     break;
+                case BoundNodeKind.TypeReferenceExpression:
+                    EmitTypeReferenceExpression(ilProcessor, (BoundTypeReferenceExpression)node);
+                    break;
+                case BoundNodeKind.MemberAccessExpression:
+                    EmitMemberAccessExpression(ilProcessor, (BoundMemberAccessExpression)node);
+                    break;
                 default:
                     throw new InvalidOperationException($"Unexpected node kind {node.Kind}");
             }
+        }
+
+        private void EmitTypeReferenceExpression(ILProcessor ilProcessor, BoundTypeReferenceExpression node)
+        {
+            // if (node.Type is EnumSymbol enumSymbol)
+            // {
+            //     ilProcessor.Emit(OpCodes.Ldc_I4_S, parameter.Ordinal);
+            // }
+            // else
+            // {
+            //     var variableDefinition = _locals[node.Variable];
+            //     ilProcessor.Emit(OpCodes.Ldloc, variableDefinition);
+            // }
         }
 
         private void EmitConstantExpression(ILProcessor ilProcessor, BoundExpression node)
@@ -660,10 +714,13 @@ namespace Compiler.CodeAnalysis.Emit
         {
             EmitExpression(ilProcessor, node.Expression);
             var needsBoxing = node.Expression.Type == TypeSymbol.Bool ||
-                              node.Expression.Type == TypeSymbol.Int;
+                              node.Expression.Type == TypeSymbol.Int ||
+                              node.Expression.Type.IsEnum();
+
+            var expressionType = Import(node.Expression.Type);
             if (needsBoxing)
             {
-                ilProcessor.Emit(OpCodes.Box, Import(node.Expression.Type));
+                ilProcessor.Emit(OpCodes.Box, expressionType);
             }
 
             if (node.Type == TypeSymbol.Any)
@@ -686,6 +743,23 @@ namespace Compiler.CodeAnalysis.Emit
             {
                 throw new InvalidOperationException($"Unexpected convertion from {node.Expression.Type} to {node.Type}");
             }
+        }
+        
+        private void EmitMemberAccessExpression(ILProcessor ilProcessor, BoundMemberAccessExpression node)
+        {
+            if (node.Instance.Type is EnumSymbol)
+            {
+                var enumDefinition = _enums[node.Instance.Type];
+                Debug.Assert(enumDefinition != null);
+                foreach (var field in enumDefinition.Fields)
+                {
+                    if (field.Name == node.Member.Name)
+                    {
+                        ilProcessor.Emit(OpCodes.Ldc_I4, (int)field.Constant);
+                    }
+                }
+            }
+            EmitExpression(ilProcessor, node.Instance);
         }
     }
 }

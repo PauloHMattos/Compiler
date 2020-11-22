@@ -26,6 +26,12 @@ namespace Compiler.CodeAnalysis.Symbols
                 case SymbolKind.Type:
                     WriteTypeTo((TypeSymbol)symbol, writer);
                     break;
+                case SymbolKind.Enum:
+                    WriteEnumTo((EnumSymbol)symbol, writer);
+                    break;
+                case SymbolKind.Field:
+                    WriteFieldTo((FieldSymbol)symbol, writer);
+                    break;
                 default:
                     throw new InvalidOperationException($"Unexpected symbol: {symbol.Kind}");
             }
@@ -92,6 +98,18 @@ namespace Compiler.CodeAnalysis.Symbols
         }
 
         private static void WriteTypeTo(TypeSymbol symbol, TextWriter writer)
+        {
+            writer.WriteIdentifier(symbol.Name);
+        }
+        
+        private static void WriteEnumTo(EnumSymbol symbol, TextWriter writer)
+        {
+            writer.WriteKeyword(SyntaxKind.EnumKeyword);
+            writer.WriteSpace();
+            writer.WriteIdentifier(symbol.Name);
+        }
+
+        private static void WriteFieldTo(FieldSymbol symbol, TextWriter writer)
         {
             writer.WriteIdentifier(symbol.Name);
         }

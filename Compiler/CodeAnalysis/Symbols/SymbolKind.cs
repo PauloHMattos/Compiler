@@ -7,5 +7,7 @@
         Type,
         Function,
         Parameter,
+        Enum,
+        Field,
     }
 }

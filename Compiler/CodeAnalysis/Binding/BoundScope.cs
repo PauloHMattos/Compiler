@@ -27,12 +27,13 @@ namespace Compiler.CodeAnalysis.Binding
         }
 
         public bool TryDeclareVariable(VariableSymbol variable) => TryDeclareSymbol(variable);
-
         public bool TryDeclareFunction(FunctionSymbol function) => TryDeclareSymbol(function);
+        public bool TryDeclareEnum(EnumSymbol enumSymbol) => TryDeclareSymbol(enumSymbol);
 
         public ImmutableArray<VariableSymbol> GetDeclaredVariables() => GetDeclaredSymbols<VariableSymbol>();
 
         public ImmutableArray<FunctionSymbol> GetDeclaredFunctions() => GetDeclaredSymbols<FunctionSymbol>();
+        public ImmutableArray<EnumSymbol> GetDeclaredEnums() => GetDeclaredSymbols<EnumSymbol>();
 
         private bool TryDeclareSymbol<TSymbol>(TSymbol symbol) where TSymbol : Symbol
         {

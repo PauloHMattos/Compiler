@@ -20,6 +20,7 @@
         CommaToken,
         ColonToken,
         IdentifierToken,
+        DotToken,
 
         // Keywords
         FalseKeyword,
@@ -38,6 +39,7 @@
         FunctionKeyword,
         ReturnKeyword,
         DefaultKeyword,
+        EnumKeyword,
 
         // Literals
         NumberToken,
@@ -74,11 +76,14 @@
         // Nodes
         CompilationUnit,
         FunctionDeclaration,
+        EnumDeclaration,
+        EnumValue,
         GlobalStatement,
         Parameter,
         TypeClause,
         ElseClause,
         StepClause,
+        EnumValueClause,
 
         // Statements
         BlockStatement,
@@ -101,5 +106,6 @@
         AssignmentExpression,
         CompoundAssignmentExpression,
         CallExpression,
+        MemberAccessExpression,
     }
 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Compiler.CodeAnalysis;
+using Compiler.CodeAnalysis.Diagnostics;
 using Compiler.CodeAnalysis.Syntax;
 using Compiler.IO;
 using Mono.Options;
@@ -88,6 +89,10 @@ namespace Compiler.Application
             if (diagnostics.Any())
             {
                 Console.Error.WriteDiagnostics(diagnostics);
+            }
+
+            if (diagnostics.HasErrors())
+            {
                 return 1;
             }
 

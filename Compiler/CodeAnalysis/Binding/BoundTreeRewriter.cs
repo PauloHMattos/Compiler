@@ -202,6 +202,10 @@ namespace Compiler.CodeAnalysis.Binding
                     return RewriteCallExpression((BoundCallExpression)expression);
                 case BoundNodeKind.ConversionExpression:
                     return RewriteConversionExpression((BoundConversionExpression)expression);
+                case BoundNodeKind.MemberAccessExpression:
+                    return RewriteFieldAccessExpression((BoundMemberAccessExpression)expression);
+                case BoundNodeKind.TypeReferenceExpression:
+                    return RewriteTypeReferenceExpression((BoundTypeReferenceExpression)expression);
                 default:
                     throw new InvalidOperationException($"Unexpected expression {expression.Kind}.");
             }
@@ -279,6 +283,23 @@ namespace Compiler.CodeAnalysis.Binding
                 return node;
             }
             return new BoundConversionExpression(node.Syntax, node.Type, expression);
+        }
+
+        protected BoundExpression RewriteFieldAccessExpression(BoundMemberAccessExpression node)
+        {
+            var expression = RewriteExpression(node.Instance);
+
+            if (expression == node.Instance)
+            {
+                return node;
+            }
+
+            return new BoundMemberAccessExpression(expression.Syntax, expression, node.Member);
+        }
+
+        protected BoundExpression RewriteTypeReferenceExpression(BoundTypeReferenceExpression node)
+        {
+            return node;
         }
     }
 }

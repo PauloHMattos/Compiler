@@ -26,6 +26,8 @@
         AssignmentExpression,
         CompoundAssignmentExpression,
         CallExpression,
-        ConversionExpression
+        ConversionExpression,
+        TypeReferenceExpression,
+        MemberAccessExpression
     }
 }

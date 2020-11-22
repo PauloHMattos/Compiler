@@ -160,6 +160,9 @@ namespace Compiler.CodeAnalysis
 
             switch (expression.Kind)
             {
+                case BoundNodeKind.ErrorExpression:
+                    return EvaluateErrorExpression((BoundErrorExpression)expression);
+
                 case BoundNodeKind.VariableExpression:
                     return EvaluateVariableExpression((BoundVariableExpression)expression);
 
@@ -177,12 +180,20 @@ namespace Compiler.CodeAnalysis
 
                 case BoundNodeKind.ConversionExpression:
                     return EvaluateConversionExpression((BoundConversionExpression)expression);
+                
+                case BoundNodeKind.MemberAccessExpression:
+                    return EvaluateMemberAccessExpression((BoundMemberAccessExpression)expression);
 
                 default:
                     throw new InvalidOperationException($"Unexpected expression {expression.Kind}");
             }
         }
-            
+
+        private static string EvaluateErrorExpression(BoundErrorExpression expression)
+        {
+            return "ERROR";
+        }
+
         private static object EvaluateConstantExpression(BoundExpression n)
         {
             Debug.Assert(n.ConstantValue != null);
@@ -367,6 +378,16 @@ namespace Compiler.CodeAnalysis
                 return Convert.ToString(value);
             }
             throw new InvalidOperationException($"Unexpected type {node.Type}");
+        }
+
+        private object? EvaluateMemberAccessExpression(BoundMemberAccessExpression expression)
+        {
+            if (expression.Member.Constant != null)
+            {
+                return expression.Member.Constant.Value;
+            }
+
+            return null;
         }
     }
 }

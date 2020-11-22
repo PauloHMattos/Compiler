@@ -11,6 +11,7 @@ namespace Compiler.CodeAnalysis.Binding
         public FunctionSymbol? MainFunction { get; }
         public FunctionSymbol? ScriptFunction { get; }
         public ImmutableArray<FunctionSymbol> Functions { get; }
+        public ImmutableArray<EnumSymbol> Enums { get; }
         public ImmutableArray<VariableSymbol> Variables { get; }
         public ImmutableArray<BoundStatement> Statements { get; }
 
@@ -19,6 +20,7 @@ namespace Compiler.CodeAnalysis.Binding
                                 FunctionSymbol? mainFunction,
                                 FunctionSymbol? scriptFunction,
                                 ImmutableArray<FunctionSymbol> functions,
+                                ImmutableArray<EnumSymbol> enums,
                                 ImmutableArray<VariableSymbol> variables,
                                 ImmutableArray<BoundStatement> statements)
         {
@@ -27,6 +29,7 @@ namespace Compiler.CodeAnalysis.Binding
             MainFunction = mainFunction;
             ScriptFunction = scriptFunction;
             Functions = functions;
+            Enums = enums;
             Variables = variables;
             Statements = statements;
         }

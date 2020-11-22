@@ -115,6 +115,8 @@ namespace Compiler.CodeAnalysis.Syntax
                     return SyntaxKind.ReturnKeyword;
                 case "default":
                     return SyntaxKind.DefaultKeyword;
+                case "enum":
+                    return SyntaxKind.EnumKeyword;
                 default:
                     return SyntaxKind.IdentifierToken;
             }
@@ -124,6 +126,8 @@ namespace Compiler.CodeAnalysis.Syntax
         {
             switch (kind)
             {
+                case SyntaxKind.DotToken:
+                    return ".";
                 case SyntaxKind.CommaToken:
                     return ",";
                 case SyntaxKind.ColonToken:
@@ -168,6 +172,8 @@ namespace Compiler.CodeAnalysis.Syntax
                     return "return";
                 case SyntaxKind.DefaultKeyword:
                     return "default";
+                case SyntaxKind.EnumKeyword:
+                    return "enum";
                 case SyntaxKind.PlusToken: 
                     return "+";
                 case SyntaxKind.PlusEqualsToken: 

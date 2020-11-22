@@ -121,6 +121,11 @@ namespace Compiler.Tests.CodeAnalysis
         [InlineData("string(10)", "10")]
         [InlineData("string(true)", "True")]
         [InlineData("int(\"100\")", 100)]
+        [InlineData("enum A { A, B = 100, C } return A.A", 0)]
+        [InlineData("enum A { A, B = 100, C } return A.B", 100)]
+        [InlineData("enum A { A, B = 100, C } return A.C", 101)]
+        [InlineData("enum A { A, B = 100, C = 0 } return A.C", 0)]
+        [InlineData("enum A { A, B = 100, C = 0, D } return A.D", 1)]
         public void Evaluator_Compute_CorrectValues(string text, object expectedValue)
         {
             AssertValue(text, expectedValue);
@@ -260,7 +265,7 @@ namespace Compiler.Tests.CodeAnalysis
 
             var diagnostics = new List<string>()
             {
-                DiagnosticCode.UndefinedVariable.GetDiagnostic("x")
+                DiagnosticCode.UndefinedName.GetDiagnostic("x")
             };
             AssertDiagnostics(text, diagnostics);
         }
@@ -338,7 +343,7 @@ namespace Compiler.Tests.CodeAnalysis
             var text = "[x] * 1";
             var diagnostics = new List<string>()
             {
-                DiagnosticCode.UndefinedVariable.GetDiagnostic("x")
+                DiagnosticCode.UndefinedName.GetDiagnostic("x")
             };
             AssertDiagnostics(text, diagnostics);
         }
@@ -385,7 +390,7 @@ namespace Compiler.Tests.CodeAnalysis
 
             var diagnostics = new List<string>()
             {
-                DiagnosticCode.UndefinedVariable.GetDiagnostic("x")
+                DiagnosticCode.UndefinedName.GetDiagnostic("x")
             };
             AssertDiagnostics(text, diagnostics);
         }
@@ -721,6 +726,21 @@ namespace Compiler.Tests.CodeAnalysis
             var diagnostics = new List<string>()
             {
                 DiagnosticCode.UnterminatedMultilineComment.GetDiagnostic(),
+            };
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_Cannot_Access_Member()
+        {
+            const string? text = @"
+                var p: int = 0
+                p.[length]
+            ";
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.CannotAccessMember.GetDiagnostic("length", "int"),
             };
 
             AssertDiagnostics(text, diagnostics);

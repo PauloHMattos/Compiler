@@ -10,7 +10,7 @@ namespace Compiler.CodeAnalysis.Diagnostics
         UnexpectedToken,
         UndefinedUnaryOperator,
         UndefinedBinaryOperator,
-        UndefinedVariable,
+        UndefinedName,
         NotAVariable,
         CannotConvert,
         SymbolAlreadyDeclared,
@@ -36,7 +36,10 @@ namespace Compiler.CodeAnalysis.Diagnostics
         RequiredTypeNotFound,
         RequiredTypeAmbiguous,
         RequiredMethodNotFound,
-        UnterminatedMultilineComment
+        UnterminatedMultilineComment,
+        AlreadyDeclaredMember,
+        EnumerationAlreadyContainsValue,
+        CannotAccessMember,
     }
 
 
@@ -50,7 +53,7 @@ namespace Compiler.CodeAnalysis.Diagnostics
             {DiagnosticCode.UnexpectedToken, "Unexpected token <{0}>, expected <{1}>."},
             {DiagnosticCode.UndefinedUnaryOperator, "Unary operator '{0}' is not defined for type '{1}'."},
             {DiagnosticCode.UndefinedBinaryOperator, "Binary operator '{0}' is not defined for types '{1}' and '{2}'."},
-            {DiagnosticCode.UndefinedVariable, "Variable '{0}' is not defined."},
+            {DiagnosticCode.UndefinedName, "The name '{0}' does not exist in the current context."},
             {DiagnosticCode.NotAVariable, "'{0}' is not a variable."},
             {DiagnosticCode.CannotConvert, "Cannot convert type '{0}' to '{1}'."},
             {DiagnosticCode.SymbolAlreadyDeclared, "'{0}' has already been declared."},
@@ -77,6 +80,9 @@ namespace Compiler.CodeAnalysis.Diagnostics
             {DiagnosticCode.RequiredTypeAmbiguous, "The required type {0} was found in multiple references: {1}"},
             {DiagnosticCode.RequiredMethodNotFound, "The required method '{0}.{1}({2})' cannot be resolved among the given references."},
             {DiagnosticCode.UnterminatedMultilineComment, "Unterminated multi-line comment."},
+            {DiagnosticCode.AlreadyDeclaredMember, "The type '{0}' already contains a definition for '{1}'."},
+            {DiagnosticCode.EnumerationAlreadyContainsValue, "The enumeration member '{0}' has the same constant value '{1}' as the member '{2}'."},
+            {DiagnosticCode.CannotAccessMember, "Cannot access member '{0}' of type '{1}'."},
         };
 
         public static string GetDiagnostic(this DiagnosticCode code, params object[] arguments)

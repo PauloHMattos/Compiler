@@ -20,6 +20,7 @@ namespace Compiler.CodeAnalysis
         public ImmutableArray<SyntaxTree> SyntaxTrees { get; }
         public FunctionSymbol? MainFunction => GlobalScope.MainFunction;
         public ImmutableArray<FunctionSymbol> Functions => GlobalScope.Functions;
+        public ImmutableArray<EnumSymbol> Enums => GlobalScope.Enums;
         public ImmutableArray<VariableSymbol> Variables => GlobalScope.Variables;
 
         internal BoundGlobalScope GlobalScope
@@ -60,7 +61,7 @@ namespace Compiler.CodeAnalysis
 
         public EvaluationResult Evaluate(Dictionary<VariableSymbol, object> variables)
         {
-            if (GlobalScope.Diagnostics.Any())
+            if (GlobalScope.Diagnostics.HasErrors())
             {
                 return new EvaluationResult(GlobalScope.Diagnostics, null);
             }
@@ -78,7 +79,7 @@ namespace Compiler.CodeAnalysis
             //     cfg.WriteTo(streamWriter);
 
 
-            if (program.Diagnostics.Any())
+            if (program.Diagnostics.HasErrors())
             {
                 return new EvaluationResult(program.Diagnostics, null);
             }
@@ -127,6 +128,14 @@ namespace Compiler.CodeAnalysis
                     }
                 }
 
+                foreach (var enumSymbol in submission.Enums)
+                {
+                    if (seenSymbolNames.Add(enumSymbol.Name))
+                    {
+                        yield return enumSymbol;
+                    }
+                }
+
                 foreach (var variable in submission.Variables)
                 {
                     if (seenSymbolNames.Add(variable.Name))
@@ -141,12 +150,16 @@ namespace Compiler.CodeAnalysis
 
         public ImmutableArray<Diagnostic> Emit(string moduleName, IEnumerable<string> references, string outputPath)
         {
-            if (GlobalScope.Diagnostics.Any())
+            if (GlobalScope.Diagnostics.HasErrors())
             {
                 return GlobalScope.Diagnostics;
             }
             var program = GetProgram();
-            return Emitter.Emit(program, moduleName, references, outputPath);
+            var emittionDiagnostics = Emitter.Emit(program, moduleName, references, outputPath);
+
+            var accumulatedDiagnostics = emittionDiagnostics.ToBuilder();
+            accumulatedDiagnostics.AddRange(GlobalScope.Diagnostics);
+            return accumulatedDiagnostics.ToImmutable();
         }
     }
 }
