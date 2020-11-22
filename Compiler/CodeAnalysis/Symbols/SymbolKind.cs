@@ -8,5 +8,6 @@
         Function,
         Parameter,
         Enum,
+        Field,
     }
 }

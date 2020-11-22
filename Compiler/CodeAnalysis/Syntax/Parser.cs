@@ -475,6 +475,45 @@ namespace Compiler.CodeAnalysis.Syntax
             return ParseBinaryExpression();
         }
 
+        private MemberAccessExpressionSyntax ParseMemberAccess()
+        {
+            var queue = new Queue<NameExpressionSyntax>();
+            var dotTokenQueue = new Queue<SyntaxToken>();
+            var condition = true;
+
+            while (condition)
+            {
+                queue.Enqueue(ParseNameOrCallExpression());
+
+                if (Current.Kind == SyntaxKind.DotToken)
+                {
+                    dotTokenQueue.Enqueue(MatchToken(SyntaxKind.DotToken));
+                }
+                else
+                {
+                    condition = false;
+                }
+            }
+
+            var first = queue.Dequeue();
+            return ParseMemberAccessInternal(queue, dotTokenQueue, first);
+        }
+
+        private MemberAccessExpressionSyntax ParseMemberAccessInternal(Queue<NameExpressionSyntax> queue, Queue<SyntaxToken> dotTokenQueue, ExpressionSyntax parent)
+        {
+            var member = queue.Dequeue();
+            var operatorToken = dotTokenQueue.Dequeue();
+
+            if (queue.Count > 0)
+            {
+                return ParseMemberAccessInternal(queue, dotTokenQueue, new MemberAccessExpressionSyntax(_syntaxTree, parent, operatorToken, member));
+            }
+            else
+            {
+                return new MemberAccessExpressionSyntax(_syntaxTree, parent, operatorToken, member);
+            }
+        }
+
         private ExpressionSyntax ParseBinaryExpression(int parentPrecedence = 0)
         {
             ExpressionSyntax left;
@@ -508,6 +547,11 @@ namespace Compiler.CodeAnalysis.Syntax
 
         private ExpressionSyntax ParsePrimaryExpression()
         {
+            if (Peek(1).Kind == SyntaxKind.DotToken)
+            {
+                return ParseMemberAccess();
+            }
+            
             switch (Current.Kind)
             {
                 case SyntaxKind.OpenParenthesisToken:
@@ -565,16 +609,16 @@ namespace Compiler.CodeAnalysis.Syntax
             return new LiteralExpressionSyntax(_syntaxTree, keywordToken, isTrue);
         }
 
-        private ExpressionSyntax ParseNameOrCallExpression()
+        private NameExpressionSyntax ParseNameOrCallExpression()
         {
-            if (Peek(0).Kind == SyntaxKind.IdentifierToken && Peek(1).Kind == SyntaxKind.OpenParenthesisToken)
+            if (Current.Kind == SyntaxKind.IdentifierToken && Peek(1).Kind == SyntaxKind.OpenParenthesisToken)
             {
                 return ParseCallExpression();
             }
             return ParseNameExpression();
         }
 
-        private ExpressionSyntax ParseCallExpression()
+        private CallExpressionSyntax ParseCallExpression()
         {
             var identifier = MatchToken(SyntaxKind.IdentifierToken);
             var openParenthesisToken = MatchToken(SyntaxKind.OpenParenthesisToken);
@@ -609,7 +653,7 @@ namespace Compiler.CodeAnalysis.Syntax
             return new SeparatedSyntaxList<ExpressionSyntax>(nodesAndSeparators.ToImmutable());
         }
 
-        private ExpressionSyntax ParseNameExpression()
+        private NameExpressionSyntax ParseNameExpression()
         {
             var identifierToken = MatchToken(SyntaxKind.IdentifierToken);
             return new NameExpressionSyntax(_syntaxTree, identifierToken);

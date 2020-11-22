@@ -22,7 +22,7 @@ namespace Compiler.CodeAnalysis.Emit
         private readonly TypeDefinition _typeDefinition;
         private readonly List<AssemblyDefinition> _assemblies;
         private readonly Dictionary<TypeSymbol, TypeReference> _resolvedTypes;
-        private readonly Dictionary<EnumSymbol, TypeDefinition> _enums;
+        private readonly Dictionary<TypeSymbol, TypeDefinition> _enums;
         private readonly Dictionary<FunctionSymbol, MethodDefinition> _methods;
         private readonly Dictionary<VariableSymbol, VariableDefinition> _locals;
         private readonly Dictionary<BoundLabel, int> _labels;
@@ -43,7 +43,7 @@ namespace Compiler.CodeAnalysis.Emit
             _diagnostics = new DiagnosticBag();
             _assemblies = new List<AssemblyDefinition>();
             _resolvedTypes = new Dictionary<TypeSymbol, TypeReference>();
-            _enums = new Dictionary<EnumSymbol, TypeDefinition>();
+            _enums = new Dictionary<TypeSymbol, TypeDefinition>();
             _methods = new Dictionary<FunctionSymbol, MethodDefinition>();
             _locals = new Dictionary<VariableSymbol, VariableDefinition>();
 
@@ -212,8 +212,8 @@ namespace Compiler.CodeAnalysis.Emit
                 return _diagnostics.ToImmutableArray();
             }
 
-            EmitFunctionDeclarations(program.Functions);
             EmitEnumDeclarations(program.Enums);
+            EmitFunctionDeclarations(program.Functions);
 
             if (program.MainFunction != null)
             {
@@ -258,6 +258,10 @@ namespace Compiler.CodeAnalysis.Emit
 
         private void EmitEnumDeclarations(ImmutableArray<EnumSymbol> enums)
         {
+            Console.ForegroundColor = ConsoleColor.DarkGreen;
+            Console.WriteLine("EmitEnumDeclarations");
+            Console.ResetColor();
+            
             foreach (var enumSymbol in enums)
             {
                 EmitEnumDeclaration(enumSymbol);
@@ -275,6 +279,7 @@ namespace Compiler.CodeAnalysis.Emit
             _enums.Add(enumSymbol, enumType);
             _resolvedTypes.Add(enumSymbol, enumType);
 
+            Console.WriteLine(enumSymbol.Name);
             var specialField = new FieldDefinition("value__", _enumSpecialAttributes, Import(TypeSymbol.Int));
             enumType.Fields.Add(specialField);
             foreach (var value in enumSymbol.Values)
@@ -493,9 +498,28 @@ namespace Compiler.CodeAnalysis.Emit
                 case BoundNodeKind.ConversionExpression:
                     EmitConversionExpression(ilProcessor, (BoundConversionExpression)node);
                     break;
+                case BoundNodeKind.TypeReferenceExpression:
+                    EmitTypeReferenceExpression(ilProcessor, (BoundTypeReferenceExpression)node);
+                    break;
+                case BoundNodeKind.MemberAccessExpression:
+                    EmitMemberAccessExpression(ilProcessor, (BoundMemberAccessExpression)node);
+                    break;
                 default:
                     throw new InvalidOperationException($"Unexpected node kind {node.Kind}");
             }
+        }
+
+        private void EmitTypeReferenceExpression(ILProcessor ilProcessor, BoundTypeReferenceExpression node)
+        {
+            // if (node.Type is EnumSymbol enumSymbol)
+            // {
+            //     ilProcessor.Emit(OpCodes.Ldc_I4_S, parameter.Ordinal);
+            // }
+            // else
+            // {
+            //     var variableDefinition = _locals[node.Variable];
+            //     ilProcessor.Emit(OpCodes.Ldloc, variableDefinition);
+            // }
         }
 
         private void EmitConstantExpression(ILProcessor ilProcessor, BoundExpression node)
@@ -721,6 +745,23 @@ namespace Compiler.CodeAnalysis.Emit
             {
                 throw new InvalidOperationException($"Unexpected convertion from {node.Expression.Type} to {node.Type}");
             }
+        }
+        
+        private void EmitMemberAccessExpression(ILProcessor ilProcessor, BoundMemberAccessExpression node)
+        {
+            if (node.Instance.Type is EnumSymbol)
+            {
+                var enumDefinition = _enums[node.Instance.Type];
+                Debug.Assert(enumDefinition != null);
+                foreach (var field in enumDefinition.Fields)
+                {
+                    if (field.Name == node.Member.Name)
+                    {
+                        ilProcessor.Emit(OpCodes.Ldc_I4, (int)field.Constant);
+                    }
+                }
+            }
+            EmitExpression(ilProcessor, node.Instance);
         }
     }
 }

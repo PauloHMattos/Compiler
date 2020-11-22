@@ -126,6 +126,8 @@ namespace Compiler.CodeAnalysis.Syntax
         {
             switch (kind)
             {
+                case SyntaxKind.DotToken:
+                    return ".";
                 case SyntaxKind.CommaToken:
                     return ",";
                 case SyntaxKind.ColonToken:

@@ -20,6 +20,7 @@
         CommaToken,
         ColonToken,
         IdentifierToken,
+        DotToken,
 
         // Keywords
         FalseKeyword,
@@ -105,5 +106,6 @@
         AssignmentExpression,
         CompoundAssignmentExpression,
         CallExpression,
+        MemberAccessExpression,
     }
 }

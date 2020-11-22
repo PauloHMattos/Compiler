@@ -75,9 +75,9 @@ namespace Compiler.CodeAnalysis.Diagnostics
             ReportError(location, DiagnosticCode.UndefinedBinaryOperator.GetDiagnostic(operatorText, leftType, rightType));
         }
 
-        public void ReportUndefinedVariable(in TextLocation location, string name)
+        public void ReportUndefinedName(in TextLocation location, string name)
         {
-            ReportError(location, DiagnosticCode.UndefinedVariable.GetDiagnostic(name));
+            ReportError(location, DiagnosticCode.UndefinedName.GetDiagnostic(name));
         }
 
         internal void ReportRequiredTypeNotFound(string? name, string metadataName)
@@ -217,9 +217,14 @@ namespace Compiler.CodeAnalysis.Diagnostics
             ReportError(location, DiagnosticCode.InvalidReturnWithValueInGlobalStatements.GetDiagnostic());
         }
 
-        internal void ReportUnterminatedMultilineComment(TextLocation location)
+        internal void ReportUnterminatedMultilineComment(in TextLocation location)
         {
             ReportError(location, DiagnosticCode.UnterminatedMultilineComment.GetDiagnostic());
+        }
+
+        internal void ReportCannotAccessMember(in TextLocation location, string typeName, string memberName)
+        {
+            ReportError(location, DiagnosticCode.CannotAccessMember.GetDiagnostic(memberName, typeName));
         }
     }
 }

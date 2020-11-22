@@ -7,4 +7,7 @@ enum Test
 
 function main()
 {
+    print(Test.A1)
+    print(10 + 20)
+    print("Test.A1")
 }
