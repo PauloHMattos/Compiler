@@ -10,11 +10,16 @@ namespace Compiler.CodeAnalysis.Binding
         public override BoundNodeKind Kind => BoundNodeKind.LiteralExpression;
         public override TypeSymbol Type { get; }
 
-        public BoundLiteralExpression(SyntaxNode syntax, object value)
+        public BoundLiteralExpression(SyntaxNode syntax, TypeSymbol type, object value)
             : base(syntax)
         {
-            Type = TypeSymbol.GetSymbolFrom(value);
+            Type = type;
             ConstantValue = new BoundConstant(value);
+        }
+        
+        public BoundLiteralExpression(SyntaxNode syntax, object value)
+            : this(syntax, TypeSymbol.GetSymbolFrom(value), value)
+        {
         }
     }
 }

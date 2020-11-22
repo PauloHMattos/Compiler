@@ -255,7 +255,7 @@ namespace Compiler.CodeAnalysis.Binding
         }
         private void BindEnumDeclaration(EnumDeclarationSyntax syntax)
         {
-            var enumValues = ImmutableArray.CreateBuilder<EnumValueSymbol>();
+            var enumValues = ImmutableArray.CreateBuilder<(string Name, int Value)>();
 
             var seenValueNames = new HashSet<string>();
             var seenValues = new Dictionary<int, string>();
@@ -278,7 +278,7 @@ namespace Compiler.CodeAnalysis.Binding
                     else if (enumValues.Count != 0)
                     {
                         var lastEnumValue = enumValues.Last();
-                        value = (int)lastEnumValue.Constant!.Value + 1;
+                        value = lastEnumValue!.Value + 1;
                     }
 
                     if (seenValues.TryGetValue(value, out var otherName))
@@ -289,9 +289,7 @@ namespace Compiler.CodeAnalysis.Binding
                     {
                         seenValues.Add(value, valueName);
                     }
-
-                    var enumValue = new EnumValueSymbol(valueName, value);
-                    enumValues.Add(enumValue);
+                    enumValues.Add((valueName, value));
                 }
             }
 
@@ -438,7 +436,7 @@ namespace Compiler.CodeAnalysis.Binding
                 type = TypeSymbol.Error;
             }
 
-            return new BoundLiteralExpression(syntax, type.DefaultValue!);
+            return new BoundLiteralExpression(syntax, type, type.DefaultValue!);
         }
 
         [return: NotNullIfNotNull("syntax")]

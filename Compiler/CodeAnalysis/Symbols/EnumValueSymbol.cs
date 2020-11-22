@@ -6,8 +6,8 @@ namespace Compiler.CodeAnalysis.Symbols
     {
         internal override BoundConstant Constant => base.Constant!;
 
-        internal EnumValueSymbol(string name, int value)
-            : base(name, true, TypeSymbol.Int, new BoundConstant (value))
+        internal EnumValueSymbol(string name, TypeSymbol enumSymbol, int value)
+            : base(name, true, enumSymbol, new BoundConstant (value))
         {
         }
     }

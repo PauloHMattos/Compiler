@@ -2,12 +2,15 @@ enum Test
 {
     A,
     A1 = 10,
-    A2 = 0
+    A2
 }
 
 function main()
 {
     print(Test.A1)
-    print(10 + 20)
-    print("Test.A1")
+    print(string(Test.A1))
+    print(int(Test.A1))
+    //print(int(Test.A1) + int(Test.A2))
+    //print(10 + 20)
+    //print("Test.A1")
 }

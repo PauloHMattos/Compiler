@@ -59,6 +59,15 @@ namespace Compiler.CodeAnalysis.Symbols
             }
         }
 
+        internal bool IsEnum()
+        {
+            if (NetType == null)
+            {
+                return false;
+            }
+            return NetType == typeof(Enum) || NetType.IsEnum;
+        }
+
         public static IEnumerable<TypeSymbol> GetBuiltInTypes()
         {
             yield return Any;

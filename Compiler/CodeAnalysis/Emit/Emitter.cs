@@ -258,10 +258,6 @@ namespace Compiler.CodeAnalysis.Emit
 
         private void EmitEnumDeclarations(ImmutableArray<EnumSymbol> enums)
         {
-            Console.ForegroundColor = ConsoleColor.DarkGreen;
-            Console.WriteLine("EmitEnumDeclarations");
-            Console.ResetColor();
-            
             foreach (var enumSymbol in enums)
             {
                 EmitEnumDeclaration(enumSymbol);
@@ -279,7 +275,6 @@ namespace Compiler.CodeAnalysis.Emit
             _enums.Add(enumSymbol, enumType);
             _resolvedTypes.Add(enumSymbol, enumType);
 
-            Console.WriteLine(enumSymbol.Name);
             var specialField = new FieldDefinition("value__", _enumSpecialAttributes, Import(TypeSymbol.Int));
             enumType.Fields.Add(specialField);
             foreach (var value in enumSymbol.Values)
@@ -719,10 +714,13 @@ namespace Compiler.CodeAnalysis.Emit
         {
             EmitExpression(ilProcessor, node.Expression);
             var needsBoxing = node.Expression.Type == TypeSymbol.Bool ||
-                              node.Expression.Type == TypeSymbol.Int;
+                              node.Expression.Type == TypeSymbol.Int ||
+                              node.Expression.Type.IsEnum();
+
+            var expressionType = Import(node.Expression.Type);
             if (needsBoxing)
             {
-                ilProcessor.Emit(OpCodes.Box, Import(node.Expression.Type));
+                ilProcessor.Emit(OpCodes.Box, expressionType);
             }
 
             if (node.Type == TypeSymbol.Any)

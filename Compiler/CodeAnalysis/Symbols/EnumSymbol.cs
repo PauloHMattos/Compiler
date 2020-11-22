@@ -10,10 +10,15 @@ namespace Compiler.CodeAnalysis.Symbols
         public EnumDeclarationSyntax Declaration { get; }
         public override SymbolKind Kind => SymbolKind.Enum;
 
-        internal EnumSymbol(string name, ImmutableArray<EnumValueSymbol> values, EnumDeclarationSyntax declaration) 
-            : base(name, values[0] ?? null, typeof(Enum))
+        internal EnumSymbol(string name, ImmutableArray<(string, int)> values, EnumDeclarationSyntax declaration) 
+            : base(name, values.Length == 0 ? null : values[0].Item2, typeof(Enum))
         {
-            Values = values;
+            var builder = ImmutableArray.CreateBuilder<EnumValueSymbol>();
+            foreach (var (identifier, value) in values)
+            {
+                builder.Add(new EnumValueSymbol(identifier, this, value));
+            }
+            Values = builder.ToImmutable();
             Declaration = declaration;
         }
     }

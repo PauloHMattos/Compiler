@@ -54,6 +54,21 @@ namespace Compiler.CodeAnalysis.Binding
                 }
             }
 
+            if (from.IsEnum() && to == TypeSymbol.Int)
+            {
+                return Conversion.Implicit;
+            }
+
+            if (from == TypeSymbol.Int && to.IsEnum())
+            {
+                return Conversion.Implicit;
+            }
+
+            if (from.IsEnum() && to == TypeSymbol.String)
+            {
+                return Conversion.Explicit;
+            }
+
             return Conversion.None;
         }
     }
