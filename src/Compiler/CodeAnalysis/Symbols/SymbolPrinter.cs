@@ -29,6 +29,9 @@ namespace Compiler.CodeAnalysis.Symbols
                 case SymbolKind.Enum:
                     WriteEnumTo((EnumSymbol)symbol, writer);
                     break;
+                case SymbolKind.Struct:
+                    WriteStructTo((StructSymbol)symbol, writer);
+                    break;
                 case SymbolKind.Field:
                     WriteFieldTo((FieldSymbol)symbol, writer);
                     break;
@@ -105,6 +108,13 @@ namespace Compiler.CodeAnalysis.Symbols
         private static void WriteEnumTo(EnumSymbol symbol, TextWriter writer)
         {
             writer.WriteKeyword(SyntaxKind.EnumKeyword);
+            writer.WriteSpace();
+            writer.WriteIdentifier(symbol.Name);
+        }
+
+        private static void WriteStructTo(StructSymbol symbol, TextWriter writer)
+        {
+            writer.WriteKeyword(SyntaxKind.StructKeyword);
             writer.WriteSpace();
             writer.WriteIdentifier(symbol.Name);
         }

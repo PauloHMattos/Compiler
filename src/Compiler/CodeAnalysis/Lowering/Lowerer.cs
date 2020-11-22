@@ -22,11 +22,16 @@ namespace Compiler.CodeAnalysis.Lowering
             return new BoundLabel(name);
         }
 
-        public static BoundBlockStatement Lower(FunctionSymbol function, BoundStatement statement)
+        public static BoundBlockStatement Lower(Symbol symbol, BoundStatement statement)
         {
+            if (symbol is not (FunctionSymbol or StructSymbol))
+            {
+                throw new InvalidOperationException($"Symbol of type {symbol.Kind} not expected in Lowerer.");
+            }
+
             var lowerer = new Lowerer();
             var result = lowerer.RewriteStatement(statement);
-            return RemoveDeadCode(Flatten(function, result));
+            return RemoveDeadCode(Flatten(symbol, result));
         }
 
         private static BoundBlockStatement RemoveDeadCode(BoundBlockStatement statement)
@@ -46,8 +51,11 @@ namespace Compiler.CodeAnalysis.Lowering
             return new BoundBlockStatement(statement.Syntax, builder.ToImmutable());
         }
 
-        private static BoundBlockStatement Flatten(FunctionSymbol function, BoundStatement statement)
+        private static BoundBlockStatement Flatten(Symbol symbol, BoundStatement statement)
         {
+            // TODO: Take into account nested scopes when Flattening.  The compiler allows a naming collision
+            // to occur if separate scope blocks contain identically named symbols.
+
             var builder = ImmutableArray.CreateBuilder<BoundStatement>();
             var stack = new Stack<BoundStatement>();
             stack.Push(statement);
@@ -69,7 +77,7 @@ namespace Compiler.CodeAnalysis.Lowering
                 }
             }
 
-            if (function.Type == TypeSymbol.Void &&
+            if (symbol is FunctionSymbol function && function.Type == TypeSymbol.Void &&
                 (builder.Count == 0 || CanFallThrough(builder.Last())))
             {
                 builder.Add(new BoundReturnStatement(statement.Syntax, null));

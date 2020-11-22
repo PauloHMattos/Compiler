@@ -51,16 +51,9 @@ namespace Compiler.CodeAnalysis.Binding
                     null,
                     ImmutableArray<FunctionSymbol>.Empty,
                     ImmutableArray<EnumSymbol>.Empty,
+                    ImmutableArray<StructSymbol>.Empty,
                     ImmutableArray<VariableSymbol>.Empty,
                     ImmutableArray<BoundStatement>.Empty);
-            }
-
-            var functionDeclarations = syntaxTrees.SelectMany(st => st.Root.Members)
-                                                  .OfType<FunctionDeclarationSyntax>();
-
-            foreach (var function in functionDeclarations)
-            {
-                binder.BindFunctionDeclaration(function);
             }
 
 
@@ -70,6 +63,23 @@ namespace Compiler.CodeAnalysis.Binding
             foreach (var enumDeclaration in enumDeclarations)
             {
                 binder.BindEnumDeclaration(enumDeclaration);
+            }
+            
+
+            var structDeclarations = syntaxTrees.SelectMany(st => st.Root.Members)
+                                                  .OfType<StructDeclarationSyntax>();
+
+            foreach (var structDeclaration in structDeclarations)
+            {
+                binder.BindStructDeclaration(structDeclaration);
+            }
+
+            var functionDeclarations = syntaxTrees.SelectMany(st => st.Root.Members)
+                                                  .OfType<FunctionDeclarationSyntax>();
+
+            foreach (var function in functionDeclarations)
+            {
+                binder.BindFunctionDeclaration(function);
             }
 
             var globalStatements = syntaxTrees
@@ -129,13 +139,14 @@ namespace Compiler.CodeAnalysis.Binding
             var diagnostics = binder.Diagnostics.ToImmutableArray();
             var variables = binder._scope.GetDeclaredVariables();
             var enums = binder._scope.GetDeclaredEnums();
+            var structs = binder._scope.GetDeclaredStructs();
 
             if (previous != null)
             {
                 diagnostics = diagnostics.InsertRange(0, previous.Diagnostics);
             }
 
-            return new BoundGlobalScope(previous, diagnostics, mainFunction, functions, enums, variables, statements.ToImmutable());
+            return new BoundGlobalScope(previous, diagnostics, mainFunction, functions, enums, structs, variables, statements.ToImmutable());
         }
 
         public static BoundProgram BindProgram(BoundProgram? previous, BoundGlobalScope globalScope)
@@ -147,13 +158,36 @@ namespace Compiler.CodeAnalysis.Binding
                     globalScope.Diagnostics,
                     null,
                     ImmutableDictionary<FunctionSymbol, BoundBlockStatement>.Empty,
-                    ImmutableArray<EnumSymbol>.Empty);
+                    ImmutableArray<EnumSymbol>.Empty,
+                    ImmutableDictionary<StructSymbol, BoundBlockStatement>.Empty);
             }
+
             var functionBodies = ImmutableDictionary.CreateBuilder<FunctionSymbol, BoundBlockStatement>();
+            var structBodies = ImmutableDictionary.CreateBuilder<StructSymbol, BoundBlockStatement>();
             var diagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
+
+            foreach (var structSymbol in globalScope.Structs)
+            {
+                var binder = new Binder(parentScope, null);
+                var body = binder.BindMemberBlockStatement(structSymbol.Declaration!.Body);
+                var loweredBody = Lowerer.Lower(structSymbol, body);
+
+                structBodies.Add(structSymbol, loweredBody);
+
+                diagnostics.AddRange(binder.Diagnostics);
+            }
 
             foreach (var function in globalScope.Functions)
             {
+                // Structs generate declartions for their constructors.  However, these have no function bodies.
+                // We will skip attempting to lower the bodies for these and allow the Emitter to automatically
+                // generate the code necessary.  This will avoid the potential of reporting diagnostic errors to
+                // the user for code they never wrote.
+                if (function.Type is StructSymbol)
+                {
+                    continue;
+                }
+
                 var binder = new Binder(parentScope, function);
                 var body = binder.BindStatement(function.Declaration!.Body);
                 var loweredBody = Lowerer.Lower(function, body);
@@ -182,7 +216,8 @@ namespace Compiler.CodeAnalysis.Binding
                                     diagnostics.ToImmutable(),
                                     globalScope.MainFunction,
                                     functionBodies.ToImmutable(),
-                                    globalScope.Enums);
+                                    globalScope.Enums,
+                                    structBodies.ToImmutable());
         }
 
         private void BindFunctionDeclaration(FunctionDeclarationSyntax syntax)
@@ -214,6 +249,7 @@ namespace Compiler.CodeAnalysis.Binding
                 Diagnostics.ReportSymbolAlreadyDeclared(syntax.Identifier.Location, function.Name);
             }
         }
+
         private void BindEnumDeclaration(EnumDeclarationSyntax syntax)
         {
             var enumValues = ImmutableArray.CreateBuilder<(string Name, int Value)>();
@@ -260,6 +296,92 @@ namespace Compiler.CodeAnalysis.Binding
             {
                 Diagnostics.ReportSymbolAlreadyDeclared(syntax.Identifier.Location, enumSymbol.Name);
             }
+        }
+
+        private void BindStructDeclaration(StructDeclarationSyntax syntax)
+        {
+            // Peek into the struct body and generate a constructor based on all writeable members
+            var members = syntax.Body.Statement.OfType<VariableDeclarationStatementSyntax>()
+                                               .Where(m => m.Keyword.Kind == SyntaxKind.VarKeyword);
+
+            var ctorParameters = ImmutableArray.CreateBuilder<ParameterSymbol>();
+            var boundMembers = ImmutableArray.CreateBuilder<MemberSymbol>();
+
+            foreach (var varDeclarationSyntax in members)
+            {
+                var decl = BindVariableDeclarationStatement(varDeclarationSyntax);
+
+                if (decl is BoundVariableDeclarationStatement d)
+                {
+                    var field = new FieldSymbol(d);
+                    boundMembers.Add(field);
+                }
+
+                if (varDeclarationSyntax.Keyword.Kind == SyntaxKind.ConstKeyword)
+                {
+                    // These are not candidates for ctorParameters because they are read-only
+                    continue;
+                }
+
+                var parameterName = varDeclarationSyntax.Identifier.Text;
+                var parameterType = BindTypeClause(varDeclarationSyntax.TypeClause);
+
+                if (parameterType == null && varDeclarationSyntax.Initializer != null)
+                {
+                    parameterType = BindExpression(varDeclarationSyntax.Initializer).Type;
+                }
+                else if (parameterType == null && varDeclarationSyntax.Initializer == null)
+                {
+                    // We don't need to do error reporting here (e.g. report on duplicate members) because that will be
+                    // done later in the BindMemberBlockStatement
+                    continue;
+                }
+
+                var parameter = new ParameterSymbol(parameterName, parameterType!, ctorParameters.Count);
+
+                ctorParameters.Add(parameter);
+            }
+
+            string structIdentifier = syntax.Identifier.Text;
+            var structSymbol = new StructSymbol(structIdentifier, ctorParameters.ToImmutable(), boundMembers.ToImmutable(), syntax);
+            if (structIdentifier != null && !_scope.TryDeclareStruct(structSymbol))
+            {
+                Diagnostics.ReportSymbolAlreadyDeclared(syntax.Identifier.Location, structSymbol.Name);
+            }
+
+            // Declare Built-in Constructor
+            var ctor = new FunctionSymbol(structIdentifier + ".ctor", ctorParameters.ToImmutable(), structSymbol);
+            var ctorWithParams = new FunctionSymbol(structIdentifier + ".ctor", ctorParameters.ToImmutable(), structSymbol);
+            if (structIdentifier != null)
+            {
+                if(!_scope.TryDeclareFunction(ctor))
+                {
+                    Diagnostics.ReportSymbolAlreadyDeclared(syntax.Identifier.Location, ctor.Name);
+                }
+                if(!_scope.TryDeclareFunction(ctorWithParams))
+                {
+                    Diagnostics.ReportSymbolAlreadyDeclared(syntax.Identifier.Location, ctorWithParams.Name);
+                }
+            }
+        }
+
+        private BoundStatement BindMemberBlockStatement(MemberBlockStatementSyntax syntax)
+        {
+            var statements = ImmutableArray.CreateBuilder<BoundStatement>();
+            _scope = new BoundScope(_scope);
+
+            foreach (var statementSyntax in syntax.Statement)
+            {
+                if (statementSyntax.Kind != SyntaxKind.VariableDeclarationStatement)
+                {
+                    Diagnostics.ReportInvalidExpressionStatement(statementSyntax.Location);
+                }
+
+                var statement = BindVariableDeclarationStatement((VariableDeclarationStatementSyntax)statementSyntax);
+                statements.Add(statement);
+            }
+
+            return new BoundMemberBlockStatement(syntax, statements.ToImmutable());
         }
 
         private BoundStatement BindGlobalStatement(StatementSyntax syntax)
@@ -388,6 +510,16 @@ namespace Compiler.CodeAnalysis.Binding
             {
                 Diagnostics.ReportUndefinedType(typeSyntax.Identifier.Location, typeSyntax.Identifier.Text);
                 type = TypeSymbol.Error;
+            }
+
+            if (type is StructSymbol s)
+            {
+                // Struct types default to calling their empty constructor
+                var ctorSyntaxToken = new SyntaxToken(syntax.SyntaxTree, SyntaxKind.IdentifierToken, syntax.Span.End, s.Name, null, ImmutableArray<SyntaxTrivia>.Empty, ImmutableArray<SyntaxTrivia>.Empty);
+                var openParenToken = new SyntaxToken(syntax.SyntaxTree, SyntaxKind.OpenParenthesisToken, syntax.Span.End, "(", null, ImmutableArray<SyntaxTrivia>.Empty, ImmutableArray<SyntaxTrivia>.Empty);
+                var closeParenToken = new SyntaxToken(syntax.SyntaxTree, SyntaxKind.CloseParenthesisToken, syntax.Span.End, ")", null, ImmutableArray<SyntaxTrivia>.Empty, ImmutableArray<SyntaxTrivia>.Empty);
+
+                return BindCallExpression(new CallExpressionSyntax(syntax.SyntaxTree, ctorSyntaxToken, openParenToken, new SeparatedSyntaxList<ExpressionSyntax>(ImmutableArray<SyntaxNode>.Empty), closeParenToken));
             }
 
             return new BoundLiteralExpression(syntax, type, type.DefaultValue!);
@@ -596,14 +728,19 @@ namespace Compiler.CodeAnalysis.Binding
                 previous = stack.Pop();
                 var scope = new BoundScope(parent);
 
-                foreach (var f in previous.Functions)
-                {
-                    scope.TryDeclareFunction(f);
-                }
-
                 foreach (var e in previous.Enums)
                 {
                     scope.TryDeclareEnum(e);
+                }
+
+                foreach (var s in previous.Structs)
+                {
+                    scope.TryDeclareStruct(s);
+                }
+
+                foreach (var f in previous.Functions)
+                {
+                    scope.TryDeclareFunction(f);
                 }
 
                 foreach (var variable in previous.Variables)
@@ -722,7 +859,7 @@ namespace Compiler.CodeAnalysis.Binding
             // that accepts one parameter.
             var type = LookupType(syntax.IdentifierToken.Text);
 
-            if (syntax.Arguments.Count == 1 && type is TypeSymbol t)
+            if (syntax.Arguments.Count == 1 && !(type is StructSymbol) && type is TypeSymbol t)
             {
                 return BindConversion(syntax.Arguments[0], t, allowExplicit: true);
             }
@@ -732,6 +869,11 @@ namespace Compiler.CodeAnalysis.Binding
             {
                 Diagnostics.ReportUndefinedFunction(syntax.IdentifierToken.Location, syntax.IdentifierToken.Text);
                 return new BoundErrorExpression(syntax);
+            }
+
+            if (symbol is StructSymbol)
+            {
+                symbol = _scope.TryLookupSymbol(syntax.IdentifierToken.Text + ".ctor");
             }
 
             if (symbol is not FunctionSymbol function)
@@ -804,6 +946,23 @@ namespace Compiler.CodeAnalysis.Binding
             return new BoundCallExpression(syntax, matchFunction, boundArgumentBuilder.ToImmutable());
         }
 
+        private bool MatchArgumentsAndParameters(ImmutableArray<BoundExpression> arguments, ImmutableArray<ParameterSymbol> parameters)
+        {
+            for (var i = 0; i < arguments.Length; i++)
+            {
+                var argument = arguments[i];
+                var expected = parameters[i];
+                var conversion = Conversion.Classify(argument.Type, expected.Type);
+
+                if (!conversion.Exists || conversion.IsExplicit)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         private BoundExpression BindMemberAccessExpression(MemberAccessExpressionSyntax syntax)
         {
             if (syntax.ParentExpression.Kind == SyntaxKind.NameExpression)
@@ -852,6 +1011,22 @@ namespace Compiler.CodeAnalysis.Binding
                 }
 
                 foreach (var member in e.Values)
+                {
+                    if (member.Name == memberName)
+                    {
+                        return member;
+                    }
+                }
+            }
+            if (typeSymbol is StructSymbol s)
+            {
+                if (memberExpression is CallExpressionSyntax call)
+                {
+                    Diagnostics.ReportUndefinedFunction(call.Location, memberName);
+                    return null;
+                }
+
+                foreach (var member in s.Members)
                 {
                     if (member.Name == memberName)
                     {

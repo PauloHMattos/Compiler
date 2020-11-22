@@ -27,6 +27,7 @@ namespace Compiler.CodeAnalysis.Binding
         }
 
         public bool TryDeclareVariable(VariableSymbol variable) => TryDeclareSymbol(variable, out var _);
+        public bool TryDeclareStruct(StructSymbol structSymbol) => TryDeclareSymbol(structSymbol, out var _);
         public bool TryDeclareFunction(FunctionSymbol function)
         {
             if (!TryDeclareSymbol(function, out var alreadyDeclaredSymbol))
@@ -58,6 +59,7 @@ namespace Compiler.CodeAnalysis.Binding
 
         public ImmutableArray<FunctionSymbol> GetDeclaredFunctions() => GetDeclaredSymbols<FunctionSymbol>();
         public ImmutableArray<EnumSymbol> GetDeclaredEnums() => GetDeclaredSymbols<EnumSymbol>();
+        public ImmutableArray<StructSymbol> GetDeclaredStructs() => GetDeclaredSymbols<StructSymbol>();
 
         private bool TryDeclareSymbol<TSymbol>(TSymbol symbol, out Symbol? alreadyDeclaredSymbol) where TSymbol : Symbol
         {

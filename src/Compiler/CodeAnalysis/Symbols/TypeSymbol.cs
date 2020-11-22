@@ -9,6 +9,7 @@ namespace Compiler.CodeAnalysis.Symbols
         public static readonly TypeSymbol Error = new TypeSymbol("?", null, null);
         // Base types
         public static readonly TypeSymbol Enum = new TypeSymbol("enum", null, typeof(Enum));
+        public static readonly TypeSymbol Struct = new TypeSymbol("struct", null, typeof(ValueType));
         // Built-in types
         public static readonly TypeSymbol Any = new TypeSymbol("any", null, typeof(object));
         public static readonly TypeSymbol Void = new TypeSymbol("void", null, typeof(void));
@@ -80,6 +81,7 @@ namespace Compiler.CodeAnalysis.Symbols
         public static IEnumerable<TypeSymbol> GetBaseTypes()
         {
             yield return Enum;
+            yield return Struct;
         }
     }
 }

@@ -1,0 +1,14 @@
+struct Test
+{
+    var i : int
+    //var s : string
+    //var b : bool
+}
+
+function main()
+{
+    var test : Test = Test(10)//, "asd", true)
+    print(test.i)
+    //print(test.s)
+    //print(test.b)
+}

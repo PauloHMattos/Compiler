@@ -16,6 +16,7 @@
         GotoStatement,
         ConditionalGotoStatement,
         ReturnStatement,
+        MemberBlockStatement,
 
         // Expressions
         ErrorExpression,

@@ -117,6 +117,8 @@ namespace Compiler.CodeAnalysis.Syntax
                     return SyntaxKind.DefaultKeyword;
                 case "enum":
                     return SyntaxKind.EnumKeyword;
+                case "struct":
+                    return SyntaxKind.StructKeyword;
                 default:
                     return SyntaxKind.IdentifierToken;
             }
@@ -174,6 +176,8 @@ namespace Compiler.CodeAnalysis.Syntax
                     return "default";
                 case SyntaxKind.EnumKeyword:
                     return "enum";
+                case SyntaxKind.StructKeyword:
+                    return "struct";
                 case SyntaxKind.PlusToken: 
                     return "+";
                 case SyntaxKind.PlusEqualsToken: 

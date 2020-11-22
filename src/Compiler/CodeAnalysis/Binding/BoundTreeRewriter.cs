@@ -15,6 +15,8 @@ namespace Compiler.CodeAnalysis.Binding
                     return RewriteSequencePointStatement((BoundSequencePointStatement)statement);
                 case BoundNodeKind.BlockStatement:
                     return RewriteBlockStatement((BoundBlockStatement)statement);
+                case BoundNodeKind.MemberBlockStatement:
+                    return RewriteMemberBlockStatement((BoundMemberBlockStatement)statement);
                 case BoundNodeKind.ExpressionStatement:
                     return RewriteExpressionStatement((BoundExpressionStatement)statement);
                 case BoundNodeKind.VariableDeclarationStatement:
@@ -57,19 +59,7 @@ namespace Compiler.CodeAnalysis.Binding
 
         protected virtual BoundStatement RewriteBlockStatement(BoundBlockStatement node)
         {
-            ImmutableArray<BoundStatement>.Builder? builder = null;
-
-            for (var i = 0; i < node.Statements.Length; i++)
-            {
-                var oldStatement = node.Statements[i];
-                var newStatement = RewriteStatement(oldStatement);
-                if (newStatement != oldStatement && builder == null)
-                {
-                    builder = ImmutableArray.CreateBuilder<BoundStatement>(node.Statements.Length);
-                    builder.AddRange(node.Statements, i);
-                }
-                builder?.Add(newStatement);
-            }
+            ImmutableArray<BoundStatement>.Builder? builder = RewriteStatements(node.Statements);
 
             if (builder == null)
             {
@@ -78,6 +68,36 @@ namespace Compiler.CodeAnalysis.Binding
 
             return new BoundBlockStatement(node.Syntax, builder.ToImmutable());
         }
+
+        private ImmutableArray<BoundStatement>.Builder? RewriteStatements(ImmutableArray<BoundStatement> statements)
+        {
+            ImmutableArray<BoundStatement>.Builder? builder = null;
+
+            for (var i = 0; i < statements.Length; i++)
+            {
+                var oldStatement = statements[i];
+                var newStatement = RewriteStatement(oldStatement);
+                if (newStatement != oldStatement && builder == null)
+                {
+                    builder = ImmutableArray.CreateBuilder<BoundStatement>(statements.Length);
+                    builder.AddRange(statements, i);
+                }
+                builder?.Add(newStatement);
+            }
+
+            return builder;
+        }
+        
+        private BoundStatement RewriteMemberBlockStatement(BoundMemberBlockStatement node)
+        {
+            ImmutableArray<BoundStatement>.Builder? builder = RewriteStatements(node.Statements);
+            if (builder == null)
+            {
+                return node;
+            }
+            return new BoundBlockStatement(node.Syntax, builder.ToImmutable());
+        }
+
 
         protected virtual BoundStatement RewriteExpressionStatement(BoundExpressionStatement node)
         {

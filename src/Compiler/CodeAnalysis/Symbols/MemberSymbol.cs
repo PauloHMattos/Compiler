@@ -16,5 +16,16 @@ namespace Compiler.CodeAnalysis.Symbols
         private protected FieldSymbol(string name, bool isReadOnly, TypeSymbol type, BoundConstant? constant) : base(name, isReadOnly, type, constant)
         {
         }
+
+
+        private protected FieldSymbol(VariableSymbol variable) 
+            : this(variable.Name, variable.IsReadOnly, variable.Type, variable.Constant)
+        {
+        }
+
+        internal FieldSymbol(BoundVariableDeclarationStatement declaration)
+            : this(declaration.Variable)
+        {
+        }
     }
 }

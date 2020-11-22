@@ -11,6 +11,7 @@ namespace Compiler.CodeAnalysis.Binding
         public FunctionSymbol? MainFunction { get; }
         public ImmutableArray<FunctionSymbol> Functions { get; }
         public ImmutableArray<EnumSymbol> Enums { get; }
+        public ImmutableArray<StructSymbol> Structs { get; }
         public ImmutableArray<VariableSymbol> Variables { get; }
         public ImmutableArray<BoundStatement> Statements { get; }
 
@@ -19,6 +20,7 @@ namespace Compiler.CodeAnalysis.Binding
                                 FunctionSymbol? mainFunction,
                                 ImmutableArray<FunctionSymbol> functions,
                                 ImmutableArray<EnumSymbol> enums,
+                                ImmutableArray<StructSymbol> structs,
                                 ImmutableArray<VariableSymbol> variables,
                                 ImmutableArray<BoundStatement> statements)
         {
@@ -27,6 +29,7 @@ namespace Compiler.CodeAnalysis.Binding
             MainFunction = mainFunction;
             Functions = functions;
             Enums = enums;
+            Structs = structs;
             Variables = variables;
             Statements = statements;
         }

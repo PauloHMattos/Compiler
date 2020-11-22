@@ -23,12 +23,14 @@ namespace Compiler.CodeAnalysis.Emit
         private readonly List<AssemblyDefinition> _assemblies;
         private readonly Dictionary<TypeSymbol, TypeReference> _resolvedTypes;
         private readonly Dictionary<TypeSymbol, TypeDefinition> _enums;
+        private readonly Dictionary<TypeSymbol, TypeDefinition> _structs;
         private readonly Dictionary<FunctionSymbol, MethodDefinition> _methods;
         private readonly Dictionary<VariableSymbol, VariableDefinition> _locals;
         private readonly Dictionary<BoundLabel, int> _labels;
         private readonly Dictionary<SourceText, Document> _documents;
         private readonly List<Fixup> _fixups;
 
+        private readonly MethodReference _objectCtor;
         private readonly MethodReference _objectEqualsReference;
         private readonly MethodReference _consoleReadLineReference;
         private readonly MethodReference _consoleWriteLineReference;
@@ -44,6 +46,7 @@ namespace Compiler.CodeAnalysis.Emit
             _assemblies = new List<AssemblyDefinition>();
             _resolvedTypes = new Dictionary<TypeSymbol, TypeReference>();
             _enums = new Dictionary<TypeSymbol, TypeDefinition>();
+            _structs = new Dictionary<TypeSymbol, TypeDefinition>();
             _methods = new Dictionary<FunctionSymbol, MethodDefinition>();
             _locals = new Dictionary<VariableSymbol, VariableDefinition>();
 
@@ -57,6 +60,7 @@ namespace Compiler.CodeAnalysis.Emit
             ReadAssemblies(references);
             ResolveTypes();
 
+            _objectCtor = ResolveMethod<object>(".ctor", Array.Empty<Type>());
             _objectEqualsReference = ResolveMethod<object>(nameof(object.Equals), new[] { typeof(object), typeof(object) });
             _consoleReadLineReference = ResolveMethod(typeof(Console), nameof(Console.ReadLine), Array.Empty<Type>());
             _consoleWriteLineReference = ResolveMethod(typeof(Console), nameof(Console.WriteLine), new[] { typeof(object) });
@@ -213,6 +217,7 @@ namespace Compiler.CodeAnalysis.Emit
             }
 
             EmitEnumDeclarations(program.Enums);
+            EmitStructDeclarations(program.Structs);
             EmitFunctionDeclarations(program.Functions);
 
             if (program.MainFunction != null)
@@ -256,42 +261,6 @@ namespace Compiler.CodeAnalysis.Emit
             }
         }
 
-        private void EmitEnumDeclarations(ImmutableArray<EnumSymbol> enums)
-        {
-            foreach (var enumSymbol in enums)
-            {
-                EmitEnumDeclaration(enumSymbol);
-            }
-        }
-
-        private void EmitEnumDeclaration(EnumSymbol enumSymbol)
-        {
-            const TypeAttributes _enumAttributes = TypeAttributes.Class | TypeAttributes.NotPublic | TypeAttributes.AnsiClass | TypeAttributes.Sealed;
-            const FieldAttributes _enumFieldAttributes = FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.Literal | FieldAttributes.HasDefault;
-            const FieldAttributes _enumSpecialAttributes = FieldAttributes.Public | FieldAttributes.SpecialName | FieldAttributes.RTSpecialName;
-            
-            var enumType = new TypeDefinition("", enumSymbol.Name, _enumAttributes, Import(TypeSymbol.Enum));
-            _assemblyDefinition.MainModule.Types.Add(enumType);
-            _enums.Add(enumSymbol, enumType);
-            _resolvedTypes.Add(enumSymbol, enumType);
-
-            var specialField = new FieldDefinition("value__", _enumSpecialAttributes, Import(TypeSymbol.Int));
-            enumType.Fields.Add(specialField);
-            foreach (var value in enumSymbol.Values)
-            {
-                var valueField = new FieldDefinition(value.Name, _enumFieldAttributes, enumType)
-                {
-                    Constant = value.Constant.Value
-                };
-                enumType.Fields.Add(valueField);
-            }
-        }
-
-        private TypeReference Import(TypeSymbol type)
-        {
-            return _resolvedTypes[type];
-        }
-        
         private void EmitFunctionDeclaration(FunctionSymbol function)
         {
             var functionType = Import(function.Type);
@@ -344,6 +313,187 @@ namespace Compiler.CodeAnalysis.Emit
                 var debugInfo = new VariableDebugInformation(definition, symbol.Name);
                 method.DebugInformation.Scope.Variables.Add(debugInfo);
             }
+        }
+
+        private void EmitEnumDeclarations(ImmutableArray<EnumSymbol> enums)
+        {
+            foreach (var enumSymbol in enums)
+            {
+                EmitEnumDeclaration(enumSymbol);
+            }
+        }
+
+        private void EmitEnumDeclaration(EnumSymbol enumSymbol)
+        {
+            const TypeAttributes _enumAttributes = TypeAttributes.Class | TypeAttributes.NotPublic | TypeAttributes.AnsiClass | TypeAttributes.Sealed;
+            const FieldAttributes _enumFieldAttributes = FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.Literal | FieldAttributes.HasDefault;
+            const FieldAttributes _enumSpecialAttributes = FieldAttributes.Public | FieldAttributes.SpecialName | FieldAttributes.RTSpecialName;
+            
+            var enumType = new TypeDefinition("", enumSymbol.Name, _enumAttributes, Import(TypeSymbol.Enum));
+            _assemblyDefinition.MainModule.Types.Add(enumType);
+            _enums.Add(enumSymbol, enumType);
+            _resolvedTypes.Add(enumSymbol, enumType);
+
+            var specialField = new FieldDefinition("value__", _enumSpecialAttributes, Import(TypeSymbol.Int));
+            enumType.Fields.Add(specialField);
+            foreach (var value in enumSymbol.Values)
+            {
+                var valueField = new FieldDefinition(value.Name, _enumFieldAttributes, enumType)
+                {
+                    Constant = value.Constant.Value
+                };
+                enumType.Fields.Add(valueField);
+            }
+        }
+        
+        private void EmitStructDeclarations(ImmutableDictionary<StructSymbol, BoundBlockStatement> structs)
+        {
+            foreach (var (declaration, _) in structs)
+            {
+                EmitStructDeclaration(declaration);
+            }
+            foreach (var (declaration, body) in structs)
+            {
+                EmitStructBody(declaration, body);
+            }
+        }
+        
+        private void EmitStructDeclaration(StructSymbol structSymbol)
+        {
+            const TypeAttributes _structAttributes = TypeAttributes.Class | TypeAttributes.NotPublic |
+                                                    TypeAttributes.SequentialLayout | TypeAttributes.AnsiClass |
+                                                    TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit;
+            
+            var structType = new TypeDefinition("", structSymbol.Name, _structAttributes, Import(TypeSymbol.Struct));
+            _assemblyDefinition.MainModule.Types.Add(structType);
+            _structs.Add(structSymbol, structType);
+            _resolvedTypes.Add(structSymbol, structType);
+            
+            // foreach (var member in structSymbol.Members)
+            // {
+            //     if (member is FieldSymbol field)
+            //     {
+            //         var fieldAttributes = field.IsReadOnly ? FieldAttributes.Public | FieldAttributes.InitOnly : FieldAttributes.Public;
+            //         var fieldDefinition = new FieldDefinition(field.Name, fieldAttributes, Import(field.Type));
+            //         structType.Fields.Add(fieldDefinition);
+            //     }
+            //     else
+            //     {
+            //         throw new Exception($"Unexpected statement type {member.Kind}. Expected BoundVariableDeclaration.");
+            //     }
+            // }
+            
+            // Forward-declare empty constructor
+            var emptyCtorDefinition = new MethodDefinition(
+                ".ctor",
+                MethodAttributes.Public |
+                MethodAttributes.SpecialName |
+                MethodAttributes.RTSpecialName |
+                MethodAttributes.HideBySig,
+                Import(TypeSymbol.Void)
+            );
+
+            //structType.Methods.Insert(0, emptyCtorDefinition);
+
+            // Forward-declare initializer constructor
+            var defaultCtorDefintion = new MethodDefinition(
+                ".ctor",
+                MethodAttributes.Public |
+                MethodAttributes.SpecialName |
+                MethodAttributes.RTSpecialName |
+                MethodAttributes.HideBySig,
+                Import(TypeSymbol.Void)
+            );
+
+            // This constructor will be the second one on the class
+            structType.Methods.Insert(0, defaultCtorDefintion);
+        }
+
+        private void EmitStructBody(StructSymbol key, BoundBlockStatement value)
+        {
+            var structType = _structs[key];
+            EmitEmptyConstructorForStruct(value, structType);
+            EmitDefaultConstructorForStruct(key, value, structType);
+        }
+
+        private void EmitEmptyConstructorForStruct(BoundBlockStatement value, TypeDefinition structType)
+        {
+            // Get empty constructor declaration
+            var constructor = structType.Methods[0];
+
+            var ilProcessor = constructor.Body.GetILProcessor();
+
+            foreach (var field in value.Statements)
+            {
+                if (field is BoundVariableDeclarationStatement d)
+                {
+                    var fieldAttributes = d.Variable.IsReadOnly ? FieldAttributes.Public | FieldAttributes.InitOnly : FieldAttributes.Public;
+                    var fieldDefinition = new FieldDefinition(d.Variable.Name, fieldAttributes, Import(d.Variable.Type));
+                    structType.Fields.Add(fieldDefinition);
+
+                    EmitFieldAssignment(ilProcessor, d, fieldDefinition);
+                }
+                else if (field is BoundSequencePointStatement s && s.Statement is BoundVariableDeclarationStatement sd)
+                {
+                    var fieldAttributes = sd.Variable.IsReadOnly ? FieldAttributes.Public | FieldAttributes.InitOnly : FieldAttributes.Public;
+                    var fieldDefinition = new FieldDefinition(sd.Variable.Name, fieldAttributes, Import(sd.Variable.Type));
+                    structType.Fields.Add(fieldDefinition);
+
+                    EmitSequencePointStatement(ilProcessor, s);
+                    EmitFieldAssignment(ilProcessor, sd, fieldDefinition);
+                }
+                else
+                {
+                    throw new Exception($"Unexpected statement type {field.Kind}. Expected BoundVariableDeclaration.");
+                }
+            }
+
+            ilProcessor.Emit(OpCodes.Ldarg_0);
+            ilProcessor.Emit(OpCodes.Call, _objectCtor);
+            ilProcessor.Emit(OpCodes.Ret);
+
+            constructor.Body.Optimize();
+        }
+
+        private void EmitDefaultConstructorForStruct(StructSymbol @struct, BoundBlockStatement value, TypeDefinition structType)
+        {
+            // Get default constructor declaration
+            var constructor = structType.Methods[0];
+
+            var ilProcessor = constructor.Body.GetILProcessor();
+
+            // Assign each parameter
+            for (int i = 0; i < @struct.CtorParameters.Length; i++)
+            {
+                var ctorParam = @struct.CtorParameters[i];
+                var paramType = Import(ctorParam.Type);
+                const ParameterAttributes parameterAttributes = ParameterAttributes.None;
+                var parameterDefinition = new ParameterDefinition(ctorParam.Name, parameterAttributes, paramType);
+
+                constructor.Parameters.Add(parameterDefinition);
+
+                ilProcessor.Emit(OpCodes.Ldarg_0);
+                ilProcessor.Emit(OpCodes.Ldarg, i + 1);
+
+                foreach (var field in structType.Fields)
+                {
+                    Console.WriteLine($"{field.Name} == {ctorParam.Name}");
+                    if (field.Name == ctorParam.Name)
+                    {
+                        ilProcessor.Emit(OpCodes.Stfld, field);
+                        break;
+                    }
+                }
+            }
+
+            ilProcessor.Emit(OpCodes.Ret);
+
+            constructor.Body.Optimize();
+        }
+
+        private TypeReference Import(TypeSymbol type)
+        {
+            return _resolvedTypes[type];
         }
 
         private void EmitStatement(ILProcessor ilProcessor, BoundStatement node)
@@ -411,6 +561,17 @@ namespace Compiler.CodeAnalysis.Emit
         private void EmitNopStatement(ILProcessor ilProcessor, BoundNopStatement node)
         {
             ilProcessor.Emit(OpCodes.Nop);
+        }
+
+        private void EmitFieldAssignment(ILProcessor ilProcessor, BoundVariableDeclarationStatement node, FieldDefinition field)
+        {
+            ilProcessor.Emit(OpCodes.Ldarg_0);
+
+            if (node.Initializer.ConstantValue != null)
+            {
+                EmitConstantExpression(ilProcessor, node.Initializer);
+                ilProcessor.Emit(OpCodes.Stfld, field);
+            }
         }
 
         private void EmitVariableDeclaration(ILProcessor ilProcessor, BoundVariableDeclarationStatement node)
@@ -703,6 +864,16 @@ namespace Compiler.CodeAnalysis.Emit
             {
                 ilProcessor.Emit(OpCodes.Call, _consoleWriteLineReference);
             }
+            else if (node.Function.Name.EndsWith(".ctor"))
+            {
+                var className = node.Function.Name[..^5];
+                var structSymbol = _structs.First(s => s.Key.Name == className).Value;
+                
+                // TODO: We should use a general overload resolution algorithm instead
+                ilProcessor.Emit(OpCodes.Newobj, //node.Arguments.Length == 0 ?
+                                                   // structSymbol.Methods[0] :
+                                                    structSymbol.Methods[0]);
+            }
             else
             {
                 var methodDefinition = _methods[node.Function];
@@ -756,6 +927,18 @@ namespace Compiler.CodeAnalysis.Emit
                     if (field.Name == node.Member.Name)
                     {
                         ilProcessor.Emit(OpCodes.Ldc_I4, (int)field.Constant);
+                    }
+                }
+            }
+            if (node.Instance.Type is StructSymbol)
+            {
+                var structDefinition = _structs[node.Instance.Type];
+                Debug.Assert(structDefinition != null);
+                foreach (var field in structDefinition.Fields)
+                {
+                    if (field.Name == node.Member.Name)
+                    {
+                        ilProcessor.Emit(OpCodes.Ldfld, field);
                     }
                 }
             }

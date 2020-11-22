@@ -152,17 +152,17 @@ namespace Compiler.CodeAnalysis.Syntax
 
         private MemberSyntax ParseMember()
         {
-            if (Current.Kind == SyntaxKind.FunctionKeyword)
+            switch (Current.Kind)
             {
-                return ParseFunctionDeclaration();
+                case SyntaxKind.FunctionKeyword:
+                    return ParseFunctionDeclaration();
+                case SyntaxKind.EnumKeyword:
+                    return ParseEnumDeclaration();
+                case SyntaxKind.StructKeyword:
+                    return ParseStructDeclaration();
+                default:
+                    return ParseGlobalStatement();
             }
-
-            if (Current.Kind == SyntaxKind.EnumKeyword)
-            {
-                return ParseEnumDeclaration();
-            }
-
-            return ParseGlobalStatement();
         }
 
         private MemberSyntax ParseFunctionDeclaration()
@@ -220,6 +220,46 @@ namespace Compiler.CodeAnalysis.Syntax
                 return new EnumValueClauseSyntax(_syntaxTree, equalsToken, expression);
             }
             return null;
+        }
+        
+        private MemberSyntax ParseStructDeclaration()
+        {
+            var keyword = MatchToken(SyntaxKind.StructKeyword);
+            var identifier = MatchToken(SyntaxKind.IdentifierToken);
+            var body = ParseStructBlockStatement();
+
+            return new StructDeclarationSyntax(_syntaxTree, keyword, identifier, body);
+        }
+
+        private MemberBlockStatementSyntax ParseStructBlockStatement()
+        {
+            var statements = ImmutableArray.CreateBuilder<StatementSyntax>();
+
+            var openBraceToken = MatchToken(SyntaxKind.OpenBraceToken);
+
+            while (Current.Kind != SyntaxKind.EndOfFileToken &&
+                   Current.Kind != SyntaxKind.CloseBraceToken)
+            {
+                var startToken = Current;
+
+                var statement = ParseVariableDeclarationStatement();
+                statements.Add(statement);
+
+                // If ParseStatement() did not consume any tokens,
+                // we need to skip the current token and continue
+                // in order to avoid an infinite loop.
+                //
+                // We don't need to report an error, because we'll
+                // already tried to parse an expression statement
+                // and reported one.
+                if (Current == startToken)
+                {
+                    NextToken();
+                }
+            }
+
+            var closeBraceToken = MatchToken(SyntaxKind.CloseBraceToken);
+            return new MemberBlockStatementSyntax(_syntaxTree, openBraceToken, statements.ToImmutable(), closeBraceToken);
         }
 
         private SeparatedSyntaxList<T> ParseList<T>(SyntaxKind endTokenKind, SyntaxKind separatorKind, Func<T> parseMethod) where T : SyntaxNode
