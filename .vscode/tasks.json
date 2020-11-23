@@ -26,7 +26,9 @@
             "command": "dotnet",
             "type": "process",
             "args": [
-                "test"
+                "test",
+                "/p:CollectCoverage=true",
+                "/p:CoverletOutputFormat=opencover"
             ],
             "problemMatcher": "$msCompile"
         },
