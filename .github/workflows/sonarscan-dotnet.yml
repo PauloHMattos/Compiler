@@ -15,22 +15,25 @@ jobs:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 0
+        
+    - name: Setup .NET Core 3.1
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '3.1.x'
+    - name: Setup .NET Core 5.0
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '5.0.x'
 
     - name: SonarCloud
       uses: highbyte/sonarscan-dotnet@2.0
       with:
-        # The key of the SonarQube project
         sonarProjectKey: PauloHMattos_Compiler
-        # The name of the SonarQube project
         sonarProjectName: Compiler
-        # The name of the SonarQube organization
         sonarOrganization: paulohmattos
-        # Optional command arguments to dotnet test
         dotnetTestArguments: /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
-        # Optional extra command arguments the the SonarScanner 'begin' command
-        sonarBeginArguments: /d:sonar.verbose="true" /d:sonar.language="cs" /d:sonar.cs.opencover.reportsPaths="**/*opencover.xml"
-        # The SonarQube server URL. For SonarCloud, don't set this setting.
-        #sonarHostname: # optional, default is https://sonarcloud.io
+        sonarBeginArguments: /d:sonar.verbose="true" /d:sonar.language="cs" /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml" /d:sonar.coverage.exclusions="**Tests.cs"
+        sonarHostname: "https://sonarcloud.io"
 
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
