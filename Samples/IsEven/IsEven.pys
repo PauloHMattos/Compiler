@@ -5,7 +5,10 @@ function IsEven(n : int) : bool
 
 function main()
 {
-    while(true)
+    print("Digite quantos numeros você quer testar: ")
+    var cnt = int(input())
+
+    while (cnt > 0)
     {
         print("Digite um numero: ")
         var n = int(input())
@@ -15,7 +18,8 @@ function main()
         }
         else
         {
-            print("Não é par")
+            print("Nao é par")
         }
+        cnt -= 1
     }
 }
