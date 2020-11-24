@@ -21,10 +21,10 @@ namespace Compiler.Tests.Snippets
         }
 
         [Theory]
-        [InlineData("HelloWorld", null)]
-        [InlineData("Evaluation")]
-        [InlineData("Input", "Paulo", "24")]
-        [InlineData("IsEven", "2", "10", "5")]
+        //[InlineData("HelloWorld", null)]
+        //[InlineData("Evaluation")]
+        //[InlineData("Input", "Paulo", "24")]
+        //[InlineData("IsEven", "2", "10", "5")]
         [InlineData("Enum")]
         public async Task SamplesTests(string filenamePrefix, params string[] inputs)
         {
