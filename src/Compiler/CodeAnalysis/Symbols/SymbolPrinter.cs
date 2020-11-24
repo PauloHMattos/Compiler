@@ -32,7 +32,7 @@ namespace Compiler.CodeAnalysis.Symbols
                 case SymbolKind.Struct:
                     WriteStructTo((StructSymbol)symbol, writer);
                     break;
-                case SymbolKind.Field:
+                case SymbolKind.Member:
                     WriteFieldTo((FieldSymbol)symbol, writer);
                     break;
                 default:

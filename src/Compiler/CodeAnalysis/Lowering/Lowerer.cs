@@ -244,7 +244,7 @@ namespace Compiler.CodeAnalysis.Lowering
             var newNode = (BoundCompoundAssignmentExpression)base.RewriteCompoundAssignmentExpression(node);
 
 
-            var result = Assignment(
+            return Assignment(
                 newNode.Syntax, 
                 newNode.Variable,
                 Binary(
@@ -254,10 +254,7 @@ namespace Compiler.CodeAnalysis.Lowering
                     newNode.Expression
                 )
             );
-
-            return result;
         }
-
 
         protected override BoundStatement RewriteExpressionStatement(BoundExpressionStatement node)
         {
@@ -269,6 +266,28 @@ namespace Compiler.CodeAnalysis.Lowering
         {
             var rewrittenNode = base.RewriteVariableDeclarationStatement(node);
             return new BoundSequencePointStatement(rewrittenNode.Syntax, rewrittenNode, rewrittenNode.Syntax.Location);
+        }
+
+        protected override BoundExpression RewriteCompoundMemberAssignmentExpression(BoundCompoundMemberAssignmentExpression node)
+        {
+            var newNode = (BoundCompoundMemberAssignmentExpression)base.RewriteCompoundMemberAssignmentExpression(node);
+            
+            // a.f <op>= b
+            //
+            // --->
+            //
+            // a.f = (a.f <op> b)
+            return Assignment(
+                newNode.Syntax,
+                newNode.Instance,
+                newNode.Member,
+                Binary(
+                    newNode.Syntax,
+                    Member(newNode.Syntax, newNode.Instance, newNode.Member),
+                    newNode.Operator,
+                    newNode.Expression
+                )
+            );
         }
     }
 }

@@ -106,8 +106,6 @@
         BinaryExpression,
         ParenthesizedExpression,
         UnaryExpression,
-        AssignmentExpression,
-        CompoundAssignmentExpression,
         CallExpression,
         MemberAccessExpression,
     }

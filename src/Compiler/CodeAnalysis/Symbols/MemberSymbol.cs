@@ -2,8 +2,18 @@ using Compiler.CodeAnalysis.Binding;
 
 namespace Compiler.CodeAnalysis.Symbols
 {
+    public enum MemberKind
+    {
+        Field,
+        Property,
+        Method
+    }
+
     public abstract class MemberSymbol : VariableSymbol
     {
+        public override SymbolKind Kind => SymbolKind.Member;
+        public abstract MemberKind MemberKind { get; }
+
         private protected MemberSymbol(string name, bool isReadOnly, TypeSymbol type, BoundConstant? constant) : base(name, isReadOnly, type, constant)
         {
         }
@@ -11,7 +21,7 @@ namespace Compiler.CodeAnalysis.Symbols
     
     public class FieldSymbol : MemberSymbol
     {
-        public override SymbolKind Kind => SymbolKind.Field;
+        public override MemberKind MemberKind => MemberKind.Field;
 
         private protected FieldSymbol(string name, bool isReadOnly, TypeSymbol type, BoundConstant? constant) : base(name, isReadOnly, type, constant)
         {

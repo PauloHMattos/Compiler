@@ -45,10 +45,15 @@ namespace Compiler.CodeAnalysis.Binding
         {
             return Variable(syntax, variable.Variable);
         }
-        
+
         public static BoundVariableExpression Variable(SyntaxNode syntax, VariableSymbol variable)
         {
             return new BoundVariableExpression(syntax, variable);
+        }
+
+        public static BoundMemberAccessExpression Member(SyntaxNode syntax, BoundExpression instance, MemberSymbol member)
+        {
+            return new BoundMemberAccessExpression(syntax, instance, member);
         }
 
         public static BoundVariableDeclarationStatement VariableDeclaration(SyntaxNode syntax, VariableSymbol symbol, BoundExpression initializer)
@@ -73,13 +78,18 @@ namespace Compiler.CodeAnalysis.Binding
             return new BoundAssignmentExpression(syntax, variable, expression);
         }
 
+        public static BoundMemberAssignmentExpression Assignment(SyntaxNode syntax, BoundExpression instance, MemberSymbol member, BoundExpression expression)
+        {
+            return new BoundMemberAssignmentExpression(syntax, instance, member, expression);
+        }
+
         public static BoundBinaryExpression Binary(SyntaxNode syntax, BoundExpression left, SyntaxKind kind, BoundExpression right)
         {
             var op = BoundBinaryOperator.Bind(kind, left.Type, right.Type);
             Debug.Assert(op != null);
             return Binary(syntax, left, op, right);
         }
-        
+
         public static BoundBinaryExpression Binary(SyntaxNode syntax, BoundExpression left, BoundBinaryOperator op, BoundExpression right)
         {
             return new BoundBinaryExpression(syntax, left, op, right);
@@ -97,16 +107,16 @@ namespace Compiler.CodeAnalysis.Binding
 
         public static BoundExpressionStatement Increment(SyntaxNode syntax, BoundVariableExpression variable)
         {
-           return Increment(syntax, variable, Literal(syntax, 1));
+            return Increment(syntax, variable, Literal(syntax, 1));
         }
-        
+
         public static BoundExpressionStatement Increment(SyntaxNode syntax, BoundVariableExpression variable, BoundExpression step)
         {
             var increment = Add(syntax, variable, step);
             var incrementAssign = new BoundAssignmentExpression(syntax, variable.Variable, increment);
             return new BoundExpressionStatement(syntax, incrementAssign);
         }
-        
+
         public static BoundUnaryExpression Not(SyntaxNode syntax, BoundExpression condition)
         {
             Debug.Assert(condition.Type == TypeSymbol.Bool);

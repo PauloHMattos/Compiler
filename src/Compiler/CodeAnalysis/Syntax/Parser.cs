@@ -221,7 +221,7 @@ namespace Compiler.CodeAnalysis.Syntax
             }
             return null;
         }
-        
+
         private MemberSyntax ParseStructDeclaration()
         {
             var keyword = MatchToken(SyntaxKind.StructKeyword);
@@ -489,29 +489,6 @@ namespace Compiler.CodeAnalysis.Syntax
 
         private ExpressionSyntax ParseExpression()
         {
-            return ParseAssignmentExpression();
-        }
-
-        private ExpressionSyntax ParseAssignmentExpression()
-        {
-            if (Current.Kind == SyntaxKind.IdentifierToken)
-            {
-                switch (Peek(1).Kind)
-                {
-                    case SyntaxKind.PlusEqualsToken:
-                    case SyntaxKind.MinusEqualsToken:
-                    case SyntaxKind.StarEqualsToken:
-                    case SyntaxKind.SlashEqualsToken:
-                    case SyntaxKind.AmpersandEqualsToken:
-                    case SyntaxKind.PipeEqualsToken:
-                    case SyntaxKind.HatEqualsToken:
-                    case SyntaxKind.EqualsToken:
-                        var identifierToken = NextToken();
-                        var operatorToken = NextToken();
-                        var right = ParseAssignmentExpression();
-                        return new AssignmentExpressionSyntax(_syntaxTree, identifierToken, operatorToken, right);
-                }
-            }
             return ParseBinaryExpression();
         }
 
@@ -539,8 +516,16 @@ namespace Compiler.CodeAnalysis.Syntax
             return ParseMemberAccessInternal(queue, dotTokenQueue, first);
         }
 
+        /// <summary>
+        /// MemberAccessExpr := IDENT (DOT IDENT)*
+        /// </summary>
+        /// <param name="queue"></param>
+        /// <param name="dotTokenQueue"></param>
+        /// <param name="parent"></param>
+        /// <returns></returns>
         private MemberAccessExpressionSyntax ParseMemberAccessInternal(Queue<NameExpressionSyntax> queue, Queue<SyntaxToken> dotTokenQueue, ExpressionSyntax parent)
         {
+            // TODO (PERF): Change to iteration instead of recursion
             var member = queue.Dequeue();
             var operatorToken = dotTokenQueue.Dequeue();
 
@@ -554,6 +539,12 @@ namespace Compiler.CodeAnalysis.Syntax
             }
         }
 
+        /// <summary>
+        /// UnaryExpr := (Op)? Expr
+        /// BinaryExpr := UnaryExpr Op BinaryExpr
+        /// </summary>
+        /// <param name="parentPrecedence"></param>
+        /// <returns></returns>
         private ExpressionSyntax ParseBinaryExpression(int parentPrecedence = 0)
         {
             ExpressionSyntax left;
@@ -587,11 +578,6 @@ namespace Compiler.CodeAnalysis.Syntax
 
         private ExpressionSyntax ParsePrimaryExpression()
         {
-            if (Peek(1).Kind == SyntaxKind.DotToken)
-            {
-                return ParseMemberAccess();
-            }
-            
             switch (Current.Kind)
             {
                 case SyntaxKind.OpenParenthesisToken:
@@ -609,6 +595,16 @@ namespace Compiler.CodeAnalysis.Syntax
 
                 case SyntaxKind.DefaultKeyword:
                     return ParseDefaultLiteral();
+
+                case SyntaxKind.IdentifierToken:
+                    if (Peek(1).Kind == SyntaxKind.DotToken)
+                    {
+                        return ParseMemberAccess();
+                    }
+                    else
+                    {
+                        return ParseNameOrCallExpression();
+                    }
 
                 default:
                     return ParseNameOrCallExpression();

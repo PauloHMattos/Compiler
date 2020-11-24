@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Compiler.Tests.Snippets
+namespace Compiler.Tests.Samples
 {
     public class ConsoleOutputTests
     {

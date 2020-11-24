@@ -30,7 +30,6 @@ namespace Compiler.CodeAnalysis.Emit
         private readonly Dictionary<SourceText, Document> _documents;
         private readonly List<Fixup> _fixups;
 
-        private readonly MethodReference _objectCtor;
         private readonly MethodReference _objectEqualsReference;
         private readonly MethodReference _consoleReadLineReference;
         private readonly MethodReference _consoleWriteLineReference;
@@ -60,7 +59,6 @@ namespace Compiler.CodeAnalysis.Emit
             ReadAssemblies(references);
             ResolveTypes();
 
-            _objectCtor = ResolveMethod<object>(".ctor", Array.Empty<Type>());
             _objectEqualsReference = ResolveMethod<object>(nameof(object.Equals), new[] { typeof(object), typeof(object) });
             _consoleReadLineReference = ResolveMethod(typeof(Console), nameof(Console.ReadLine), Array.Empty<Type>());
             _consoleWriteLineReference = ResolveMethod(typeof(Console), nameof(Console.WriteLine), new[] { typeof(object) });
@@ -360,7 +358,7 @@ namespace Compiler.CodeAnalysis.Emit
         
         private void EmitStructDeclaration(StructSymbol structSymbol)
         {
-            const TypeAttributes _structAttributes = TypeAttributes.Class | TypeAttributes.NotPublic |
+            const TypeAttributes _structAttributes = TypeAttributes.Class | TypeAttributes.Public |
                                                     TypeAttributes.SequentialLayout | TypeAttributes.AnsiClass |
                                                     TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit;
             
@@ -424,7 +422,7 @@ namespace Compiler.CodeAnalysis.Emit
                     var fieldDefinition = new FieldDefinition(sd.Variable.Name, fieldAttributes, Import(sd.Variable.Type));
                     structType.Fields.Add(fieldDefinition);
 
-                    EmitSequencePointStatement(ilProcessor, s);
+                    //EmitSequencePointStatement(ilProcessor, s);
                     EmitFieldAssignment(ilProcessor, sd, fieldDefinition);
                 }
                 else
@@ -459,7 +457,6 @@ namespace Compiler.CodeAnalysis.Emit
 
                 foreach (var field in structType.Fields)
                 {
-                    Console.WriteLine($"{field.Name} == {ctorParam.Name}");
                     if (field.Name == ctorParam.Name)
                     {
                         ilProcessor.Emit(OpCodes.Stfld, field);
@@ -553,14 +550,23 @@ namespace Compiler.CodeAnalysis.Emit
 
         private void EmitVariableDeclaration(ILProcessor ilProcessor, BoundVariableDeclarationStatement node)
         {
-            Console.WriteLine($"EmitVariableDeclaration {node.Variable.Name}");
             var typeReference = Import(node.Variable.Type);
             var variableDefinition = new VariableDefinition(typeReference);
             _locals.Add(node.Variable, variableDefinition);
             ilProcessor.Body.Variables.Add(variableDefinition);
 
+            var isStruct = node.Variable.Type.Kind == SymbolKind.Struct;
+            if (isStruct)
+            {
+                ilProcessor.Emit(OpCodes.Ldloca_S, variableDefinition);
+            }
+            
             EmitExpression(ilProcessor, node.Initializer);
-            ilProcessor.Emit(OpCodes.Stloc, variableDefinition);
+
+            if (!isStruct)
+            {
+                ilProcessor.Emit(OpCodes.Stloc, variableDefinition);
+            }
         }
 
         private void EmitLabelStatement(ILProcessor ilProcessor, BoundLabelStatement node)
@@ -587,7 +593,6 @@ namespace Compiler.CodeAnalysis.Emit
         {
             if (node.Expression != null)
             {
-
                 EmitExpression(ilProcessor, node.Expression);
             }
             ilProcessor.Emit(OpCodes.Ret);
@@ -596,13 +601,13 @@ namespace Compiler.CodeAnalysis.Emit
         private void EmitExpressionStatement(ILProcessor ilProcessor, BoundExpressionStatement node)
         {
             EmitExpression(ilProcessor, node.Expression);
-
+            
             if (node.Expression.Type != TypeSymbol.Void)
             {
+                // TODO - Take a better look a this
                 ilProcessor.Emit(OpCodes.Pop);
             }
         }
-
 
         private void EmitExpression(ILProcessor ilProcessor, BoundExpression node)
         {
@@ -638,6 +643,9 @@ namespace Compiler.CodeAnalysis.Emit
                 case BoundNodeKind.MemberAccessExpression:
                     EmitMemberAccessExpression(ilProcessor, (BoundMemberAccessExpression)node);
                     break;
+                case BoundNodeKind.MemberAssignmentExpression:
+                    EmitMemberAssignmentExpression(ilProcessor, (BoundMemberAssignmentExpression)node);
+                    break;
                 default:
                     throw new InvalidOperationException($"Unexpected node kind {node.Kind}");
             }
@@ -645,20 +653,14 @@ namespace Compiler.CodeAnalysis.Emit
 
         private void EmitTypeReferenceExpression(ILProcessor ilProcessor, BoundTypeReferenceExpression node)
         {
-            // if (node.Type is EnumSymbol enumSymbol)
-            // {
-            //     ilProcessor.Emit(OpCodes.Ldc_I4_S, parameter.Ordinal);
-            // }
-            // else
-            // {
-            //     var variableDefinition = _locals[node.Variable];
-            //     ilProcessor.Emit(OpCodes.Ldloc, variableDefinition);
-            // }
+            // HACK - This is not the rigth way to handle statics
+            // Currently I don't know how to properly do it, so...
         }
 
         private void EmitConstantExpression(ILProcessor ilProcessor, BoundExpression node)
         {
             Debug.Assert(node.ConstantValue != null);
+
             if (node.Type == TypeSymbol.Bool)
             {
                 var value = (bool)node.ConstantValue.Value;
@@ -681,7 +683,7 @@ namespace Compiler.CodeAnalysis.Emit
             }
         }
 
-        private void EmitVariableExpression(ILProcessor ilProcessor, BoundVariableExpression node)
+        private void EmitVariableExpression(ILProcessor ilProcessor, BoundVariableExpression node, bool byRef = false)
         {
             if (node.Variable is ParameterSymbol parameter)
             {
@@ -690,7 +692,16 @@ namespace Compiler.CodeAnalysis.Emit
             else
             {
                 var variableDefinition = _locals[node.Variable];
-                ilProcessor.Emit(OpCodes.Ldloc, variableDefinition);
+                // TODO - Take a better look at this
+                var isStruct = node.Variable.Type.Kind == SymbolKind.Struct;
+                if (isStruct)
+                {
+                    ilProcessor.Emit(OpCodes.Ldloca_S, variableDefinition);
+                }
+                else
+                {
+                    ilProcessor.Emit(OpCodes.Ldloc, variableDefinition);
+                }
             }
         }
 
@@ -845,10 +856,22 @@ namespace Compiler.CodeAnalysis.Emit
             else if (node.Function.Name.EndsWith(".ctor"))
             {
                 var className = node.Function.Name[..^5];
+                var typeReference = Import(node.Function.Type);
                 var structSymbol = _structs.First(s => s.Key.Name == className).Value;
                 
+                var code = OpCodes.Newobj;
+                if (node.Function.Type.Kind == SymbolKind.Struct)
+                {
+                    if (node.Arguments.Length == 0)
+                    {
+                        ilProcessor.Emit(OpCodes.Initobj, typeReference);
+                        return;
+                    }
+                    code = OpCodes.Call;
+                }
+
                 // TODO: We should use a general overload resolution algorithm instead
-                ilProcessor.Emit(OpCodes.Newobj, node.Arguments.Length == 0 ?
+                ilProcessor.Emit(code, node.Arguments.Length == 0 ?
                                                     structSymbol.Methods[0] :
                                                     structSymbol.Methods[1]);
             }
@@ -901,9 +924,9 @@ namespace Compiler.CodeAnalysis.Emit
 
             EmitExpression(ilProcessor, node.Instance);
             
-            switch (node.Member.Kind)
+            switch (node.Member.MemberKind)
             {
-                case SymbolKind.Field:
+                case MemberKind.Field:
                     EmitFieldAccessExpression(ilProcessor, node, typeDefinition);
                     break;
 
@@ -926,6 +949,47 @@ namespace Compiler.CodeAnalysis.Emit
                     {
                         ilProcessor.Emit(OpCodes.Ldfld, field);
                     }
+                    break;
+                }
+            }
+        }
+
+        private void EmitMemberAssignmentExpression(ILProcessor ilProcessor, BoundMemberAssignmentExpression node)
+        {
+            Debug.Assert(node.Instance.Type != null);
+
+            EmitExpression(ilProcessor, node.Instance);
+            EmitExpression(ilProcessor, node.Expression);
+
+            var typeReference = Import(node.Instance.Type);
+            var typeDefinition = typeReference.Resolve();
+            
+            ilProcessor.Emit(OpCodes.Dup);
+            var expressionTypeReference = Import(node.Expression.Type);
+            var variableDefinition = new VariableDefinition(expressionTypeReference);
+            ilProcessor.Body.Variables.Add(variableDefinition);
+            ilProcessor.Emit(OpCodes.Stloc, variableDefinition);
+
+            switch (node.Member.MemberKind)
+            {
+                case MemberKind.Field:
+                    EmitFieldAssignmentExpression(ilProcessor, node, typeDefinition);
+                    break;
+
+                default:
+                    throw new InvalidOperationException($"Unexpected member type {node.Member.Kind}");
+            }
+
+            ilProcessor.Emit(OpCodes.Ldloc, variableDefinition);
+        }
+
+        private static void EmitFieldAssignmentExpression(ILProcessor ilProcessor, BoundMemberAssignmentExpression node, TypeDefinition typeDefinition)
+        {
+            foreach (var field in typeDefinition.Fields)
+            {
+                if (field.Name == node.Member.Name)
+                {
+                    ilProcessor.Emit(OpCodes.Stfld, field);
                     break;
                 }
             }

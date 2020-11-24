@@ -6,11 +6,20 @@ struct Test
 
 function main()
 {
-    var test : Test = Test()
-    print(test.i)
-    print(test.b)
+    var test0 : Test
+    print(test0.i)
+    print(test0.b)
+
+    var test1 : Test = Test()
+    print(test1.i)
+    print(test1.b)
     
     var test2 : Test = Test(10, true)
+    print(test2.i)
+    print(test2.b)
+
+    test2.i = 100
+    test2.b = false
     print(test2.i)
     print(test2.b)
 }

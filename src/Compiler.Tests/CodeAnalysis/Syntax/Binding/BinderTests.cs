@@ -11,7 +11,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
     public class BinderTests
     {
         [Fact]
-        public void Binder_IfStatement_Reports_CannotConvert()
+        public void Evaluator_IfStatement_Reports_CannotConvert()
         {
             var text = @"
                 {
@@ -27,7 +27,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             };
             AssertDiagnostics(text, diagnostics);
         }
-
+        
         [Fact]
         public void Binder_DoWhileStatement_Reports_CannotConvert()
         {
@@ -582,13 +582,11 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_InvokeFunctionArguments_NoInfiniteLoop()
         {
             var text = @"
-                print(""Hi""[[=]][)]
+                print(""Hi""=[)]
             ";
 
             var diagnostics = new List<string>()
             {
-                DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.EqualsToken, SyntaxKind.CloseParenthesisToken),
-                DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.EqualsToken, SyntaxKind.IdentifierToken),
                 DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.CloseParenthesisToken, SyntaxKind.IdentifierToken),
             };
 
@@ -599,7 +597,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_FunctionParameters_NoInfiniteLoop()
         {
             var text = @"
-                function hi(name: string[[[=]]][)]
+                function hi(name: string[[[=]]][[)]]
                 {
                     print(""Hi "" + name + ""!"" )
                 }[]
@@ -610,6 +608,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
                 DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.EqualsToken, SyntaxKind.CloseParenthesisToken),
                 DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.EqualsToken, SyntaxKind.OpenBraceToken),
                 DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.EqualsToken, SyntaxKind.IdentifierToken),
+                DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.CloseParenthesisToken, SyntaxKind.IdentifierToken),
                 DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.CloseParenthesisToken, SyntaxKind.IdentifierToken),
                 DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.EndOfFileToken, SyntaxKind.CloseBraceToken),
             };

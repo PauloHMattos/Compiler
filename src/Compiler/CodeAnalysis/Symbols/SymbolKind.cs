@@ -9,6 +9,6 @@
         Parameter,
         Enum,
         Struct,
-        Field,
+        Member,
     }
 }

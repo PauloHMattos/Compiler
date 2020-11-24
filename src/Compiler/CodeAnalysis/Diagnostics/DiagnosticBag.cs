@@ -133,7 +133,7 @@ namespace Compiler.CodeAnalysis.Diagnostics
             ReportError(location, DiagnosticCode.SymbolAlreadyDeclared.GetDiagnostic(name));
         }
 
-        public void ReportCannotReassigned(in TextLocation location, string name)
+        public void ReportCannotReassign(in TextLocation location, string name)
         {
             ReportError(location, DiagnosticCode.VariableCannotReassigned.GetDiagnostic(name));
         }
@@ -231,6 +231,11 @@ namespace Compiler.CodeAnalysis.Diagnostics
         internal void ReportUndefinedOverloadForArguments(in TextLocation location, object methodName, string signature)
         {
             ReportError(location, DiagnosticCode.UndefinedOverloadForArguments.GetDiagnostic(methodName, signature));
+        }
+        
+        internal void ReportCannotAssignMethodMember(TextLocation location, string name)
+        {
+            throw new NotImplementedException();
         }
     }
 }
