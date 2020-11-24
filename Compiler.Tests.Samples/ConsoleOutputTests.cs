@@ -41,8 +41,8 @@ namespace EV2.Tests.Snippets
                 FileName = "dotnet"
             };
 
-            _output.WriteLine(Environment.CurrentDirectory);
-            _output.WriteLine(psi.WorkingDirectory);
+            // _output.WriteLine(Environment.CurrentDirectory);
+            // _output.WriteLine(psi.WorkingDirectory);
 
             var output = new StringBuilder();
             using Process? process = Process.Start(psi);
@@ -83,7 +83,6 @@ namespace EV2.Tests.Snippets
                 foreach (var input in inputs)
                 {
                     process.StandardInput.WriteLine(input);
-                    //mreOut.WaitOne();
                 }
             }
 
@@ -95,7 +94,7 @@ namespace EV2.Tests.Snippets
 
             // Compare stdout to outputfile
             var outputPath = Path.GetFullPath(Path.Combine(SamplesPath, filenamePrefix, filenamePrefix + ".out"));
-            _output.WriteLine(output.ToString());
+            // _output.WriteLine(output.ToString());
             
             Assert.Equal(await File.ReadAllTextAsync(outputPath), output.ToString());
         }
