@@ -336,7 +336,7 @@ namespace Compiler.CodeAnalysis.Emit
 
             var specialField = new FieldDefinition("value__", _enumSpecialAttributes, Import(TypeSymbol.Int));
             enumType.Fields.Add(specialField);
-            foreach (var value in enumSymbol.Values)
+            foreach (EnumValueSymbol value in enumSymbol.Members)
             {
                 var valueField = new FieldDefinition(value.Name, _enumFieldAttributes, enumType)
                 {
@@ -658,8 +658,6 @@ namespace Compiler.CodeAnalysis.Emit
 
         private void EmitConstantExpression(ILProcessor ilProcessor, BoundExpression node)
         {
-            Console.WriteLine("EmitConstantExpression");
-            Console.WriteLine(node.ConstantValue.Value);
             Debug.Assert(node.ConstantValue != null);
             if (node.Type == TypeSymbol.Bool)
             {
@@ -898,30 +896,37 @@ namespace Compiler.CodeAnalysis.Emit
         
         private void EmitMemberAccessExpression(ILProcessor ilProcessor, BoundMemberAccessExpression node)
         {
-            EmitExpression(ilProcessor, node.Instance);
+            var typeDefinition = Import(node.Instance.Type).Resolve();
+            Debug.Assert(typeDefinition != null);
 
-            if (node.Instance.Type is EnumSymbol)
+            EmitExpression(ilProcessor, node.Instance);
+            
+            switch (node.Member.Kind)
             {
-                var enumDefinition = _enums[node.Instance.Type];
-                Debug.Assert(enumDefinition != null);
-                foreach (var field in enumDefinition.Fields)
+                case SymbolKind.Field:
+                    EmitFieldAccessExpression(ilProcessor, node, typeDefinition);
+                    break;
+
+                default:
+                    throw new InvalidOperationException($"Unexpected member type {node.Member.Kind}");
+            }
+        }
+
+        private static void EmitFieldAccessExpression(ILProcessor ilProcessor, BoundMemberAccessExpression node, TypeDefinition typeDefinition)
+        {
+            foreach (var field in typeDefinition.Fields)
+            {
+                if (field.Name == node.Member.Name)
                 {
-                    if (field.Name == node.Member.Name)
+                    if (field.Constant != null)
                     {
                         ilProcessor.Emit(OpCodes.Ldc_I4, (int)field.Constant);
                     }
-                }
-            }
-            else if (node.Instance.Type is StructSymbol)
-            {
-                var structDefinition = _structs[node.Instance.Type];
-                Debug.Assert(structDefinition != null);
-                foreach (var field in structDefinition.Fields)
-                {
-                    if (field.Name == node.Member.Name)
+                    else
                     {
                         ilProcessor.Emit(OpCodes.Ldfld, field);
                     }
+                    break;
                 }
             }
         }

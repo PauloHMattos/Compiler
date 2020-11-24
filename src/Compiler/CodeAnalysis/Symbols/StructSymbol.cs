@@ -7,7 +7,6 @@ namespace Compiler.CodeAnalysis.Symbols
     {
         public StructDeclarationSyntax? Declaration { get; }
         public ImmutableArray<ParameterSymbol> CtorParameters { get; }
-        public ImmutableArray<MemberSymbol> Members { get; }
 
         public override SymbolKind Kind => SymbolKind.Struct;
         
@@ -15,11 +14,10 @@ namespace Compiler.CodeAnalysis.Symbols
                               ImmutableArray<ParameterSymbol> ctorParameters,
                               ImmutableArray<MemberSymbol> members,
                               StructDeclarationSyntax? declaration = null) 
-            : base(name, null, typeof(System.ValueType))
+            : base(name, null, typeof(System.ValueType), members)
         {
             Declaration = declaration;
             CtorParameters = ctorParameters;
-            Members = members;
         }
     }
 }

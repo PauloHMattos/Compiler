@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace Compiler.CodeAnalysis.Symbols
 {
@@ -20,9 +21,17 @@ namespace Compiler.CodeAnalysis.Symbols
         public Type? NetType { get; }
         public object? DefaultValue { get; }
         public override SymbolKind Kind => SymbolKind.Type;
+        public virtual ImmutableArray<MemberSymbol> Members { get; }
 
-
-        protected TypeSymbol(string name, object? defaultValue, Type? netType) : base(name)
+        protected TypeSymbol(string name, object? defaultValue, Type? netType, ImmutableArray<MemberSymbol> members) : base(name)
+        {
+            NetType = netType;
+            Members = members;
+            DefaultValue = defaultValue;
+        }
+        
+        protected TypeSymbol(string name, object? defaultValue, Type? netType)
+            : this(name, defaultValue, netType, ImmutableArray<MemberSymbol>.Empty)
         {
             NetType = netType;
             DefaultValue = defaultValue;

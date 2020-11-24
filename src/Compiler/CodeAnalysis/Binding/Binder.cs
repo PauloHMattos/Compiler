@@ -64,7 +64,7 @@ namespace Compiler.CodeAnalysis.Binding
             {
                 binder.BindEnumDeclaration(enumDeclaration);
             }
-            
+
 
             var structDeclarations = syntaxTrees.SelectMany(st => st.Root.Members)
                                                   .OfType<StructDeclarationSyntax>();
@@ -1003,36 +1003,17 @@ namespace Compiler.CodeAnalysis.Binding
         private MemberSymbol? BindMemberReference(TypeSymbol typeSymbol, NameExpressionSyntax memberExpression)
         {
             var memberName = memberExpression.IdentifierToken.Text;
-            if (typeSymbol is EnumSymbol e)
+            if (memberExpression is CallExpressionSyntax call)
             {
-                if (memberExpression is CallExpressionSyntax call)
-                {
-                    Diagnostics.ReportUndefinedFunction(call.Location, memberName);
-                    return null;
-                }
-
-                foreach (var member in e.Values)
-                {
-                    if (member.Name == memberName)
-                    {
-                        return member;
-                    }
-                }
+                Diagnostics.ReportUndefinedFunction(call.Location, memberName);
+                return null;
             }
-            if (typeSymbol is StructSymbol s)
-            {
-                if (memberExpression is CallExpressionSyntax call)
-                {
-                    Diagnostics.ReportUndefinedFunction(call.Location, memberName);
-                    return null;
-                }
 
-                foreach (var member in s.Members)
+            foreach (var member in typeSymbol.Members)
+            {
+                if (member.Name == memberName)
                 {
-                    if (member.Name == memberName)
-                    {
-                        return member;
-                    }
+                    return member;
                 }
             }
 
