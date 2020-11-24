@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using Compiler.CodeAnalysis.Text;
 using Compiler.IO;
 
@@ -65,8 +66,37 @@ namespace Compiler.CodeAnalysis.Syntax
             return AncestorsAndSelf().Skip(1);
         }
 
-        public abstract IEnumerable<SyntaxNode> GetChildren();
+        public virtual IEnumerable<SyntaxNode> GetChildren()
+        {
+            var properties = GetType().
+                    GetProperties(BindingFlags.Public | BindingFlags.Instance).
+                    Where(p => p.Name != nameof(Parent));	
 
+            foreach (var property in properties)	
+            {	
+                if (typeof(SyntaxNode).IsAssignableFrom(property.PropertyType))	
+                {	
+                    var child = (SyntaxNode?)property.GetValue(this);	
+                    if (child != null)	
+                        yield return child;	
+                }	
+                else if (typeof(SeparatedSyntaxList).IsAssignableFrom(property.PropertyType))	
+                {	
+                    var separatedSyntaxList = (SeparatedSyntaxList)property.GetValue(this)!;	
+                    foreach (var child in separatedSyntaxList.GetWithSeparators())	
+                        yield return child;	
+                }	
+                else if (typeof(IEnumerable<SyntaxNode>).IsAssignableFrom(property.PropertyType))	
+                {	
+                    var children = (IEnumerable<SyntaxNode>)property.GetValue(this)!;	
+                    foreach (var child in children)	
+                    {	
+                        if (child != null)	
+                            yield return child;	
+                    }	
+                }	
+            }	
+        }
         public void WriteTo(TextWriter writer)
         {
             PrintTree(writer, this);
