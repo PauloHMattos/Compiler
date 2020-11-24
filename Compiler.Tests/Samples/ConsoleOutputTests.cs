@@ -5,12 +5,20 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace EV2.Tests.Snippets
 {
     public class ConsoleOutputTests
     {
         private const string SamplesPath = @"..\..\..\..\Samples\";
+
+        private readonly ITestOutputHelper _output;
+
+        public ConsoleOutputTests(ITestOutputHelper output)
+        {
+            _output = output;
+        }
 
         [Theory]
         [InlineData("HelloWorld", null)]
@@ -32,6 +40,9 @@ namespace EV2.Tests.Snippets
                 Arguments = "run",
                 FileName = "dotnet"
             };
+
+            _output.WriteLine(Environment.CurrentDirectory);
+            _output.WriteLine(psi.WorkingDirectory);
 
             var output = new StringBuilder();
             using Process? process = Process.Start(psi);
