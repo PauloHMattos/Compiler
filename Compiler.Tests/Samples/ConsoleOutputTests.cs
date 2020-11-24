@@ -95,6 +95,8 @@ namespace EV2.Tests.Snippets
 
             // Compare stdout to outputfile
             var outputPath = Path.GetFullPath(Path.Combine(SamplesPath, filenamePrefix, filenamePrefix + ".out"));
+            _output.WriteLine(output.ToString());
+            
             Assert.Equal(await File.ReadAllTextAsync(outputPath), output.ToString());
         }
     }
