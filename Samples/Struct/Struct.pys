@@ -1,10 +1,16 @@
 struct Test
 {
     var i : int
+    var b : bool
 }
 
 function main()
 {
-    var test : Test = Test(10)
+    var test : Test = Test()
     print(test.i)
+    print(test.b)
+    
+    var test2 : Test = Test(10, true)
+    print(test2.i)
+    print(test2.b)
 }

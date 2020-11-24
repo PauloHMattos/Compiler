@@ -350,7 +350,7 @@ namespace Compiler.CodeAnalysis.Binding
             }
 
             // Declare Built-in Constructor
-            var ctor = new FunctionSymbol(structIdentifier + ".ctor", ctorParameters.ToImmutable(), structSymbol);
+            var ctor = new FunctionSymbol(structIdentifier + ".ctor", ImmutableArray<ParameterSymbol>.Empty, structSymbol);
             var ctorWithParams = new FunctionSymbol(structIdentifier + ".ctor", ctorParameters.ToImmutable(), structSymbol);
             if (structIdentifier != null)
             {
@@ -873,6 +873,7 @@ namespace Compiler.CodeAnalysis.Binding
 
             if (symbol is StructSymbol)
             {
+                Console.WriteLine(syntax.IdentifierToken.Text + ".ctor");
                 symbol = _scope.TryLookupSymbol(syntax.IdentifierToken.Text + ".ctor");
             }
 

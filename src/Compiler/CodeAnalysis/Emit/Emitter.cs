@@ -368,21 +368,7 @@ namespace Compiler.CodeAnalysis.Emit
             _assemblyDefinition.MainModule.Types.Add(structType);
             _structs.Add(structSymbol, structType);
             _resolvedTypes.Add(structSymbol, structType);
-            
-            // foreach (var member in structSymbol.Members)
-            // {
-            //     if (member is FieldSymbol field)
-            //     {
-            //         var fieldAttributes = field.IsReadOnly ? FieldAttributes.Public | FieldAttributes.InitOnly : FieldAttributes.Public;
-            //         var fieldDefinition = new FieldDefinition(field.Name, fieldAttributes, Import(field.Type));
-            //         structType.Fields.Add(fieldDefinition);
-            //     }
-            //     else
-            //     {
-            //         throw new Exception($"Unexpected statement type {member.Kind}. Expected BoundVariableDeclaration.");
-            //     }
-            // }
-            
+
             // Forward-declare empty constructor
             var emptyCtorDefinition = new MethodDefinition(
                 ".ctor",
@@ -392,8 +378,7 @@ namespace Compiler.CodeAnalysis.Emit
                 MethodAttributes.HideBySig,
                 Import(TypeSymbol.Void)
             );
-
-            //structType.Methods.Insert(0, emptyCtorDefinition);
+            structType.Methods.Insert(0, emptyCtorDefinition);
 
             // Forward-declare initializer constructor
             var defaultCtorDefintion = new MethodDefinition(
@@ -448,17 +433,14 @@ namespace Compiler.CodeAnalysis.Emit
                 }
             }
 
-            ilProcessor.Emit(OpCodes.Ldarg_0);
-            ilProcessor.Emit(OpCodes.Call, _objectCtor);
             ilProcessor.Emit(OpCodes.Ret);
-
             constructor.Body.Optimize();
         }
 
         private void EmitDefaultConstructorForStruct(StructSymbol @struct, BoundBlockStatement value, TypeDefinition structType)
         {
             // Get default constructor declaration
-            var constructor = structType.Methods[0];
+            var constructor = structType.Methods[1];
 
             var ilProcessor = constructor.Body.GetILProcessor();
 
@@ -487,7 +469,6 @@ namespace Compiler.CodeAnalysis.Emit
             }
 
             ilProcessor.Emit(OpCodes.Ret);
-
             constructor.Body.Optimize();
         }
 
@@ -566,16 +547,13 @@ namespace Compiler.CodeAnalysis.Emit
         private void EmitFieldAssignment(ILProcessor ilProcessor, BoundVariableDeclarationStatement node, FieldDefinition field)
         {
             ilProcessor.Emit(OpCodes.Ldarg_0);
-
-            if (node.Initializer.ConstantValue != null)
-            {
-                EmitConstantExpression(ilProcessor, node.Initializer);
-                ilProcessor.Emit(OpCodes.Stfld, field);
-            }
+            EmitExpression(ilProcessor, node.Initializer);
+            ilProcessor.Emit(OpCodes.Stfld, field);
         }
 
         private void EmitVariableDeclaration(ILProcessor ilProcessor, BoundVariableDeclarationStatement node)
         {
+            Console.WriteLine($"EmitVariableDeclaration {node.Variable.Name}");
             var typeReference = Import(node.Variable.Type);
             var variableDefinition = new VariableDefinition(typeReference);
             _locals.Add(node.Variable, variableDefinition);
@@ -680,6 +658,8 @@ namespace Compiler.CodeAnalysis.Emit
 
         private void EmitConstantExpression(ILProcessor ilProcessor, BoundExpression node)
         {
+            Console.WriteLine("EmitConstantExpression");
+            Console.WriteLine(node.ConstantValue.Value);
             Debug.Assert(node.ConstantValue != null);
             if (node.Type == TypeSymbol.Bool)
             {
@@ -870,9 +850,9 @@ namespace Compiler.CodeAnalysis.Emit
                 var structSymbol = _structs.First(s => s.Key.Name == className).Value;
                 
                 // TODO: We should use a general overload resolution algorithm instead
-                ilProcessor.Emit(OpCodes.Newobj, //node.Arguments.Length == 0 ?
-                                                   // structSymbol.Methods[0] :
-                                                    structSymbol.Methods[0]);
+                ilProcessor.Emit(OpCodes.Newobj, node.Arguments.Length == 0 ?
+                                                    structSymbol.Methods[0] :
+                                                    structSymbol.Methods[1]);
             }
             else
             {
@@ -918,6 +898,8 @@ namespace Compiler.CodeAnalysis.Emit
         
         private void EmitMemberAccessExpression(ILProcessor ilProcessor, BoundMemberAccessExpression node)
         {
+            EmitExpression(ilProcessor, node.Instance);
+
             if (node.Instance.Type is EnumSymbol)
             {
                 var enumDefinition = _enums[node.Instance.Type];
@@ -930,7 +912,7 @@ namespace Compiler.CodeAnalysis.Emit
                     }
                 }
             }
-            if (node.Instance.Type is StructSymbol)
+            else if (node.Instance.Type is StructSymbol)
             {
                 var structDefinition = _structs[node.Instance.Type];
                 Debug.Assert(structDefinition != null);
@@ -942,7 +924,6 @@ namespace Compiler.CodeAnalysis.Emit
                     }
                 }
             }
-            EmitExpression(ilProcessor, node.Instance);
         }
     }
 }
