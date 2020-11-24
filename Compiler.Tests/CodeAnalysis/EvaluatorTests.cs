@@ -126,6 +126,9 @@ namespace Compiler.Tests.CodeAnalysis
         [InlineData("enum A { A, B = 100, C } return A.C", 101)]
         [InlineData("enum A { A, B = 100, C = 0 } return A.C", 0)]
         [InlineData("enum A { A, B = 100, C = 0, D } return A.D", 1)]
+        [InlineData("{ var a = 0 var b = 0 var c = a = b = 1 return c }", 1)]
+        [InlineData("{ var a = 0 var b = 0 var c = a = b = 1 return a }", 1)]
+        [InlineData("{ var a = 0 var b = 0 var c = a = b = 1 return b }", 1)]
         public void Evaluator_Compute_CorrectValues(string text, object expectedValue)
         {
             AssertValue(text, expectedValue);
@@ -754,7 +757,7 @@ namespace Compiler.Tests.CodeAnalysis
             var variables = new Dictionary<VariableSymbol, object>();
             var result = compilation.Evaluate(variables);
 
-            Assert.False(result.Diagnostics.HasErrors());
+            Assert.False(result.Diagnostics.HasErrors(), "Evaluation has errors");
             Assert.Equal(expectedValue, result.Value);
         }
 
