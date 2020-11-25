@@ -4,22 +4,31 @@ struct Test
     var b : bool
 }
 
+
+function changeStruct(s : Test, i : int, b : bool) : Test
+{
+    s.i = i
+    s.b = b
+    return s
+}
+
+function printStruct(s : Test)
+{
+    print(s.i)
+    print(s.b)
+}
+
 function main()
 {
     var test0 : Test
-    print(test0.i)
-    print(test0.b)
+    printStruct(test0)
 
     var test1 : Test = Test()
-    print(test1.i)
-    print(test1.b)
+    printStruct(test1)
     
     var test2 : Test = Test(10, true)
-    print(test2.i)
-    print(test2.b)
+    printStruct(test2)
 
-    test2.i = 100
-    test2.b = false
-    print(test2.i)
-    print(test2.b)
+    var test3 = changeStruct(test2, 100, false)
+    printStruct(test3)
 }

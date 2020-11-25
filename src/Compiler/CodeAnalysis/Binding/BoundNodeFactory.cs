@@ -41,14 +41,14 @@ namespace Compiler.CodeAnalysis.Binding
         public static BoundConditionalGotoStatement GotoFalse(SyntaxNode syntax, BoundLabel label, BoundExpression condition)
             => new BoundConditionalGotoStatement(syntax, label, condition, jumpIfTrue: false);
 
-        public static BoundVariableExpression Variable(SyntaxNode syntax, BoundVariableDeclarationStatement variable)
+        public static BoundVariableExpression Variable(SyntaxNode syntax, BoundVariableDeclarationStatement variable, bool byReference)
         {
-            return Variable(syntax, variable.Variable);
+            return Variable(syntax, variable.Variable, byReference);
         }
 
-        public static BoundVariableExpression Variable(SyntaxNode syntax, VariableSymbol variable)
+        public static BoundVariableExpression Variable(SyntaxNode syntax, VariableSymbol variable, bool byReference)
         {
-            return new BoundVariableExpression(syntax, variable);
+            return new BoundVariableExpression(syntax, variable, byReference);
         }
 
         public static BoundMemberAccessExpression Member(SyntaxNode syntax, BoundExpression instance, MemberSymbol member)

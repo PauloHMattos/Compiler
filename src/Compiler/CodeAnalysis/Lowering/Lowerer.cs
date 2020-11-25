@@ -218,14 +218,14 @@ namespace Compiler.CodeAnalysis.Lowering
                                 While(node.Syntax, 
                                     LessOrEqual(
                                     node.Syntax,
-                                    Variable(node.Syntax, lowerBound),
-                                    Variable(node.Syntax, upperBound)),
+                                    Variable(node.Syntax, lowerBound, false),
+                                    Variable(node.Syntax, upperBound, false)),
                                     Block(node.Syntax, 
                                         node.Body,
                                         Label(node.Syntax, node.ContinueLabel),
                                         Increment(
                                             node.Syntax, 
-                                            Variable(node.Syntax, lowerBound), node.Step)),
+                                            Variable(node.Syntax, lowerBound, false), node.Step)),
                                     node.BreakLabel,
                                     continueLabel: GenerateNewLabel())
             );
@@ -249,7 +249,7 @@ namespace Compiler.CodeAnalysis.Lowering
                 newNode.Variable,
                 Binary(
                     newNode.Syntax, 
-                    Variable(newNode.Syntax, newNode.Variable),
+                    Variable(newNode.Syntax, newNode.Variable, false),
                     newNode.Operator,
                     newNode.Expression
                 )

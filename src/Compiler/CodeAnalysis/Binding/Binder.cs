@@ -183,7 +183,7 @@ namespace Compiler.CodeAnalysis.Binding
                 // We will skip attempting to lower the bodies for these and allow the Emitter to automatically
                 // generate the code necessary.  This will avoid the potential of reporting diagnostic errors to
                 // the user for code they never wrote.
-                if (function.Type is StructSymbol)
+                if (function.Type is StructSymbol && function.Name.EndsWith(".ctor"))
                 {
                     continue;
                 }
@@ -242,9 +242,8 @@ namespace Compiler.CodeAnalysis.Binding
             }
 
             var type = BindTypeClause(syntax.Type) ?? TypeSymbol.Void;
-
             var function = new FunctionSymbol(syntax.Identifier.Text, parameters.ToImmutable(), type, syntax);
-            if (syntax.Identifier.Text != null && !_scope.TryDeclareFunction(function))
+            if (function.Name != null && !_scope.TryDeclareFunction(function))
             {
                 Diagnostics.ReportSymbolAlreadyDeclared(syntax.Identifier.Location, function.Name);
             }
@@ -957,7 +956,6 @@ namespace Compiler.CodeAnalysis.Binding
 
             if (symbol is StructSymbol)
             {
-                Console.WriteLine(syntax.IdentifierToken.Text + ".ctor");
                 symbol = _scope.TryLookupSymbol(syntax.IdentifierToken.Text + ".ctor");
             }
 
@@ -1052,7 +1050,7 @@ namespace Compiler.CodeAnalysis.Binding
         {
             if (syntax.ParentExpression.Kind == SyntaxKind.NameExpression)
             {
-                var nameExpression = BindExpression(syntax.ParentExpression);
+                var nameExpression = BindNameExpression((NameExpressionSyntax)syntax.ParentExpression, true);
                 var variable = BindMemberReference(nameExpression, syntax.MemberExpression);
                 if (variable == null)
                 {
@@ -1138,7 +1136,7 @@ namespace Compiler.CodeAnalysis.Binding
             return new BoundConversionExpression(expression.Syntax, type, expression);
         }
 
-        private BoundExpression BindNameExpression(NameExpressionSyntax syntax)
+        private BoundExpression BindNameExpression(NameExpressionSyntax syntax, bool byReference = false)
         {
             if (syntax.IdentifierToken.IsMissing)
             {
@@ -1161,7 +1159,7 @@ namespace Compiler.CodeAnalysis.Binding
                 case SymbolKind.LocalVariable:
                 case SymbolKind.GlobalVariable:
                 case SymbolKind.Parameter:
-                    return new BoundVariableExpression(syntax, (VariableSymbol)symbol);
+                    return new BoundVariableExpression(syntax, (VariableSymbol)symbol, byReference);
                     
                 case SymbolKind.Type:
                 case SymbolKind.Enum:

@@ -136,7 +136,6 @@ namespace Compiler.CodeAnalysis.Emit
         {
             foreach (var reference in references)
             {
-                Console.WriteLine(reference);
                 try
                 {
                     var assembly = AssemblyDefinition.ReadAssembly(reference);
@@ -253,6 +252,7 @@ namespace Compiler.CodeAnalysis.Emit
             {
                 EmitFunctionDeclaration(function);
             }
+
             foreach (var (function, body) in functions)
             {
                 EmitFunctionBody(function, body);
@@ -555,18 +555,8 @@ namespace Compiler.CodeAnalysis.Emit
             _locals.Add(node.Variable, variableDefinition);
             ilProcessor.Body.Variables.Add(variableDefinition);
 
-            var isStruct = node.Variable.Type.Kind == SymbolKind.Struct;
-            if (isStruct)
-            {
-                ilProcessor.Emit(OpCodes.Ldloca_S, variableDefinition);
-            }
-            
             EmitExpression(ilProcessor, node.Initializer);
-
-            if (!isStruct)
-            {
-                ilProcessor.Emit(OpCodes.Stloc, variableDefinition);
-            }
+            ilProcessor.Emit(OpCodes.Stloc, variableDefinition);
         }
 
         private void EmitLabelStatement(ILProcessor ilProcessor, BoundLabelStatement node)
@@ -683,18 +673,24 @@ namespace Compiler.CodeAnalysis.Emit
             }
         }
 
-        private void EmitVariableExpression(ILProcessor ilProcessor, BoundVariableExpression node, bool byRef = false)
+        private void EmitVariableExpression(ILProcessor ilProcessor, BoundVariableExpression node)
         {
             if (node.Variable is ParameterSymbol parameter)
             {
-                ilProcessor.Emit(OpCodes.Ldarg, parameter.Ordinal);
+                if (node.ByReference)
+                {
+                    ilProcessor.Emit(OpCodes.Ldarga, parameter.Ordinal);
+                }
+                else
+                {
+                    ilProcessor.Emit(OpCodes.Ldarg, parameter.Ordinal);
+                }
             }
             else
             {
                 var variableDefinition = _locals[node.Variable];
-                // TODO - Take a better look at this
-                var isStruct = node.Variable.Type.Kind == SymbolKind.Struct;
-                if (isStruct)
+                
+                if (node.ByReference)
                 {
                     ilProcessor.Emit(OpCodes.Ldloca_S, variableDefinition);
                 }
@@ -859,19 +855,8 @@ namespace Compiler.CodeAnalysis.Emit
                 var typeReference = Import(node.Function.Type);
                 var structSymbol = _structs.First(s => s.Key.Name == className).Value;
                 
-                var code = OpCodes.Newobj;
-                if (node.Function.Type.Kind == SymbolKind.Struct)
-                {
-                    if (node.Arguments.Length == 0)
-                    {
-                        ilProcessor.Emit(OpCodes.Initobj, typeReference);
-                        return;
-                    }
-                    code = OpCodes.Call;
-                }
-
                 // TODO: We should use a general overload resolution algorithm instead
-                ilProcessor.Emit(code, node.Arguments.Length == 0 ?
+                ilProcessor.Emit(OpCodes.Newobj, node.Arguments.Length == 0 ?
                                                     structSymbol.Methods[0] :
                                                     structSymbol.Methods[1]);
             }
