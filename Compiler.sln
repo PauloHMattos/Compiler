@@ -11,6 +11,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Compiler.Application", "Com
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Compiler.Generators", "Compiler.Generators\Compiler.Generators.csproj", "{4304D961-4EB4-4934-AA5A-3F5B18299C30}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Compiler.Tests.Samples", "Compiler.Tests.Samples\Compiler.Tests.Samples.csproj", "{8C0C9F3C-AD4C-4CB4-AF23-675C722FC170}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{4304D961-4EB4-4934-AA5A-3F5B18299C30}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4304D961-4EB4-4934-AA5A-3F5B18299C30}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4304D961-4EB4-4934-AA5A-3F5B18299C30}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8C0C9F3C-AD4C-4CB4-AF23-675C722FC170}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8C0C9F3C-AD4C-4CB4-AF23-675C722FC170}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8C0C9F3C-AD4C-4CB4-AF23-675C722FC170}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8C0C9F3C-AD4C-4CB4-AF23-675C722FC170}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -33,6 +33,19 @@
             "problemMatcher": "$msCompile"
         },
         {
+            "label": "test samples",
+            "group": "test",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "test",
+                "Compiler.Tests.Samples/Compiler.Tests.Samples.csproj",
+                "/p:CollectCoverage=true",
+                "/p:CoverletOutputFormat=opencover"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
             "label": "PyS",
             "command": "dotnet",
             "type": "shell",
