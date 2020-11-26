@@ -11,7 +11,7 @@
             },
             "args": [
                 "build",
-                "${workspaceFolder}/REPL/REPL.csproj",
+                "${workspaceFolder}/Compiler.Application/Compiler.Application.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],

@@ -9,7 +9,6 @@ namespace Compiler.CodeAnalysis.Binding
         public BoundGlobalScope? Previous { get; }
         public ImmutableArray<Diagnostic> Diagnostics { get; }
         public FunctionSymbol? MainFunction { get; }
-        public FunctionSymbol? ScriptFunction { get; }
         public ImmutableArray<FunctionSymbol> Functions { get; }
         public ImmutableArray<EnumSymbol> Enums { get; }
         public ImmutableArray<VariableSymbol> Variables { get; }
@@ -18,7 +17,6 @@ namespace Compiler.CodeAnalysis.Binding
         public BoundGlobalScope(BoundGlobalScope? previous,
                                 ImmutableArray<Diagnostic> diagnostics,
                                 FunctionSymbol? mainFunction,
-                                FunctionSymbol? scriptFunction,
                                 ImmutableArray<FunctionSymbol> functions,
                                 ImmutableArray<EnumSymbol> enums,
                                 ImmutableArray<VariableSymbol> variables,
@@ -27,7 +25,6 @@ namespace Compiler.CodeAnalysis.Binding
             Previous = previous;
             Diagnostics = diagnostics;
             MainFunction = mainFunction;
-            ScriptFunction = scriptFunction;
             Functions = functions;
             Enums = enums;
             Variables = variables;

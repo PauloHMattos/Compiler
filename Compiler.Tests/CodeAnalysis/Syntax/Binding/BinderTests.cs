@@ -6,10 +6,11 @@ using Compiler.CodeAnalysis.Symbols;
 using Compiler.CodeAnalysis.Syntax;
 using Xunit;
 
-namespace Compiler.Tests.CodeAnalysis
+namespace Compiler.Tests.CodeAnalysis.Binding
 {
-    public class EvaluatorTests
+    public class BinderTests
     {
+        /*
         [Theory]
         [InlineData("1", 1)]
         [InlineData("+1", 1)]
@@ -129,13 +130,13 @@ namespace Compiler.Tests.CodeAnalysis
         [InlineData("{ var a = 0 var b = 0 var c = a = b = 1 return c }", 1)]
         [InlineData("{ var a = 0 var b = 0 var c = a = b = 1 return a }", 1)]
         [InlineData("{ var a = 0 var b = 0 var c = a = b = 1 return b }", 1)]
-        public void Evaluator_Compute_CorrectValues(string text, object expectedValue)
+        public void Binder_Compute_CorrectValues(string text, object expectedValue)
         {
             AssertValue(text, expectedValue);
         }
-
+*/
         [Fact]
-        public void Evaluator_IfStatement_Reports_CannotConvert()
+        public void Binder_IfStatement_Reports_CannotConvert()
         {
             var text = @"
                 {
@@ -153,7 +154,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_DoWhileStatement_Reports_CannotConvert()
+        public void Binder_DoWhileStatement_Reports_CannotConvert()
         {
             var text = @"
                 {
@@ -172,7 +173,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_WhileStatement_Reports_CannotConvert()
+        public void Binder_WhileStatement_Reports_CannotConvert()
         {
             var text = @"
                 {
@@ -190,7 +191,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_ForStatement_Reports_CannotConvert_LowerBound()
+        public void Binder_ForStatement_Reports_CannotConvert_LowerBound()
         {
             var text = @"
                 {
@@ -208,7 +209,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_ForStatement_Reports_CannotConvert_UpperBound()
+        public void Binder_ForStatement_Reports_CannotConvert_UpperBound()
         {
             var text = @"
                 {
@@ -226,7 +227,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_ForStatement_Reports_CannotConvert_Step()
+        public void Binder_ForStatement_Reports_CannotConvert_Step()
         {
             var text = @"
                 {
@@ -244,7 +245,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_BreakOrContinueStatement_Reports_InvalidBreakOrContinue()
+        public void Binder_BreakOrContinueStatement_Reports_InvalidBreakOrContinue()
         {
             var text = @"
                 {
@@ -262,9 +263,9 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_AssignmentExpression_Reports_Undefined()
+        public void Binder_AssignmentExpression_Reports_Undefined()
         {
-            var text = "[x] = 1";
+            var text = @"[x] = 1";
 
             var diagnostics = new List<string>()
             {
@@ -274,7 +275,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_AssignmentExpression_Reports_CannotReassign()
+        public void Binder_AssignmentExpression_Reports_CannotReassign()
         {
             var text = @"
                 {
@@ -294,7 +295,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_AssignmentExpression_Reports_CannotConvert_Implicitly()
+        public void Binder_AssignmentExpression_Reports_CannotConvert_Implicitly()
         {
             var text = @"
                 {
@@ -311,7 +312,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_AssignmentExpression_Reports_CannotConvert_Explicit()
+        public void Binder_AssignmentExpression_Reports_CannotConvert_Explicit()
         {
             var text = @"
                 {
@@ -328,7 +329,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_AssignmentExpression_Reports_NotAVariable()
+        public void Binder_AssignmentExpression_Reports_NotAVariable()
         {
             var text = @"[print] = 42";
 
@@ -341,7 +342,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_NameExpression_Reports_Undefined()
+        public void Binder_NameExpression_Reports_Undefined()
         {
             var text = "[x] * 1";
             var diagnostics = new List<string>()
@@ -352,7 +353,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_UnaryExpression_Reports_UndefinedOperator()
+        public void Binder_UnaryExpression_Reports_UndefinedOperator()
         {
             var text = "[+]false";
             var diagnostics = new List<string>()
@@ -363,7 +364,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_BinaryExpression_Reports_UndefinedOperator()
+        public void Binder_BinaryExpression_Reports_UndefinedOperator()
         {
             var text = "10 [+] false";
             var diagnostics = new List<string>()
@@ -374,7 +375,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_CompoundExpression_Reports_Undefined()
+        public void Binder_CompoundExpression_Reports_Undefined()
         {
             var text = @"var x = 10
                          x [+=] false";
@@ -387,7 +388,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
         
         [Fact]
-        public void Evaluator_CompoundExpression_Assignemnt_NonDefinedVariable_Reports_Undefined()
+        public void Binder_CompoundExpression_Assignemnt_NonDefinedVariable_Reports_Undefined()
         {
             var text = @"[x] += 10";
 
@@ -399,7 +400,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_CompoundDeclarationExpression_Reports_CannotAssign()
+        public void Binder_CompoundDeclarationExpression_Reports_CannotAssign()
         {
             var text = @"
                 {
@@ -416,7 +417,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_VariableDeclaration_Reports_Redeclaration()
+        public void Binder_VariableDeclaration_Reports_Redeclaration()
         {
             var text = @"
                 {
@@ -437,7 +438,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_NameExpression_Reports_NoErrorForInsertedToken()
+        public void Binder_NameExpression_Reports_NoErrorForInsertedToken()
         {
             var text = @"1 + []";
 
@@ -450,7 +451,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_BlockStatement_NoInfiniteLoop()
+        public void Binder_BlockStatement_NoInfiniteLoop()
         {
             var text = @"
                 {
@@ -467,17 +468,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_Script_Return()
-        {
-            var text = @"
-                return
-            ";
-
-            AssertValue(text, "");
-        }
-
-        [Fact]
-        public void Evaluator_Void_Function_Should_Not_Return_Value()
+        public void Binder_Void_Function_Should_Not_Return_Value()
         {
             var text = @"
                 function test()
@@ -495,7 +486,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_Function_With_ReturnValue_Should_Not_Return_Void()
+        public void Binder_Function_With_ReturnValue_Should_Not_Return_Void()
         {
             var text = @"
                 function test(): int
@@ -513,7 +504,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_FunctionReturn_Missing()
+        public void Binder_FunctionReturn_Missing()
         {
             var text = @"
                 function [add](a: int, b: int): int
@@ -530,7 +521,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_Parameter_Already_Declared()
+        public void Binder_Parameter_Already_Declared()
         {
             var text = @"
                 function sum(a: int, b: int, [a: int]) : int
@@ -548,7 +539,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_Function_Must_Have_Name()
+        public void Binder_Function_Must_Have_Name()
         {
             var text = @"
                 function [(]a: int, b: int) : int
@@ -566,7 +557,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_Bad_Type()
+        public void Binder_Bad_Type()
         {
             var text = @"
                 function test(n: [invalidtype])
@@ -583,26 +574,27 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_CallExpression_WrongArgumentType()
+        public void Binder_CallExpression_WrongArgumentType()
         {
             var text = @"
                     function a(x : int)
                     {
 
                     }
-                    a([""42""])
+                    [a]([""42""])
             ";
 
             var diagnostics = new List<string>()
             {
+                DiagnosticCode.UndefinedOverloadForArguments.GetDiagnostic("a", "(string)"),
                 DiagnosticCode.CannotConvertImplicitly.GetDiagnostic(TypeSymbol.String, TypeSymbol.Int),
             };
 
             AssertDiagnostics(text, diagnostics);
         }
-
+        
         [Fact]
-        public void Evaluator_InvokeFunctionArguments_Missing()
+        public void Binder_InvokeFunctionArguments_Missing()
         {
             var text = @"
                 print([)]
@@ -617,7 +609,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_CallExpression_WrongArgumentCount()
+        public void Binder_CallExpression_WrongArgumentCount()
         {
             var text = @"
                 {
@@ -634,7 +626,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_CallExpression_Reports_Undefined()
+        public void Binder_CallExpression_Reports_Undefined()
         {
             var text = @"[foo](42)";
 
@@ -647,7 +639,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_CallExpression_Reports_NotAFunction()
+        public void Binder_CallExpression_Reports_NotAFunction()
         {
             var text = @"
                 {
@@ -665,7 +657,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_Variables_Can_Shadow_Functions()
+        public void Binder_Variables_Can_Shadow_Functions()
         {
             var text = @"
                 {
@@ -683,7 +675,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_InvokeFunctionArguments_NoInfiniteLoop()
+        public void Binder_InvokeFunctionArguments_NoInfiniteLoop()
         {
             var text = @"
                 print(""Hi""[[=]][)]
@@ -700,7 +692,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_FunctionParameters_NoInfiniteLoop()
+        public void Binder_FunctionParameters_NoInfiniteLoop()
         {
             var text = @"
                 function hi(name: string[[[=]]][)]
@@ -722,7 +714,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_MultiLineComment_ReportsUnterminated()
+        public void Binder_MultiLineComment_ReportsUnterminated()
         {
             var text = @"[/*] unterminated comment";
 
@@ -735,7 +727,7 @@ namespace Compiler.Tests.CodeAnalysis
         }
 
         [Fact]
-        public void Evaluator_Cannot_Access_Member()
+        public void Binder_Cannot_Access_Member()
         {
             const string? text = @"
                 var p: int = 0
@@ -749,36 +741,36 @@ namespace Compiler.Tests.CodeAnalysis
             AssertDiagnostics(text, diagnostics);
         }
 
-        private static void AssertValue(string text, object expectedValue)
-        {
-            var syntaxTree = SyntaxTree.Parse(text);
-            var compilation = Compilation.CreateScript(null, syntaxTree);
+        // private static void AssertValue(string text, object expectedValue)
+        // {
+        //     var syntaxTree = SyntaxTree.Parse(text);
+        //     var compilation = Compilation.Create(syntaxTree);
 
-            var variables = new Dictionary<VariableSymbol, object>();
-            var result = compilation.Evaluate(variables);
+        //     var variables = new Dictionary<VariableSymbol, object>();
+        //     var diagnostics = compilation.Bind();
 
-            Assert.False(result.Diagnostics.HasErrors(), "Evaluation has errors");
-            Assert.Equal(expectedValue, result.Value);
-        }
+        //     Assert.False(diagnostics.HasErrors(), "Evaluation has errors");
+        //     Assert.Equal(expectedValue, result.Value);
+        // }
 
         private static void AssertDiagnostics(string text, List<string> expectedDiagnostics)
         {
             var annotatedText = AnnotatedText.Parse(text);
             var syntaxTree = SyntaxTree.Parse(annotatedText.Text);
 
-            var compilation = Compilation.CreateScript(null, syntaxTree);
-            var result = compilation.Evaluate(new Dictionary<VariableSymbol, object>());
+            var compilation = Compilation.Create(syntaxTree);
+            var diagnostic = compilation.Validate();
 
-            if (annotatedText.Spans.Length != result.Diagnostics.Length)
+            if (annotatedText.Spans.Length != diagnostic.Length)
             {
                 throw new InvalidOperationException("ERROR: Must mark the same number os spans as there are expected diagnostics");
             }
 
-            Assert.Equal(expectedDiagnostics.Count, result.Diagnostics.Length);
-            for (var i = 0; i < result.Diagnostics.Length; i++)
+            Assert.Equal(expectedDiagnostics.Count, diagnostic.Length);
+            for (var i = 0; i < diagnostic.Length; i++)
             {
-                Assert.Equal(annotatedText.Spans[i], result.Diagnostics[i].Location.Span);
-                Assert.Equal(expectedDiagnostics[i], result.Diagnostics[i].Message);
+                Assert.Equal(annotatedText.Spans[i], diagnostic[i].Location.Span);
+                Assert.Equal(expectedDiagnostics[i], diagnostic[i].Message);
             }
         }
     }

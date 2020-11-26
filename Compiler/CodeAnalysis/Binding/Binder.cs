@@ -16,17 +16,15 @@ namespace Compiler.CodeAnalysis.Binding
     {
         private int _labelCounter;
         private BoundScope _scope;
-        private readonly bool _isScript;
         private readonly FunctionSymbol? _function;
         private readonly Stack<(BoundLabel BreakLabel, BoundLabel ContinueLabel)> _loopStack;
 
         public DiagnosticBag Diagnostics { get; }
 
-        private Binder(bool isScript, BoundScope? parent, FunctionSymbol? function)
+        private Binder(BoundScope? parent, FunctionSymbol? function)
         {
             _scope = new BoundScope(parent);
             Diagnostics = new DiagnosticBag();
-            _isScript = isScript;
             _function = function;
             _loopStack = new Stack<(BoundLabel BreakLabel, BoundLabel ContinueLabel)>();
 
@@ -39,17 +37,16 @@ namespace Compiler.CodeAnalysis.Binding
             }
         }
 
-        public static BoundGlobalScope BindGlobalScope(bool isScript, BoundGlobalScope? previous, ImmutableArray<SyntaxTree> syntaxTrees)
+        public static BoundGlobalScope BindGlobalScope(BoundGlobalScope? previous, ImmutableArray<SyntaxTree> syntaxTrees)
         {
             var parentScope = CreateParentScope(previous);
-            var binder = new Binder(isScript, parentScope, null);
+            var binder = new Binder(parentScope, null);
 
             binder.Diagnostics.AddRange(syntaxTrees.SelectMany(st => st.Diagnostics));
             if (binder.Diagnostics.HasErrors())
             {
                 return new BoundGlobalScope(previous,
                     binder.Diagnostics.ToImmutableArray(),
-                    null,
                     null,
                     ImmutableArray<FunctionSymbol>.Empty,
                     ImmutableArray<EnumSymbol>.Empty,
@@ -104,47 +101,30 @@ namespace Compiler.CodeAnalysis.Binding
             var functions = binder._scope.GetDeclaredFunctions();
 
             FunctionSymbol? mainFunction;
-            FunctionSymbol? scriptFunction;
 
-            if (isScript)
+            mainFunction = functions.FirstOrDefault(f => f.Name == "main");
+            if (mainFunction != null && (mainFunction.Type != TypeSymbol.Void || mainFunction.Parameters.Any()))
             {
-                mainFunction = null;
-                if (globalStatements.Any())
+                binder.Diagnostics.ReportMainMustHaveCorrectSignature(mainFunction.Declaration!.Identifier.Location);
+            }
+
+            if (globalStatements.Any())
+            {
+                if (mainFunction != null)
                 {
-                    scriptFunction = new FunctionSymbol("$eval", ImmutableArray<ParameterSymbol>.Empty, TypeSymbol.Any, null);
+                    binder.Diagnostics.ReportCannotMixMainAndGlobalStatements(mainFunction.Declaration!.Identifier.Location);
+
+                    foreach (var globalStatement in firstGlobalStatementPerSyntaxTree)
+                    {
+                        binder.Diagnostics.ReportCannotMixMainAndGlobalStatements(globalStatement.Location);
+                    }
                 }
                 else
                 {
-                    scriptFunction = null;
+                    mainFunction = new FunctionSymbol("main", ImmutableArray<ParameterSymbol>.Empty, TypeSymbol.Void, null);
                 }
             }
-            else
-            {
-                mainFunction = functions.FirstOrDefault(f => f.Name == "main");
-                scriptFunction = null;
 
-                if (mainFunction != null && (mainFunction.Type != TypeSymbol.Void || mainFunction.Parameters.Any()))
-                {
-                    binder.Diagnostics.ReportMainMustHaveCorrectSignature(mainFunction.Declaration!.Identifier.Location);
-                }
-
-                if (globalStatements.Any())
-                {
-                    if (mainFunction != null)
-                    {
-                        binder.Diagnostics.ReportCannotMixMainAndGlobalStatements(mainFunction.Declaration!.Identifier.Location);
-
-                        foreach (var globalStatement in firstGlobalStatementPerSyntaxTree)
-                        {
-                            binder.Diagnostics.ReportCannotMixMainAndGlobalStatements(globalStatement.Location);
-                        }
-                    }
-                    else
-                    {
-                        mainFunction = new FunctionSymbol("main", ImmutableArray<ParameterSymbol>.Empty, TypeSymbol.Void, null);
-                    }
-                }
-            }
             var diagnostics = binder.Diagnostics.ToImmutableArray();
             var variables = binder._scope.GetDeclaredVariables();
             var enums = binder._scope.GetDeclaredEnums();
@@ -154,17 +134,16 @@ namespace Compiler.CodeAnalysis.Binding
                 diagnostics = diagnostics.InsertRange(0, previous.Diagnostics);
             }
 
-            return new BoundGlobalScope(previous, diagnostics, mainFunction, scriptFunction, functions, enums, variables, statements.ToImmutable());
+            return new BoundGlobalScope(previous, diagnostics, mainFunction, functions, enums, variables, statements.ToImmutable());
         }
 
-        public static BoundProgram BindProgram(bool isScript, BoundProgram? previous, BoundGlobalScope globalScope)
+        public static BoundProgram BindProgram(BoundProgram? previous, BoundGlobalScope globalScope)
         {
             var parentScope = CreateParentScope(globalScope);
             if (globalScope.Diagnostics.HasErrors())
             {
                 return new BoundProgram(previous,
                     globalScope.Diagnostics,
-                    null,
                     null,
                     ImmutableDictionary<FunctionSymbol, BoundBlockStatement>.Empty,
                     ImmutableArray<EnumSymbol>.Empty);
@@ -174,7 +153,7 @@ namespace Compiler.CodeAnalysis.Binding
 
             foreach (var function in globalScope.Functions)
             {
-                var binder = new Binder(isScript, parentScope, function);
+                var binder = new Binder(parentScope, function);
                 var body = binder.BindStatement(function.Declaration!.Body);
                 var loweredBody = Lowerer.Lower(function, body);
 
@@ -187,7 +166,7 @@ namespace Compiler.CodeAnalysis.Binding
 
                 diagnostics.AddRange(binder.Diagnostics);
             }
-            
+
             var compilationUnit = globalScope.Statements.Any()
                                     ? globalScope.Statements.First().Syntax.AncestorsAndSelf().LastOrDefault()
                                     : null;
@@ -197,29 +176,10 @@ namespace Compiler.CodeAnalysis.Binding
                 var body = Lowerer.Lower(globalScope.MainFunction, new BoundBlockStatement(compilationUnit!, globalScope.Statements));
                 functionBodies.Add(globalScope.MainFunction, body);
             }
-            else if (globalScope.ScriptFunction != null)
-            {
-                var statements = globalScope.Statements;
-                if (statements.Length == 1 &&
-                    statements[0] is BoundExpressionStatement es &&
-                    es.Expression.Type != TypeSymbol.Void)
-                {
-                    statements = statements.SetItem(0, new BoundReturnStatement(es.Expression.Syntax, es.Expression));
-                }
-                else if (statements.Any() && statements.Last().Kind != BoundNodeKind.ReturnStatement)
-                {
-                    var nullValue = new BoundLiteralExpression(compilationUnit!, "");
-                    statements = statements.Add(new BoundReturnStatement(compilationUnit!, nullValue));
-                }
-
-                var body = Lowerer.Lower(globalScope.ScriptFunction, new BoundBlockStatement(compilationUnit!, statements));
-                functionBodies.Add(globalScope.ScriptFunction, body);
-            }
 
             return new BoundProgram(previous,
                                     diagnostics.ToImmutable(),
                                     globalScope.MainFunction,
-                                    globalScope.ScriptFunction,
                                     functionBodies.ToImmutable(),
                                     globalScope.Enums);
         }
@@ -309,21 +269,18 @@ namespace Compiler.CodeAnalysis.Binding
         private BoundStatement BindStatement(StatementSyntax syntax, bool isGlobal = false)
         {
             var result = BindStatementInternal(syntax);
-
-            if (_isScript && isGlobal)
+            if (!isGlobal)
             {
-                return result;
-            }
-
-            if (result is BoundExpressionStatement es)
-            {
-                var isAllowedExpression = es.Expression.Kind == BoundNodeKind.ErrorExpression ||
-                                          es.Expression.Kind == BoundNodeKind.AssignmentExpression ||
-                                          es.Expression.Kind == BoundNodeKind.CallExpression ||
-                                          es.Expression.Kind == BoundNodeKind.CompoundAssignmentExpression;
-                if (!isAllowedExpression)
+                if (result is BoundExpressionStatement es)
                 {
-                    Diagnostics.ReportInvalidExpressionStatement(syntax.Location);
+                    var isAllowedExpression = es.Expression.Kind == BoundNodeKind.ErrorExpression ||
+                                              es.Expression.Kind == BoundNodeKind.AssignmentExpression ||
+                                              es.Expression.Kind == BoundNodeKind.CallExpression ||
+                                              es.Expression.Kind == BoundNodeKind.CompoundAssignmentExpression;
+                    if (!isAllowedExpression)
+                    {
+                        Diagnostics.ReportInvalidExpressionStatement(syntax.Location);
+                    }
                 }
             }
 
@@ -478,7 +435,7 @@ namespace Compiler.CodeAnalysis.Binding
             {
                 case VariableSymbol variable:
                     return variable;
-                    
+
                 case TypeSymbol symbol:
                     return symbol;
 
@@ -590,15 +547,7 @@ namespace Compiler.CodeAnalysis.Binding
 
             if (_function == null)
             {
-                if (_isScript)
-                {
-                    // Ignore because we allow both return with and without values.
-                    if (expression == null)
-                    {
-                        expression = new BoundLiteralExpression(syntax, "");
-                    }
-                }
-                else if (expression != null)
+                if (expression != null)
                 {
                     // Main does not support return values.
                     Diagnostics.ReportInvalidReturnWithValueInGlobalStatements(syntax.Expression!.Location);
@@ -701,7 +650,7 @@ namespace Compiler.CodeAnalysis.Binding
                     return BindBinaryExpression((BinaryExpressionSyntax)syntax);
                 case SyntaxKind.CallExpression:
                     return BindCallExpression((CallExpressionSyntax)syntax);
-                 case SyntaxKind.MemberAccessExpression:
+                case SyntaxKind.MemberAccessExpression:
                     return BindMemberAccessExpression((MemberAccessExpressionSyntax)syntax);
                 case SyntaxKind.ParenthesizedExpression:
                     return BindParenthesizedExpression((ParenthesizedExpressionSyntax)syntax);
@@ -948,8 +897,8 @@ namespace Compiler.CodeAnalysis.Binding
                 // BindSymbolReference already reported
                 return new BoundErrorExpression(syntax);
             }
-            
-            switch(symbol)
+
+            switch (symbol)
             {
                 case VariableSymbol variable:
                     return new BoundVariableExpression(syntax, variable);
@@ -965,7 +914,7 @@ namespace Compiler.CodeAnalysis.Binding
             var name = syntax.IdentifierToken.Text;
             var boundExpression = BindExpression(syntax.Expression);
 
-            var variable = BindSymbolReference<VariableSymbol>(name, syntax.IdentifierToken.Location, 
+            var variable = BindSymbolReference<VariableSymbol>(name, syntax.IdentifierToken.Location,
                     (location, name) => Diagnostics.ReportNotAVariable(location, name));
             if (variable == null)
             {
