@@ -616,18 +616,54 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             AssertDiagnostics(text, diagnostics);
         }
 
-        // private static void AssertValue(string text, object expectedValue)
-        // {
-        //     var syntaxTree = SyntaxTree.Parse(text);
-        //     var compilation = Compilation.Create(syntaxTree);
+        [Fact]
+        public void Binder_MethodDeclaration_SupportsOverloading()
+        {
+            var text = @"
+                    function a(x : int)
+                    {
 
-        //     var variables = new Dictionary<VariableSymbol, object>();
-        //     var diagnostics = compilation.Bind();
+                    }
 
-        //     Assert.False(diagnostics.HasErrors(), "Evaluation has errors");
-        //     Assert.Equal(expectedValue, result.Value);
-        // }
+                    function a(x : string)
+                    {
 
+                    }
+
+                    a(42)
+                    a(""42"")
+            ";
+
+            var diagnostics = new List<string>()
+            {
+            };
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Binder_MethodDeclaration_ReportAlreadyDeclared()
+        {
+            var text = @"
+                    function a(x : int)
+                    {
+
+                    }
+
+                    function [a](x : int)
+                    {
+
+                    }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.SymbolAlreadyDeclared.GetDiagnostic("a")
+            };
+
+            AssertDiagnostics(text, diagnostics);
+        }
+        
         private static void AssertDiagnostics(string text, List<string> expectedDiagnostics)
         {
             var annotatedText = AnnotatedText.Parse(text);

@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Data;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Text;
 using Compiler.CodeAnalysis.Diagnostics;
 using Compiler.CodeAnalysis.Lowering;
 using Compiler.CodeAnalysis.Symbols;
@@ -730,13 +731,6 @@ namespace Compiler.CodeAnalysis.Binding
                 return BindConversion(syntax.Arguments[0], t, allowExplicit: true);
             }
 
-            var boundArguments = ImmutableArray.CreateBuilder<BoundExpression>();
-
-            foreach (var argument in syntax.Arguments)
-            {
-                var boundArgument = BindExpression(argument);
-                boundArguments.Add(boundArgument);
-            }
             var symbol = _scope.TryLookupSymbol(syntax.IdentifierToken.Text);
             if (symbol == null)
             {
@@ -750,7 +744,18 @@ namespace Compiler.CodeAnalysis.Binding
                 return new BoundErrorExpression(syntax);
             }
 
-            if (syntax.Arguments.Count != function.Parameters.Length)
+            var boundArgumentBuilder = ImmutableArray.CreateBuilder<BoundExpression>();
+            foreach (var argument in syntax.Arguments)
+            {
+                var boundArgument = BindExpression(argument);
+                boundArgumentBuilder.Add(boundArgument);
+            }
+
+            var parameters = function.Parameters;
+            var boundArguments = boundArgumentBuilder.ToImmutable();
+            var matchFunction = function.MatchArgumentsAndParameters(boundArguments);
+
+            if (matchFunction == null && syntax.Arguments.Count != function.Parameters.Length)
             {
                 TextSpan span;
                 if (syntax.Arguments.Count > function.Parameters.Length)
@@ -775,16 +780,32 @@ namespace Compiler.CodeAnalysis.Binding
                 Diagnostics.ReportWrongArgumentCount(location, function.Name, function.Parameters.Length, syntax.Arguments.Count);
                 return new BoundErrorExpression(syntax);
             }
+            else if (matchFunction == null)
+            {
+                var builder = new StringBuilder();
+                builder.AppendJoin(", ", boundArguments.Select(a => a.Type.Name));
+                var signature = $"({builder})";
+                Diagnostics.ReportUndefinedOverloadForArguments(syntax.IdentifierToken.Location, syntax.IdentifierToken.Text, signature);
+            }
+            else
+            {
+                parameters = matchFunction.Parameters;
+            }
 
             for (var i = 0; i < syntax.Arguments.Count; i++)
             {
-                var argument = boundArguments[i];
-                var parameter = function.Parameters[i];
+                var argument = boundArgumentBuilder[i];
+                var parameter = parameters[i];
                 var argumentLocation = syntax.Arguments[i].Location;
-                boundArguments[i] = BindConversion(argumentLocation, argument, parameter.Type, false);
+                boundArgumentBuilder[i] = BindConversion(argumentLocation, argument, parameter.Type, false);
             }
 
-            return new BoundCallExpression(syntax, function, boundArguments.ToImmutable());
+            if (matchFunction == null)
+            {
+                return new BoundErrorExpression(syntax);
+            }
+
+            return new BoundCallExpression(syntax, matchFunction, boundArgumentBuilder.ToImmutable());
         }
 
         private BoundExpression BindMemberAccessExpression(MemberAccessExpressionSyntax syntax)

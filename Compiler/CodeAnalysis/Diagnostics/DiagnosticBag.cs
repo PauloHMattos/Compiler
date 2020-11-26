@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
+using System.Text;
+using Compiler.CodeAnalysis.Binding;
 using Compiler.CodeAnalysis.Symbols;
 using Compiler.CodeAnalysis.Syntax;
 using Compiler.CodeAnalysis.Text;
@@ -225,6 +228,11 @@ namespace Compiler.CodeAnalysis.Diagnostics
         internal void ReportCannotAccessMember(in TextLocation location, string typeName, string memberName)
         {
             ReportError(location, DiagnosticCode.CannotAccessMember.GetDiagnostic(memberName, typeName));
+        }
+
+        internal void ReportUndefinedOverloadForArguments(in TextLocation location, object methodName, string signature)
+        {
+            ReportError(location, DiagnosticCode.UndefinedOverloadForArguments.GetDiagnostic(methodName, signature));
         }
     }
 }

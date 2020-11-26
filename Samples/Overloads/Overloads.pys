@@ -1,0 +1,16 @@
+function main()
+{
+    foo("42")
+    foo(42)
+}
+
+
+function foo(s: string)
+{
+    print("string: " + s)
+}
+
+function foo(i : int)
+{
+    print("int: " + string(i))
+}

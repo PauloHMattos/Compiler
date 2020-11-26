@@ -26,18 +26,42 @@ namespace Compiler.CodeAnalysis.Binding
             return Parent?.TryLookupSymbol(name);
         }
 
-        public bool TryDeclareVariable(VariableSymbol variable) => TryDeclareSymbol(variable);
-        public bool TryDeclareFunction(FunctionSymbol function) => TryDeclareSymbol(function);
-        public bool TryDeclareEnum(EnumSymbol enumSymbol) => TryDeclareSymbol(enumSymbol);
+        public bool TryDeclareVariable(VariableSymbol variable) => TryDeclareSymbol(variable, out var _);
+        public bool TryDeclareFunction(FunctionSymbol function)
+        {
+            if (!TryDeclareSymbol(function, out var alreadyDeclaredSymbol))
+            {
+                if (alreadyDeclaredSymbol is FunctionSymbol f)
+                {
+                    if (f.SameSignature(function))
+                    {
+                        return false;
+                    }
+
+                    var overloads = f.Overloads.ToBuilder();
+                    overloads.Add(function);
+                    _symbols[f.Name] = new FunctionSymbol(f.Name,
+                                                          f.Parameters,
+                                                          f.Type,
+                                                          overloads.ToImmutable(),
+                                                          f.Declaration);
+                    return true;
+                }
+                return false;
+            }
+            return true;
+        }
+
+        public bool TryDeclareEnum(EnumSymbol enumSymbol) => TryDeclareSymbol(enumSymbol, out var _);
 
         public ImmutableArray<VariableSymbol> GetDeclaredVariables() => GetDeclaredSymbols<VariableSymbol>();
 
         public ImmutableArray<FunctionSymbol> GetDeclaredFunctions() => GetDeclaredSymbols<FunctionSymbol>();
         public ImmutableArray<EnumSymbol> GetDeclaredEnums() => GetDeclaredSymbols<EnumSymbol>();
 
-        private bool TryDeclareSymbol<TSymbol>(TSymbol symbol) where TSymbol : Symbol
+        private bool TryDeclareSymbol<TSymbol>(TSymbol symbol, out Symbol? alreadyDeclaredSymbol) where TSymbol : Symbol
         {
-            if (_symbols.ContainsKey(symbol.Name))
+            if (_symbols.TryGetValue(symbol.Name, out alreadyDeclaredSymbol))
             {
                 return false;
             }

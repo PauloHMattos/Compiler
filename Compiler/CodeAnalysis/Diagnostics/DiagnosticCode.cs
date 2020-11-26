@@ -40,6 +40,7 @@ namespace Compiler.CodeAnalysis.Diagnostics
         AlreadyDeclaredMember,
         EnumerationAlreadyContainsValue,
         CannotAccessMember,
+        UndefinedOverloadForArguments,
     }
 
 
@@ -83,6 +84,7 @@ namespace Compiler.CodeAnalysis.Diagnostics
             {DiagnosticCode.AlreadyDeclaredMember, "The type '{0}' already contains a definition for '{1}'."},
             {DiagnosticCode.EnumerationAlreadyContainsValue, "The enumeration member '{0}' has the same constant value '{1}' as the member '{2}'."},
             {DiagnosticCode.CannotAccessMember, "Cannot access member '{0}' of type '{1}'."},
+            {DiagnosticCode.UndefinedOverloadForArguments, "No overload of '{0}' for arguments '{1}' was found."},
         };
 
         public static string GetDiagnostic(this DiagnosticCode code, params object[] arguments)
