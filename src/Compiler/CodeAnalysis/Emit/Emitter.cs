@@ -334,8 +334,13 @@ namespace Compiler.CodeAnalysis.Emit
 
             var specialField = new FieldDefinition("value__", _enumSpecialAttributes, Import(TypeSymbol.Int));
             enumType.Fields.Add(specialField);
-            foreach (EnumValueSymbol value in enumSymbol.Members)
+            foreach (var member in enumSymbol.Members)
             {
+                if (member is not EnumValueSymbol value)
+                {
+                    continue;
+                }
+
                 var valueField = new FieldDefinition(value.Name, _enumFieldAttributes, enumType)
                 {
                     Constant = value.Constant.Value
@@ -396,7 +401,7 @@ namespace Compiler.CodeAnalysis.Emit
         {
             var structType = _structs[key];
             EmitEmptyConstructorForStruct(value, structType);
-            EmitDefaultConstructorForStruct(key, value, structType);
+            EmitDefaultConstructorForStruct(key, structType);
         }
 
         private void EmitEmptyConstructorForStruct(BoundBlockStatement value, TypeDefinition structType)
@@ -427,7 +432,7 @@ namespace Compiler.CodeAnalysis.Emit
                 }
                 else
                 {
-                    throw new Exception($"Unexpected statement type {field.Kind}. Expected BoundVariableDeclaration.");
+                    throw new InvalidOperationException($"Unexpected statement type {field.Kind}. Expected BoundVariableDeclaration.");
                 }
             }
 
@@ -435,7 +440,7 @@ namespace Compiler.CodeAnalysis.Emit
             constructor.Body.Optimize();
         }
 
-        private void EmitDefaultConstructorForStruct(StructSymbol @struct, BoundBlockStatement value, TypeDefinition structType)
+        private void EmitDefaultConstructorForStruct(StructSymbol structSymbol, TypeDefinition structType)
         {
             // Get default constructor declaration
             var constructor = structType.Methods[1];
@@ -443,9 +448,9 @@ namespace Compiler.CodeAnalysis.Emit
             var ilProcessor = constructor.Body.GetILProcessor();
 
             // Assign each parameter
-            for (int i = 0; i < @struct.CtorParameters.Length; i++)
+            for (int i = 0; i < structSymbol.CtorParameters.Length; i++)
             {
-                var ctorParam = @struct.CtorParameters[i];
+                var ctorParam = structSymbol.CtorParameters[i];
                 var paramType = Import(ctorParam.Type);
                 const ParameterAttributes parameterAttributes = ParameterAttributes.None;
                 var parameterDefinition = new ParameterDefinition(ctorParam.Name, parameterAttributes, paramType);
@@ -852,7 +857,6 @@ namespace Compiler.CodeAnalysis.Emit
             else if (node.Function.Name.EndsWith(".ctor"))
             {
                 var className = node.Function.Name[..^5];
-                var typeReference = Import(node.Function.Type);
                 var structSymbol = _structs.First(s => s.Key.Name == className).Value;
                 
                 // TODO: We should use a general overload resolution algorithm instead

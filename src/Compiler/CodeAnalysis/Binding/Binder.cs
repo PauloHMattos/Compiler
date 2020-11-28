@@ -579,21 +579,6 @@ namespace Compiler.CodeAnalysis.Binding
             }
         }
 
-        private T? BindSymbolReference<T>(string name, TextLocation location, Action<TextLocation, string> reportDelegate) where T : Symbol
-        {
-            var symbol = BindSymbolReference(name, location);
-            if (symbol == null)
-            {
-                return null;
-            }
-            if (symbol is T s)
-            {
-                return s;
-            }
-            reportDelegate.Invoke(location, name);
-            return null;
-        }
-
         private BoundStatement BindIfStatement(IfStatementSyntax syntax)
         {
             var condition = BindExpression(syntax.Condition, TypeSymbol.Bool);
@@ -1027,23 +1012,6 @@ namespace Compiler.CodeAnalysis.Binding
             }
 
             return new BoundCallExpression(syntax, matchFunction, boundArgumentBuilder.ToImmutable());
-        }
-
-        private bool MatchArgumentsAndParameters(ImmutableArray<BoundExpression> arguments, ImmutableArray<ParameterSymbol> parameters)
-        {
-            for (var i = 0; i < arguments.Length; i++)
-            {
-                var argument = arguments[i];
-                var expected = parameters[i];
-                var conversion = Conversion.Classify(argument.Type, expected.Type);
-
-                if (!conversion.Exists || conversion.IsExplicit)
-                {
-                    return false;
-                }
-            }
-
-            return true;
         }
 
         private BoundExpression BindMemberAccessExpression(MemberAccessExpressionSyntax syntax)
