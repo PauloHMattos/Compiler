@@ -11,10 +11,6 @@ on:
 jobs:
   scan:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./src/
-
     steps:
     - uses: actions/checkout@v2
       with:
@@ -26,7 +22,8 @@ jobs:
         sonarProjectKey: PauloHMattos_Compiler
         sonarProjectName: Compiler
         sonarOrganization: paulohmattos
-        dotnetTestArguments: Compiler.Tests/Compiler.Tests.csproj /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
+        dotnetBuildArguments: ./src
+        dotnetTestArguments: ./src/Compiler.Tests/Compiler.Tests.csproj /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
         sonarBeginArguments: /d:sonar.verbose="true" /d:sonar.language="cs" /d:sonar.cs.opencover.reportsPaths="**/*.opencover.xml"
         sonarHostname: "https://sonarcloud.io"
 
