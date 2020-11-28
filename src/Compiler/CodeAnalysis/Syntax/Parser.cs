@@ -525,18 +525,14 @@ namespace Compiler.CodeAnalysis.Syntax
         /// <returns></returns>
         private MemberAccessExpressionSyntax ParseMemberAccessInternal(Queue<NameExpressionSyntax> queue, Queue<SyntaxToken> dotTokenQueue, ExpressionSyntax parent)
         {
-            // TODO (PERF): Change to iteration instead of recursion
-            var member = queue.Dequeue();
-            var operatorToken = dotTokenQueue.Dequeue();
-
-            if (queue.Count > 0)
+            var result = parent;
+            while (queue.Count > 0)
             {
-                return ParseMemberAccessInternal(queue, dotTokenQueue, new MemberAccessExpressionSyntax(_syntaxTree, parent, operatorToken, member));
+                var member = queue.Dequeue();
+                var operatorToken = dotTokenQueue.Dequeue();
+                result = new MemberAccessExpressionSyntax(_syntaxTree, result, operatorToken, member);
             }
-            else
-            {
-                return new MemberAccessExpressionSyntax(_syntaxTree, parent, operatorToken, member);
-            }
+            return (MemberAccessExpressionSyntax)result;
         }
 
         /// <summary>
