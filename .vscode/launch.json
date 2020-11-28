@@ -9,20 +9,41 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "requireExactSource": false,
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/REPL/bin/Debug/net5.0/REPL.dll",
-            "args": [],
-            "cwd": "${workspaceFolder}/REPL",
+            "program": "dotnet",
+            "args": [
+                "run",
+                "--project",
+                "${input:pysproj}"
+            ],
+            "cwd": "${workspaceFolder}/samples",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
             "console": "externalTerminal",
-            "stopAtEntry": false
+            "stopAtEntry": false,
         },
         {
             "name": ".NET Core Attach",
             "type": "coreclr",
             "request": "attach",
             "processId": "${command:pickProcess}"
+        }
+    ],
+    "inputs": [
+        // Inputs for the sample projects. Be sure to update the list if you've added new project(s).
+        {
+            "id": "pysproj",
+            "type": "pickString",
+            "description": "Pick your Sample project",
+            "options": [
+                "HelloWorld",
+                "Evaluation",
+                "Enum",
+                "Input",
+                "IsEven",
+                "Overloads",
+                "Structs",
+            ],
+            "default": "HelloWorld"
         }
     ]
 }

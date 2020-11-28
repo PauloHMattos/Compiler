@@ -10,13 +10,34 @@
                 "isDefault": true
             },
             "args": [
-                "build",
-                "${workspaceFolder}/Compiler.Application/Compiler.Application.csproj",
-                "/property:GenerateFullPaths=true",
-                "/consoleloggerparameters:NoSummary"
+                "build"
             ],
+            "presentation": {
+                "focus": true,
+                "clear": true
+            },
             "problemMatcher": "$msCompile"
         },
+        // Builds the specified source project as selected by the user
+        {
+            "label": "build-csproj",
+            "command": "dotnet",
+            "type": "process",
+            "group": "build",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "args": [
+                "build",
+                "${input:csproj}"
+            ],
+            "presentation": {
+                "focus": true,
+                "clear": true
+            },
+            "problemMatcher": "$msCompile"
+        },
+        // Builds the solution and runs the test projects in the solution
         {
             "label": "test",
             "group": {
@@ -30,8 +51,13 @@
                 "/p:CollectCoverage=true",
                 "/p:CoverletOutputFormat=opencover"
             ],
+            "presentation": {
+                "focus": true,
+                "clear": true
+            },
             "problemMatcher": "$msCompile"
         },
+        // Builds the solution and runs the test samples project
         {
             "label": "test samples",
             "group": "test",
@@ -45,26 +71,43 @@
             ],
             "problemMatcher": "$msCompile"
         },
+        // Cleans the build outputs of the solution
         {
-            "label": "PyS",
+            "label": "clean",
             "command": "dotnet",
-            "type": "shell",
+            "type": "process",
+            "group": "build",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
             "args": [
-                "run",
-                "--project",
-                "${workspaceFolder}/Compiler.Application/Compiler.Application.csproj",
-                "--",
-                "${fileDirname}"
+                "clean"
             ],
             "presentation": {
-                "echo": true,
-                "reveal": "always",
                 "focus": true,
-                "panel": "shared",
-                "showReuseMessage": false,
+                "clear": true
+            },
+            "problemMatcher": "$msCompile"
+        },
+        // Builds the specified sample project as selected by the user
+        {
+            "label": "build-pysproj",
+            "command": "dotnet",
+            "type": "process",
+            "group": "build",
+            "options": {
+                "cwd": "${workspaceFolder}/Samples"
+            },
+            "args": [
+                "build",
+                "${input:pysproj}"
+            ],
+            "presentation": {
+                "focus": true,
                 "clear": true
             },
             "problemMatcher": {
+                "owner": "pysc",
                 "fileLocation": "absolute",
                 "pattern": [
                     {
@@ -75,6 +118,100 @@
                     }
                 ]
             }
+        },
+        // Builds and Runs the specified sample project as selected by the user
+        {
+            "label": "run-pysproj",
+            "command": "dotnet",
+            "type": "process",
+            "options": {
+                "cwd": "${workspaceFolder}/samples"
+            },
+            "args": [
+                "run",
+                "--project",
+                "${input:pysproj}"
+            ],
+            "presentation": {
+                "focus": true,
+                "clear": true
+            },
+            "problemMatcher": {
+                "owner": "pysc",
+                "fileLocation": "absolute",
+                "pattern": [
+                    {
+                        "regexp": "^(.+)\\((\\d+,\\d+,\\d+,\\d+)\\):\\s+(.+)$",
+                        "file": 1,
+                        "location": 2,
+                        "message": 3
+                    }
+                ]
+            }
+        },
+        // Builds and Runs the compiler with the currently opened file's folder path
+        {
+            "label": "pysc",
+            "command": "dotnet",
+            "type": "process",
+            "options": {
+                "cwd": "${workspaceFolder}/Samples"
+            },
+            "args": [
+                "run",
+                "--project",
+                "${workspaceFolder}/Compiler.Application",
+                "--",
+                "${fileDirname}"
+            ],
+            "presentation": {
+                "focus": true,
+                "clear": true
+            },
+            "problemMatcher": {
+                "owner": "pysc",
+                "fileLocation": "absolute",
+                "pattern": [
+                    {
+                        "regexp": "^(.+)\\((\\d+,\\d+,\\d+,\\d+)\\):\\s+(.+)$",
+                        "file": 1,
+                        "location": 2,
+                        "message": 3
+                    }
+                ]
+            }
+        }
+    ],
+    "inputs": [
+        // Inputs for the source projects. Be sure to update the list if you've added new project(s).
+        {
+            "id": "csproj",
+            "type": "pickString",
+            "description": "Pick your Source project",
+            "options": [
+                "Compiler.Application",
+                "Compiler",
+                "Compiler.Generators",
+                "Compiler.Tests",
+                "Compiler.Tests.Samples",
+            ],
+            "default": "Compiler.Application"
+        },
+        // Inputs for the sample projects. Be sure to update the list if you've added new project(s).
+        {
+            "id": "pysproj",
+            "type": "pickString",
+            "description": "Pick your Sample project",
+            "options": [
+                "HelloWorld",
+                "Evaluation",
+                "Enum",
+                "Input",
+                "IsEven",
+                "Overloads",
+                "Structs",
+            ],
+            "default": "HelloWorld"
         }
     ]
 }
