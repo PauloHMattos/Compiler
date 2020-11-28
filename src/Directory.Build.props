@@ -5,6 +5,13 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <PropertyGroup>
+        <!-- Properties for code coverage -->
+        <CollectCoverage>true</CollectCoverage>
+        <CoverletOutputFormat>opencover</CoverletOutputFormat>
+        <ExcludeByFile>**/Emitter.cs,**/*Printer.cs,**/*.g.cs,**/*.g.i.cs,**/*.generated.cs</ExcludeByFile>
+    </PropertyGroup>
+
     <!--
     HACK
       VS Code currently doesn't support Roslyn generators (VS does, tho). In

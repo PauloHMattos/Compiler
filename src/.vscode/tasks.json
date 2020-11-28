@@ -48,8 +48,6 @@
             "type": "process",
             "args": [
                 "test",
-                "/p:CollectCoverage=true",
-                "/p:CoverletOutputFormat=opencover"
             ],
             "presentation": {
                 "focus": true,
@@ -65,9 +63,7 @@
             "type": "process",
             "args": [
                 "test",
-                "Compiler.Tests.Samples/Compiler.Tests.Samples.csproj",
-                "/p:CollectCoverage=true",
-                "/p:CoverletOutputFormat=opencover"
+                "Compiler.Tests.Samples/Compiler.Tests.Samples.csproj"
             ],
             "problemMatcher": "$msCompile"
         },

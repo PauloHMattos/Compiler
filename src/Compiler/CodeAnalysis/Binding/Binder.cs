@@ -270,21 +270,17 @@ namespace Compiler.CodeAnalysis.Binding
         private BoundStatement BindStatement(StatementSyntax syntax, bool isGlobal = false)
         {
             var result = BindStatementInternal(syntax);
-            if (!isGlobal)
+            if (!isGlobal && result is BoundExpressionStatement es)
             {
-                if (result is BoundExpressionStatement es)
+                var isAllowedExpression = es.Expression.Kind == BoundNodeKind.ErrorExpression ||
+                                          es.Expression.Kind == BoundNodeKind.AssignmentExpression ||
+                                          es.Expression.Kind == BoundNodeKind.CallExpression ||
+                                          es.Expression.Kind == BoundNodeKind.CompoundAssignmentExpression;
+                if (!isAllowedExpression)
                 {
-                    var isAllowedExpression = es.Expression.Kind == BoundNodeKind.ErrorExpression ||
-                                              es.Expression.Kind == BoundNodeKind.AssignmentExpression ||
-                                              es.Expression.Kind == BoundNodeKind.CallExpression ||
-                                              es.Expression.Kind == BoundNodeKind.CompoundAssignmentExpression;
-                    if (!isAllowedExpression)
-                    {
-                        Diagnostics.ReportInvalidExpressionStatement(syntax.Location);
-                    }
+                    Diagnostics.ReportInvalidExpressionStatement(syntax.Location);
                 }
             }
-
             return result;
         }
 

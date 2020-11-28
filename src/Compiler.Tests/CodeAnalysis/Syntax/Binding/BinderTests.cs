@@ -217,6 +217,35 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         }
 
         [Fact]
+        public void Binder_AssignmentExpression_SupportsDefault()
+        {
+            var text = @"
+            {
+                var x : int
+                var y : int = default
+                x = y
+            }";
+
+            var diagnostics = new List<string>()
+            {
+            };
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Binder_MemberAccess()
+        {
+            var text = @"
+                enum A { A1, A2, A3 }
+                print(A.A1)
+            ";
+            var diagnostics = new List<string>()
+            {
+            };
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
         public void Binder_NameExpression_Reports_Undefined()
         {
             var text = "[x] * 1";
