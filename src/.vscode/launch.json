@@ -16,7 +16,7 @@
                 "--project",
                 "${input:pysproj}"
             ],
-            "cwd": "${workspaceFolder}/samples",
+            "cwd": "${workspaceFolder}/../samples",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
             "console": "externalTerminal",
             "stopAtEntry": false,

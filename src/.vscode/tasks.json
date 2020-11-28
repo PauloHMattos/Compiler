@@ -96,7 +96,7 @@
             "type": "process",
             "group": "build",
             "options": {
-                "cwd": "${workspaceFolder}/Samples"
+                "cwd": "${workspaceFolder}/../Samples"
             },
             "args": [
                 "build",
@@ -125,44 +125,12 @@
             "command": "dotnet",
             "type": "process",
             "options": {
-                "cwd": "${workspaceFolder}/samples"
+                "cwd": "${workspaceFolder}/../Samples"
             },
             "args": [
                 "run",
                 "--project",
                 "${input:pysproj}"
-            ],
-            "presentation": {
-                "focus": true,
-                "clear": true
-            },
-            "problemMatcher": {
-                "owner": "pysc",
-                "fileLocation": "absolute",
-                "pattern": [
-                    {
-                        "regexp": "^(.+)\\((\\d+,\\d+,\\d+,\\d+)\\):\\s+(.+)$",
-                        "file": 1,
-                        "location": 2,
-                        "message": 3
-                    }
-                ]
-            }
-        },
-        // Builds and Runs the compiler with the currently opened file's folder path
-        {
-            "label": "pysc",
-            "command": "dotnet",
-            "type": "process",
-            "options": {
-                "cwd": "${workspaceFolder}/Samples"
-            },
-            "args": [
-                "run",
-                "--project",
-                "${workspaceFolder}/Compiler.Application",
-                "--",
-                "${fileDirname}"
             ],
             "presentation": {
                 "focus": true,

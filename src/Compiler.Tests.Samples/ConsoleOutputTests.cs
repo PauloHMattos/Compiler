@@ -11,7 +11,7 @@ namespace Compiler.Tests.Snippets
 {
     public class ConsoleOutputTests
     {
-        private const string SamplesPath = @"../../../../Samples/";
+        private const string SamplesPath = @"../../../../../Samples/";
 
         private readonly ITestOutputHelper _output;
 
