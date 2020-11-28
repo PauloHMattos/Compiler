@@ -6,22 +6,22 @@
 version: 2
 updates:
   - package-ecosystem: "nuget"
-    directory: "/Compiler/"
+    directory: "/src/Compiler/"
     schedule:
       interval: "daily"
   - package-ecosystem: "nuget"
-    directory: "/Compiler.Generators/"
+    directory: "/src/Compiler.Generators/"
     schedule:
       interval: "daily"
   - package-ecosystem: "nuget"
-    directory: "/Compiler.Application/"
+    directory: "/src/Compiler.Application/"
     schedule:
       interval: "daily"
   - package-ecosystem: "nuget"
-    directory: "/Compiler.Tests/"
+    directory: "/src/Compiler.Tests/"
     schedule:
       interval: "daily"
   - package-ecosystem: "nuget"
-    directory: "/Compiler.Tests.Samples/"
+    directory: "/src/Compiler.Tests.Samples/"
     schedule:
       interval: "daily"
