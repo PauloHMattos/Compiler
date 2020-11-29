@@ -13,7 +13,7 @@ namespace Compiler.CodeAnalysis.Syntax
                 case SyntaxKind.PlusToken:
                 case SyntaxKind.MinusToken:
                 case SyntaxKind.BangToken:
-                    return 6;
+                    return 7;
 
                 default:
                     return 0;
@@ -27,11 +27,11 @@ namespace Compiler.CodeAnalysis.Syntax
                 case SyntaxKind.StarToken:
                 case SyntaxKind.SlashToken:
                 case SyntaxKind.PercentToken:
-                    return 5;
+                    return 6;
 
                 case SyntaxKind.PlusToken:
                 case SyntaxKind.MinusToken:
-                    return 4;
+                    return 5;
 
                 case SyntaxKind.EqualsEqualsToken:
                 case SyntaxKind.BangEqualsToken:
@@ -39,15 +39,25 @@ namespace Compiler.CodeAnalysis.Syntax
                 case SyntaxKind.LessOrEqualsToken:
                 case SyntaxKind.GreaterToken:
                 case SyntaxKind.GreaterOrEqualsToken:
-                    return 3;
-                    
+                    return 4;
+
                 case SyntaxKind.AmpersandToken:
                 case SyntaxKind.AmpersandAmpersandToken:
-                    return 2;
+                    return 3;
 
                 case SyntaxKind.HatToken:
                 case SyntaxKind.PipeToken:
                 case SyntaxKind.PipePipeToken:
+                    return 2;
+
+                case SyntaxKind.PlusEqualsToken:
+                case SyntaxKind.MinusEqualsToken:
+                case SyntaxKind.StarEqualsToken:
+                case SyntaxKind.SlashEqualsToken:
+                case SyntaxKind.AmpersandEqualsToken:
+                case SyntaxKind.PipeEqualsToken:
+                case SyntaxKind.HatEqualsToken:
+                case SyntaxKind.EqualsToken:
                     return 1;
 
 
@@ -58,7 +68,7 @@ namespace Compiler.CodeAnalysis.Syntax
 
         public static SyntaxKind GetBinaryOperatorOfAssignmentOperator(this SyntaxKind kind)
         {
-            switch(kind)
+            switch (kind)
             {
                 case SyntaxKind.PlusEqualsToken:
                     return SyntaxKind.PlusToken;
@@ -117,6 +127,8 @@ namespace Compiler.CodeAnalysis.Syntax
                     return SyntaxKind.DefaultKeyword;
                 case "enum":
                     return SyntaxKind.EnumKeyword;
+                case "struct":
+                    return SyntaxKind.StructKeyword;
                 default:
                     return SyntaxKind.IdentifierToken;
             }
@@ -174,23 +186,25 @@ namespace Compiler.CodeAnalysis.Syntax
                     return "default";
                 case SyntaxKind.EnumKeyword:
                     return "enum";
-                case SyntaxKind.PlusToken: 
+                case SyntaxKind.StructKeyword:
+                    return "struct";
+                case SyntaxKind.PlusToken:
                     return "+";
-                case SyntaxKind.PlusEqualsToken: 
+                case SyntaxKind.PlusEqualsToken:
                     return "+=";
-                case SyntaxKind.MinusToken: 
+                case SyntaxKind.MinusToken:
                     return "-";
-                case SyntaxKind.MinusEqualsToken: 
+                case SyntaxKind.MinusEqualsToken:
                     return "-=";
-                case SyntaxKind.StarToken: 
+                case SyntaxKind.StarToken:
                     return "*";
-                case SyntaxKind.StarEqualsToken: 
+                case SyntaxKind.StarEqualsToken:
                     return "*=";
-                case SyntaxKind.SlashToken: 
+                case SyntaxKind.SlashToken:
                     return "/";
-                case SyntaxKind.SlashEqualsToken: 
+                case SyntaxKind.SlashEqualsToken:
                     return "/=";
-                case SyntaxKind.PercentToken: 
+                case SyntaxKind.PercentToken:
                     return "%";
                 case SyntaxKind.TildeToken:
                     return "~";
@@ -198,7 +212,7 @@ namespace Compiler.CodeAnalysis.Syntax
                     return "^";
                 case SyntaxKind.HatEqualsToken:
                     return "^=";
-                case SyntaxKind.BangToken: 
+                case SyntaxKind.BangToken:
                     return "!";
                 case SyntaxKind.AmpersandToken:
                     return "&";
@@ -212,7 +226,7 @@ namespace Compiler.CodeAnalysis.Syntax
                     return "|=";
                 case SyntaxKind.PipePipeToken:
                     return "||";
-                case SyntaxKind.EqualsToken: 
+                case SyntaxKind.EqualsToken:
                     return "=";
                 case SyntaxKind.BangEqualsToken:
                     return "!=";
@@ -262,7 +276,7 @@ namespace Compiler.CodeAnalysis.Syntax
 
         public static bool IsToken(this SyntaxKind kind)
         {
-            return !kind.IsTrivia() && 
+            return !kind.IsTrivia() &&
                     kind.IsKeyword() ||
                     kind.ToString().EndsWith("Token");
         }
@@ -292,6 +306,18 @@ namespace Compiler.CodeAnalysis.Syntax
         {
             return kind == SyntaxKind.WhitespaceTrivia ||
                    kind == SyntaxKind.LineBreakTrivia;
+        }
+
+        public static bool IsAssignmentOperator(this SyntaxKind kind)
+        {
+            return kind == SyntaxKind.PlusEqualsToken
+                || kind == SyntaxKind.MinusEqualsToken
+                || kind == SyntaxKind.StarEqualsToken
+                || kind == SyntaxKind.SlashEqualsToken
+                || kind == SyntaxKind.AmpersandEqualsToken
+                || kind == SyntaxKind.PipeEqualsToken
+                || kind == SyntaxKind.HatEqualsToken
+                || kind == SyntaxKind.EqualsToken;
         }
     }
 }

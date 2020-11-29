@@ -8,6 +8,7 @@
         Function,
         Parameter,
         Enum,
-        Field,
+        Struct,
+        Member,
     }
 }

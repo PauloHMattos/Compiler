@@ -12,6 +12,12 @@
         <ExcludeByFile>**/Emitter.cs,**/*Printer.cs,**/*.g.cs,**/*.g.i.cs,**/*.generated.cs</ExcludeByFile>
     </PropertyGroup>
 
+    <ItemGroup>
+        <SonarQubeSetting Include="sonar.coverage.exclusions">
+            <Value>**/Emitter.cs,**/*Printer.cs,**/*.g.cs,**/*.g.i.cs,**/*.generated.cs</Value>
+        </SonarQubeSetting>
+    </ItemGroup>
+
     <!--
     HACK
       VS Code currently doesn't support Roslyn generators (VS does, tho). In

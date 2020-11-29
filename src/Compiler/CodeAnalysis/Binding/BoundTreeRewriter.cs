@@ -15,6 +15,8 @@ namespace Compiler.CodeAnalysis.Binding
                     return RewriteSequencePointStatement((BoundSequencePointStatement)statement);
                 case BoundNodeKind.BlockStatement:
                     return RewriteBlockStatement((BoundBlockStatement)statement);
+                case BoundNodeKind.MemberBlockStatement:
+                    return RewriteMemberBlockStatement((BoundMemberBlockStatement)statement);
                 case BoundNodeKind.ExpressionStatement:
                     return RewriteExpressionStatement((BoundExpressionStatement)statement);
                 case BoundNodeKind.VariableDeclarationStatement:
@@ -57,19 +59,7 @@ namespace Compiler.CodeAnalysis.Binding
 
         protected virtual BoundStatement RewriteBlockStatement(BoundBlockStatement node)
         {
-            ImmutableArray<BoundStatement>.Builder? builder = null;
-
-            for (var i = 0; i < node.Statements.Length; i++)
-            {
-                var oldStatement = node.Statements[i];
-                var newStatement = RewriteStatement(oldStatement);
-                if (newStatement != oldStatement && builder == null)
-                {
-                    builder = ImmutableArray.CreateBuilder<BoundStatement>(node.Statements.Length);
-                    builder.AddRange(node.Statements, i);
-                }
-                builder?.Add(newStatement);
-            }
+            ImmutableArray<BoundStatement>.Builder? builder = RewriteStatements(node.Statements);
 
             if (builder == null)
             {
@@ -78,6 +68,36 @@ namespace Compiler.CodeAnalysis.Binding
 
             return new BoundBlockStatement(node.Syntax, builder.ToImmutable());
         }
+
+        private ImmutableArray<BoundStatement>.Builder? RewriteStatements(ImmutableArray<BoundStatement> statements)
+        {
+            ImmutableArray<BoundStatement>.Builder? builder = null;
+
+            for (var i = 0; i < statements.Length; i++)
+            {
+                var oldStatement = statements[i];
+                var newStatement = RewriteStatement(oldStatement);
+                if (newStatement != oldStatement && builder == null)
+                {
+                    builder = ImmutableArray.CreateBuilder<BoundStatement>(statements.Length);
+                    builder.AddRange(statements, i);
+                }
+                builder?.Add(newStatement);
+            }
+
+            return builder;
+        }
+        
+        private BoundStatement RewriteMemberBlockStatement(BoundMemberBlockStatement node)
+        {
+            ImmutableArray<BoundStatement>.Builder? builder = RewriteStatements(node.Statements);
+            if (builder == null)
+            {
+                return node;
+            }
+            return new BoundBlockStatement(node.Syntax, builder.ToImmutable());
+        }
+
 
         protected virtual BoundStatement RewriteExpressionStatement(BoundExpressionStatement node)
         {
@@ -203,7 +223,11 @@ namespace Compiler.CodeAnalysis.Binding
                 case BoundNodeKind.ConversionExpression:
                     return RewriteConversionExpression((BoundConversionExpression)expression);
                 case BoundNodeKind.MemberAccessExpression:
-                    return RewriteFieldAccessExpression((BoundMemberAccessExpression)expression);
+                    return RewriteMemberAccessExpression((BoundMemberAccessExpression)expression);
+                case BoundNodeKind.MemberAssignmentExpression:
+                    return RewriteMemberAssignmentExpression((BoundMemberAssignmentExpression)expression);
+                case BoundNodeKind.CompoundMemberAssignmentExpression:
+                    return RewriteCompoundMemberAssignmentExpression((BoundCompoundMemberAssignmentExpression)expression);
                 case BoundNodeKind.TypeReferenceExpression:
                     return RewriteTypeReferenceExpression((BoundTypeReferenceExpression)expression);
                 default:
@@ -285,7 +309,7 @@ namespace Compiler.CodeAnalysis.Binding
             return new BoundConversionExpression(node.Syntax, node.Type, expression);
         }
 
-        protected BoundExpression RewriteFieldAccessExpression(BoundMemberAccessExpression node)
+        protected virtual BoundExpression RewriteMemberAccessExpression(BoundMemberAccessExpression node)
         {
             var expression = RewriteExpression(node.Instance);
 
@@ -297,9 +321,33 @@ namespace Compiler.CodeAnalysis.Binding
             return new BoundMemberAccessExpression(expression.Syntax, expression, node.Member);
         }
 
-        protected BoundExpression RewriteTypeReferenceExpression(BoundTypeReferenceExpression node)
+        protected virtual BoundExpression RewriteTypeReferenceExpression(BoundTypeReferenceExpression node)
         {
             return node;
+        }
+        
+        protected virtual BoundExpression RewriteMemberAssignmentExpression(BoundMemberAssignmentExpression node)
+        {
+            var instanceExpr = RewriteExpression(node.Instance);
+            var valueExpr = RewriteExpression(node.Expression);
+
+            if (instanceExpr == node.Instance && valueExpr == node.Expression)
+            {
+                return node;
+            }
+            return new BoundMemberAssignmentExpression(node.Instance.Syntax, instanceExpr, node.Member, valueExpr);
+        }
+
+        protected virtual BoundExpression RewriteCompoundMemberAssignmentExpression(BoundCompoundMemberAssignmentExpression node)
+        {
+            var instanceExpr = RewriteExpression(node.Instance);
+            var valueExpr = RewriteExpression(node.Expression);
+
+            if (instanceExpr == node.Instance && valueExpr == node.Expression)
+            {
+                return node;
+            }
+            return new BoundCompoundMemberAssignmentExpression(node.Syntax, instanceExpr, node.Member, node.Operator, valueExpr);
         }
     }
 }

@@ -1,0 +1,34 @@
+struct Test
+{
+    var i : int
+    var b : bool
+}
+
+
+function changeStruct(s : Test, i : int, b : bool) : Test
+{
+    s.i = i
+    s.b = b
+    return s
+}
+
+function printStruct(s : Test)
+{
+    print(s.i)
+    print(s.b)
+}
+
+function main()
+{
+    var test0 : Test
+    printStruct(test0)
+
+    var test1 : Test = Test()
+    printStruct(test1)
+    
+    var test2 : Test = Test(10, true)
+    printStruct(test2)
+
+    var test3 = changeStruct(test2, 100, false)
+    printStruct(test3)
+}

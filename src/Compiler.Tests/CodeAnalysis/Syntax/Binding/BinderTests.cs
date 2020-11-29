@@ -11,7 +11,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
     public class BinderTests
     {
         [Fact]
-        public void Binder_IfStatement_Reports_CannotConvert()
+        public void Evaluator_IfStatement_Reports_CannotConvert()
         {
             var text = @"
                 {
@@ -27,7 +27,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             };
             AssertDiagnostics(text, diagnostics);
         }
-
+        
         [Fact]
         public void Binder_DoWhileStatement_Reports_CannotConvert()
         {
@@ -242,7 +242,12 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             var diagnostics = new List<string>()
             {
             };
-            AssertDiagnostics(text, diagnostics);
+
+            var compilation = AssertDiagnostics(text, diagnostics);
+            var enumSymbol = Assert.Single(compilation.Enums);
+            Assert.Equal("A", enumSymbol.Name);
+            Assert.Equal(3, enumSymbol.Members.Length);
+            Assert.True(enumSymbol.IsEnum());
         }
 
         [Fact]
@@ -582,13 +587,11 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_InvokeFunctionArguments_NoInfiniteLoop()
         {
             var text = @"
-                print(""Hi""[[=]][)]
+                print(""Hi""=[)]
             ";
 
             var diagnostics = new List<string>()
             {
-                DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.EqualsToken, SyntaxKind.CloseParenthesisToken),
-                DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.EqualsToken, SyntaxKind.IdentifierToken),
                 DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.CloseParenthesisToken, SyntaxKind.IdentifierToken),
             };
 
@@ -599,7 +602,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_FunctionParameters_NoInfiniteLoop()
         {
             var text = @"
-                function hi(name: string[[[=]]][)]
+                function hi(name: string[[[=]]][[)]]
                 {
                     print(""Hi "" + name + ""!"" )
                 }[]
@@ -610,6 +613,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
                 DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.EqualsToken, SyntaxKind.CloseParenthesisToken),
                 DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.EqualsToken, SyntaxKind.OpenBraceToken),
                 DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.EqualsToken, SyntaxKind.IdentifierToken),
+                DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.CloseParenthesisToken, SyntaxKind.IdentifierToken),
                 DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.CloseParenthesisToken, SyntaxKind.IdentifierToken),
                 DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.EndOfFileToken, SyntaxKind.CloseBraceToken),
             };
@@ -693,7 +697,80 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             AssertDiagnostics(text, diagnostics);
         }
         
-        private static void AssertDiagnostics(string text, List<string> expectedDiagnostics)
+
+        [Fact]
+        public void Binder_StructDeclaration()
+        {
+            var text = @"
+                    struct Test
+                    {
+                        var a : int
+                        var b : bool = default
+                        var c = ""abc""
+                    }
+
+                    var test : Test
+            ";
+
+            var diagnostics = new List<string>()
+            {
+            };
+
+            var compilation = AssertDiagnostics(text, diagnostics);
+            var structSymbol = Assert.Single(compilation.Structs);
+            Assert.Equal("Test", structSymbol.Name);
+            Assert.Equal(3, structSymbol.CtorParameters.Length);
+            Assert.Equal(TypeSymbol.Int, structSymbol.CtorParameters[0].Type);
+            Assert.Equal(TypeSymbol.Bool, structSymbol.CtorParameters[1].Type);
+            Assert.Equal(TypeSymbol.String, structSymbol.CtorParameters[2].Type);
+            Assert.True(structSymbol.IsValueType());
+        }
+        
+        [Fact]
+        public void Binder_MemberAssignment()
+        {
+            var text = @"
+                    struct Test
+                    {
+                        var a : int
+                        var b : bool = default
+                        var c = ""abc""
+                    }
+
+                    var test : Test
+                    test.a = 100
+            ";
+
+            var diagnostics = new List<string>()
+            {
+            };
+
+            AssertDiagnostics(text, diagnostics);
+        }
+        
+        [Fact]
+        public void Binder_CompoundMemberAssignment()
+        {
+            var text = @"
+                    struct Test
+                    {
+                        var a : int
+                        var b : bool = default
+                        var c = ""abc""
+                    }
+
+                    var test : Test
+                    test.a += 100
+            ";
+
+            var diagnostics = new List<string>()
+            {
+            };
+
+            AssertDiagnostics(text, diagnostics);
+        }
+        
+        private static Compilation AssertDiagnostics(string text, List<string> expectedDiagnostics)
         {
             var annotatedText = AnnotatedText.Parse(text);
             var syntaxTree = SyntaxTree.Parse(annotatedText.Text);
@@ -712,6 +789,8 @@ namespace Compiler.Tests.CodeAnalysis.Binding
                 Assert.Equal(annotatedText.Spans[i], diagnostic[i].Location.Span);
                 Assert.Equal(expectedDiagnostics[i], diagnostic[i].Message);
             }
+
+            return compilation;
         }
     }
 }

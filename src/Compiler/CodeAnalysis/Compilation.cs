@@ -18,6 +18,7 @@ namespace Compiler.CodeAnalysis
         public FunctionSymbol? MainFunction => GlobalScope.MainFunction;
         public ImmutableArray<FunctionSymbol> Functions => GlobalScope.Functions;
         public ImmutableArray<EnumSymbol> Enums => GlobalScope.Enums;
+        public ImmutableArray<StructSymbol> Structs => GlobalScope.Structs;
         public ImmutableArray<VariableSymbol> Variables => GlobalScope.Variables;
 
         internal BoundGlobalScope GlobalScope

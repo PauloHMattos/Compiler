@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace Compiler.CodeAnalysis.Symbols
 {
@@ -9,6 +10,7 @@ namespace Compiler.CodeAnalysis.Symbols
         public static readonly TypeSymbol Error = new TypeSymbol("?", null, null);
         // Base types
         public static readonly TypeSymbol Enum = new TypeSymbol("enum", null, typeof(Enum));
+        public static readonly TypeSymbol Struct = new TypeSymbol("struct", null, typeof(ValueType));
         // Built-in types
         public static readonly TypeSymbol Any = new TypeSymbol("any", null, typeof(object));
         public static readonly TypeSymbol Void = new TypeSymbol("void", null, typeof(void));
@@ -19,9 +21,17 @@ namespace Compiler.CodeAnalysis.Symbols
         public Type? NetType { get; }
         public object? DefaultValue { get; }
         public override SymbolKind Kind => SymbolKind.Type;
+        public virtual ImmutableArray<MemberSymbol> Members { get; }
 
-
-        protected TypeSymbol(string name, object? defaultValue, Type? netType) : base(name)
+        protected TypeSymbol(string name, object? defaultValue, Type? netType, ImmutableArray<MemberSymbol> members) : base(name)
+        {
+            NetType = netType;
+            Members = members;
+            DefaultValue = defaultValue;
+        }
+        
+        protected TypeSymbol(string name, object? defaultValue, Type? netType)
+            : this(name, defaultValue, netType, ImmutableArray<MemberSymbol>.Empty)
         {
             NetType = netType;
             DefaultValue = defaultValue;
@@ -59,13 +69,22 @@ namespace Compiler.CodeAnalysis.Symbols
             }
         }
 
-        internal bool IsEnum()
+        public bool IsEnum()
         {
             if (NetType == null)
             {
                 return false;
             }
-            return NetType == typeof(Enum) || NetType.IsEnum;
+            return NetType == typeof(Enum);
+        }
+        
+        public bool IsValueType()
+        {
+            if (NetType == null)
+            {
+                return false;
+            }
+            return NetType == typeof(ValueType);
         }
 
         public static IEnumerable<TypeSymbol> GetBuiltInTypes()
@@ -80,6 +99,7 @@ namespace Compiler.CodeAnalysis.Symbols
         public static IEnumerable<TypeSymbol> GetBaseTypes()
         {
             yield return Enum;
+            yield return Struct;
         }
     }
 }

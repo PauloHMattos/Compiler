@@ -22,11 +22,16 @@ namespace Compiler.CodeAnalysis.Lowering
             return new BoundLabel(name);
         }
 
-        public static BoundBlockStatement Lower(FunctionSymbol function, BoundStatement statement)
+        public static BoundBlockStatement Lower(Symbol symbol, BoundStatement statement)
         {
+            if (symbol is not (FunctionSymbol or StructSymbol))
+            {
+                throw new InvalidOperationException($"Symbol of type {symbol.Kind} not expected in Lowerer.");
+            }
+
             var lowerer = new Lowerer();
             var result = lowerer.RewriteStatement(statement);
-            return RemoveDeadCode(Flatten(function, result));
+            return RemoveDeadCode(Flatten(symbol, result));
         }
 
         private static BoundBlockStatement RemoveDeadCode(BoundBlockStatement statement)
@@ -46,8 +51,11 @@ namespace Compiler.CodeAnalysis.Lowering
             return new BoundBlockStatement(statement.Syntax, builder.ToImmutable());
         }
 
-        private static BoundBlockStatement Flatten(FunctionSymbol function, BoundStatement statement)
+        private static BoundBlockStatement Flatten(Symbol symbol, BoundStatement statement)
         {
+            // TODO: Take into account nested scopes when Flattening.  The compiler allows a naming collision
+            // to occur if separate scope blocks contain identically named symbols.
+
             var builder = ImmutableArray.CreateBuilder<BoundStatement>();
             var stack = new Stack<BoundStatement>();
             stack.Push(statement);
@@ -69,7 +77,7 @@ namespace Compiler.CodeAnalysis.Lowering
                 }
             }
 
-            if (function.Type == TypeSymbol.Void &&
+            if (symbol is FunctionSymbol function && function.Type == TypeSymbol.Void &&
                 (builder.Count == 0 || CanFallThrough(builder.Last())))
             {
                 builder.Add(new BoundReturnStatement(statement.Syntax, null));
@@ -210,14 +218,14 @@ namespace Compiler.CodeAnalysis.Lowering
                                 While(node.Syntax, 
                                     LessOrEqual(
                                     node.Syntax,
-                                    Variable(node.Syntax, lowerBound),
-                                    Variable(node.Syntax, upperBound)),
+                                    Variable(node.Syntax, lowerBound, false),
+                                    Variable(node.Syntax, upperBound, false)),
                                     Block(node.Syntax, 
                                         node.Body,
                                         Label(node.Syntax, node.ContinueLabel),
                                         Increment(
                                             node.Syntax, 
-                                            Variable(node.Syntax, lowerBound), node.Step)),
+                                            Variable(node.Syntax, lowerBound, false), node.Step)),
                                     node.BreakLabel,
                                     continueLabel: GenerateNewLabel())
             );
@@ -236,20 +244,17 @@ namespace Compiler.CodeAnalysis.Lowering
             var newNode = (BoundCompoundAssignmentExpression)base.RewriteCompoundAssignmentExpression(node);
 
 
-            var result = Assignment(
+            return Assignment(
                 newNode.Syntax, 
                 newNode.Variable,
                 Binary(
                     newNode.Syntax, 
-                    Variable(newNode.Syntax, newNode.Variable),
+                    Variable(newNode.Syntax, newNode.Variable, false),
                     newNode.Operator,
                     newNode.Expression
                 )
             );
-
-            return result;
         }
-
 
         protected override BoundStatement RewriteExpressionStatement(BoundExpressionStatement node)
         {
@@ -261,6 +266,28 @@ namespace Compiler.CodeAnalysis.Lowering
         {
             var rewrittenNode = base.RewriteVariableDeclarationStatement(node);
             return new BoundSequencePointStatement(rewrittenNode.Syntax, rewrittenNode, rewrittenNode.Syntax.Location);
+        }
+
+        protected override BoundExpression RewriteCompoundMemberAssignmentExpression(BoundCompoundMemberAssignmentExpression node)
+        {
+            var newNode = (BoundCompoundMemberAssignmentExpression)base.RewriteCompoundMemberAssignmentExpression(node);
+            
+            // a.f <op>= b
+            //
+            // --->
+            //
+            // a.f = (a.f <op> b)
+            return Assignment(
+                newNode.Syntax,
+                newNode.Instance,
+                newNode.Member,
+                Binary(
+                    newNode.Syntax,
+                    Member(newNode.Syntax, newNode.Instance, newNode.Member),
+                    newNode.Operator,
+                    newNode.Expression
+                )
+            );
         }
     }
 }

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Compiler.Tests.Snippets
+namespace Compiler.Tests.Samples
 {
     public class ConsoleOutputTests
     {
@@ -26,6 +26,7 @@ namespace Compiler.Tests.Snippets
         [InlineData("Input", "Paulo", "24")]
         [InlineData("IsEven", "2", "10", "5")]
         [InlineData("Enum")]
+        [InlineData("Struct")]
         public async Task SamplesTests(string filenamePrefix, params string[] inputs)
         {
             var psi = new ProcessStartInfo

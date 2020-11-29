@@ -40,6 +40,7 @@
         ReturnKeyword,
         DefaultKeyword,
         EnumKeyword,
+        StructKeyword,
 
         // Literals
         NumberToken,
@@ -78,6 +79,8 @@
         FunctionDeclaration,
         EnumDeclaration,
         EnumValue,
+        StructDeclaration,
+        MemberBlockStatement,
         GlobalStatement,
         Parameter,
         TypeClause,
@@ -103,8 +106,6 @@
         BinaryExpression,
         ParenthesizedExpression,
         UnaryExpression,
-        AssignmentExpression,
-        CompoundAssignmentExpression,
         CallExpression,
         MemberAccessExpression,
     }

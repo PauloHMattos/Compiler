@@ -11,18 +11,21 @@ namespace Compiler.CodeAnalysis.Binding
         public FunctionSymbol? MainFunction { get; }
         public ImmutableDictionary<FunctionSymbol, BoundBlockStatement> Functions { get; }
         public ImmutableArray<EnumSymbol> Enums { get; }
+        public ImmutableDictionary<StructSymbol, BoundBlockStatement> Structs { get; }
 
         public BoundProgram(BoundProgram? previous,
                             ImmutableArray<Diagnostic> diagnostics,
                             FunctionSymbol? mainFunction,
                             ImmutableDictionary<FunctionSymbol, BoundBlockStatement> functions,
-                            ImmutableArray<EnumSymbol> enums)
+                            ImmutableArray<EnumSymbol> enums,
+                            ImmutableDictionary<StructSymbol, BoundBlockStatement> structs)
         {
             Previous = previous;
             Diagnostics = diagnostics;
             MainFunction = mainFunction;
             Functions = functions;
             Enums = enums;
+            Structs = structs;
         }
     }
 }
