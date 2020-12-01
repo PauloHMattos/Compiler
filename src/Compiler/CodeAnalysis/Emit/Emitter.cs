@@ -22,8 +22,7 @@ namespace Compiler.CodeAnalysis.Emit
         private readonly TypeDefinition _typeDefinition;
         private readonly List<AssemblyDefinition> _assemblies;
         private readonly Dictionary<TypeSymbol, TypeReference> _resolvedTypes;
-        private readonly Dictionary<TypeSymbol, TypeDefinition> _enums;
-        private readonly Dictionary<TypeSymbol, TypeDefinition> _structs;
+        private readonly Dictionary<TypeSymbol, TypeDefinition> _declaredTypes;
         private readonly Dictionary<FunctionSymbol, MethodDefinition> _methods;
         private readonly Dictionary<VariableSymbol, VariableDefinition> _locals;
         private readonly Dictionary<BoundLabel, int> _labels;
@@ -44,8 +43,7 @@ namespace Compiler.CodeAnalysis.Emit
             _diagnostics = new DiagnosticBag();
             _assemblies = new List<AssemblyDefinition>();
             _resolvedTypes = new Dictionary<TypeSymbol, TypeReference>();
-            _enums = new Dictionary<TypeSymbol, TypeDefinition>();
-            _structs = new Dictionary<TypeSymbol, TypeDefinition>();
+            _declaredTypes = new Dictionary<TypeSymbol, TypeDefinition>();
             _methods = new Dictionary<FunctionSymbol, MethodDefinition>();
             _locals = new Dictionary<VariableSymbol, VariableDefinition>();
 
@@ -66,7 +64,7 @@ namespace Compiler.CodeAnalysis.Emit
             _convertToBooleanReference = ResolveMethod(typeof(Convert), nameof(Convert.ToBoolean), new[] { typeof(object) });
             _convertToInt32Reference = ResolveMethod(typeof(Convert), nameof(Convert.ToInt32), new[] { typeof(object) });
             _convertToStringReference = ResolveMethod(typeof(Convert), nameof(Convert.ToString), new[] { typeof(object) });
-            _debuggableAttributeCtorReference = ResolveMethod<DebuggableAttribute>(".ctor", new [] { typeof(bool), typeof(bool) });
+            _debuggableAttributeCtorReference = ResolveMethod<DebuggableAttribute>(".ctor", new[] { typeof(bool), typeof(bool) });
 
             var objectType = Import(TypeSymbol.Any);
             _typeDefinition = new TypeDefinition("", "Program", TypeAttributes.Abstract | TypeAttributes.Sealed, objectType);
@@ -131,7 +129,7 @@ namespace Compiler.CodeAnalysis.Emit
             _diagnostics.ReportRequiredMethodNotFound(typeName, methodName, parameterTypes);
             return null!;
         }
-        
+
         private void ReadAssemblies(IEnumerable<string> references)
         {
             foreach (var reference in references)
@@ -160,7 +158,7 @@ namespace Compiler.CodeAnalysis.Emit
                 _resolvedTypes.Add(type, typeReference);
             }
         }
-        
+
         private TypeReference ResolveType(TypeSymbol type)
         {
             if (type.NetType == null)
@@ -261,8 +259,9 @@ namespace Compiler.CodeAnalysis.Emit
 
         private void EmitFunctionDeclaration(FunctionSymbol function)
         {
-            var functionType = Import(function.Type);
-            var method = new MethodDefinition(function.Name, MethodAttributes.Static | MethodAttributes.Private, functionType);
+            var functionType = Import(function.ReturnType);
+            var methodAttributes = function.Receiver == null ? MethodAttributes.Static | MethodAttributes.Private : MethodAttributes.Public;
+            var method = new MethodDefinition(function.Name, methodAttributes, functionType);
 
             foreach (var parameter in function.Parameters)
             {
@@ -272,7 +271,15 @@ namespace Compiler.CodeAnalysis.Emit
                 method.Parameters.Add(parameterDefinition);
             }
 
-            _typeDefinition.Methods.Add(method);
+            if (function.Receiver == null)
+            {
+                _typeDefinition.Methods.Add(method);
+            }
+            else
+            {
+                _declaredTypes[function.Receiver].Methods.Add(method);
+            }
+
             _methods.Add(function, method);
         }
 
@@ -326,10 +333,10 @@ namespace Compiler.CodeAnalysis.Emit
             const TypeAttributes _enumAttributes = TypeAttributes.Class | TypeAttributes.NotPublic | TypeAttributes.AnsiClass | TypeAttributes.Sealed;
             const FieldAttributes _enumFieldAttributes = FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.Literal | FieldAttributes.HasDefault;
             const FieldAttributes _enumSpecialAttributes = FieldAttributes.Public | FieldAttributes.SpecialName | FieldAttributes.RTSpecialName;
-            
+
             var enumType = new TypeDefinition("", enumSymbol.Name, _enumAttributes, Import(TypeSymbol.Enum));
             _assemblyDefinition.MainModule.Types.Add(enumType);
-            _enums.Add(enumSymbol, enumType);
+            _declaredTypes.Add(enumSymbol, enumType);
             _resolvedTypes.Add(enumSymbol, enumType);
 
             var specialField = new FieldDefinition("value__", _enumSpecialAttributes, Import(TypeSymbol.Int));
@@ -348,7 +355,7 @@ namespace Compiler.CodeAnalysis.Emit
                 enumType.Fields.Add(valueField);
             }
         }
-        
+
         private void EmitStructDeclarations(ImmutableDictionary<StructSymbol, BoundBlockStatement> structs)
         {
             foreach (var (declaration, _) in structs)
@@ -360,16 +367,16 @@ namespace Compiler.CodeAnalysis.Emit
                 EmitStructBody(declaration, body);
             }
         }
-        
+
         private void EmitStructDeclaration(StructSymbol structSymbol)
         {
             const TypeAttributes _structAttributes = TypeAttributes.Class | TypeAttributes.Public |
                                                     TypeAttributes.SequentialLayout | TypeAttributes.AnsiClass |
                                                     TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit;
-            
+
             var structType = new TypeDefinition("", structSymbol.Name, _structAttributes, Import(TypeSymbol.Struct));
             _assemblyDefinition.MainModule.Types.Add(structType);
-            _structs.Add(structSymbol, structType);
+            _declaredTypes.Add(structSymbol, structType);
             _resolvedTypes.Add(structSymbol, structType);
 
             // Forward-declare empty constructor
@@ -394,12 +401,13 @@ namespace Compiler.CodeAnalysis.Emit
             );
 
             // This constructor will be the second one on the class
-            structType.Methods.Insert(0, defaultCtorDefintion);
+            structType.Methods.Insert(0, emptyCtorDefinition);
+            structType.Methods.Insert(1, defaultCtorDefintion);
         }
 
         private void EmitStructBody(StructSymbol key, BoundBlockStatement value)
         {
-            var structType = _structs[key];
+            var structType = _declaredTypes[key];
             EmitEmptyConstructorForStruct(value, structType);
             EmitDefaultConstructorForStruct(key, structType);
         }
@@ -596,7 +604,7 @@ namespace Compiler.CodeAnalysis.Emit
         private void EmitExpressionStatement(ILProcessor ilProcessor, BoundExpressionStatement node)
         {
             EmitExpression(ilProcessor, node.Expression);
-            
+
             if (node.Expression.Type != TypeSymbol.Void)
             {
                 // TODO - Take a better look a this
@@ -694,7 +702,7 @@ namespace Compiler.CodeAnalysis.Emit
             else
             {
                 var variableDefinition = _locals[node.Variable];
-                
+
                 if (node.ByReference)
                 {
                     ilProcessor.Emit(OpCodes.Ldloca_S, variableDefinition);
@@ -841,33 +849,59 @@ namespace Compiler.CodeAnalysis.Emit
 
         private void EmitCallExpression(ILProcessor ilProcessor, BoundCallExpression node)
         {
-            foreach (var argument in node.Arguments)
+            if (node.Instance != null)
             {
-                EmitExpression(ilProcessor, argument);
-            }
-
-            if (node.Function == BuiltinFunctions.Input)
-            {
-                ilProcessor.Emit(OpCodes.Call, _consoleReadLineReference);
-            }
-            else if (node.Function == BuiltinFunctions.Print)
-            {
-                ilProcessor.Emit(OpCodes.Call, _consoleWriteLineReference);
-            }
-            else if (node.Function.Name.EndsWith(".ctor"))
-            {
-                var className = node.Function.Name[..^5];
-                var structSymbol = _structs.First(s => s.Key.Name == className).Value;
-                
-                // TODO: We should use a general overload resolution algorithm instead
-                ilProcessor.Emit(OpCodes.Newobj, node.Arguments.Length == 0 ?
-                                                    structSymbol.Methods[0] :
-                                                    structSymbol.Methods[1]);
+                var methodDefinition = _methods[node.Function];
+                if (node.Instance is BoundVariableExpression variable)
+                {
+                    EmitVariableExpression(ilProcessor, variable);
+                }
+                else if (node.Instance is BoundMemberAccessExpression field)
+                {
+                    EmitMemberAccessExpression(ilProcessor, field);
+                }
+                else
+                {
+                    throw new Exception("Unexpected node type in call expression");
+                }
+                EmitExpressions(ilProcessor, node.Arguments);
+                ilProcessor.Emit(OpCodes.Call, methodDefinition);
             }
             else
             {
-                var methodDefinition = _methods[node.Function];
-                ilProcessor.Emit(OpCodes.Call, methodDefinition);
+                EmitExpressions(ilProcessor, node.Arguments);
+
+                if (node.Function == BuiltinFunctions.Input)
+                {
+                    ilProcessor.Emit(OpCodes.Call, _consoleReadLineReference);
+                }
+                else if (node.Function == BuiltinFunctions.Print)
+                {
+                    ilProcessor.Emit(OpCodes.Call, _consoleWriteLineReference);
+                }
+                else if (node.Function.Name.EndsWith(".ctor"))
+                {
+                    var className = node.Function.Name[..^5];
+                    var structSymbol = _declaredTypes.First(s => s.Key.Name == className).Value;
+
+                    // TODO: We should use a general overload resolution algorithm instead
+                    ilProcessor.Emit(OpCodes.Newobj, node.Arguments.Length == 0 ?
+                                                        structSymbol.Methods[0] :
+                                                        structSymbol.Methods[1]);
+                }
+                else
+                {
+                    var methodDefinition = _methods[node.Function];
+                    ilProcessor.Emit(OpCodes.Call, methodDefinition);
+                }
+            }
+        }
+
+        private void EmitExpressions(ILProcessor ilProcessor, ImmutableArray<BoundExpression> arguments)
+        {
+            foreach (var argument in arguments)
+            {
+                EmitExpression(ilProcessor, argument);
             }
         }
 
@@ -905,14 +939,14 @@ namespace Compiler.CodeAnalysis.Emit
                 throw new InvalidOperationException($"Unexpected convertion from {node.Expression.Type} to {node.Type}");
             }
         }
-        
+
         private void EmitMemberAccessExpression(ILProcessor ilProcessor, BoundMemberAccessExpression node)
         {
             var typeDefinition = Import(node.Instance.Type).Resolve();
             Debug.Assert(typeDefinition != null);
 
             EmitExpression(ilProcessor, node.Instance);
-            
+
             switch (node.Member.MemberKind)
             {
                 case MemberKind.Field:
@@ -952,7 +986,7 @@ namespace Compiler.CodeAnalysis.Emit
 
             var typeReference = Import(node.Instance.Type);
             var typeDefinition = typeReference.Resolve();
-            
+
             ilProcessor.Emit(OpCodes.Dup);
             var expressionTypeReference = Import(node.Expression.Type);
             var variableDefinition = new VariableDefinition(expressionTypeReference);

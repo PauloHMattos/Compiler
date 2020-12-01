@@ -77,7 +77,7 @@ namespace Compiler.CodeAnalysis.Lowering
                 }
             }
 
-            if (symbol is FunctionSymbol function && function.Type == TypeSymbol.Void &&
+            if (symbol is FunctionSymbol function && function.ReturnType == TypeSymbol.Void &&
                 (builder.Count == 0 || CanFallThrough(builder.Last())))
             {
                 builder.Add(new BoundReturnStatement(statement.Syntax, null));

@@ -167,14 +167,30 @@ namespace Compiler.CodeAnalysis.Syntax
 
         private MemberSyntax ParseFunctionDeclaration()
         {
+            SyntaxToken identifier;
+            SyntaxToken? dotToken, receiver;
+
             var functionKeyword = MatchToken(SyntaxKind.FunctionKeyword);
-            var identifier = MatchToken(SyntaxKind.IdentifierToken);
+
+            if (Current.Kind == SyntaxKind.IdentifierToken && Peek(1).Kind == SyntaxKind.DotToken)
+            {
+                receiver = MatchToken(SyntaxKind.IdentifierToken);
+                dotToken = MatchToken(SyntaxKind.DotToken);
+                identifier = MatchToken(SyntaxKind.IdentifierToken);
+            }
+            else
+            {
+                receiver = null;
+                dotToken = null;
+                identifier = MatchToken(SyntaxKind.IdentifierToken);
+            }
+
             var openParenthesisToken = MatchToken(SyntaxKind.OpenParenthesisToken);
             var parameters = ParseParameterList();
             var closeParenthesisToken = MatchToken(SyntaxKind.CloseParenthesisToken);
             var type = ParseOptionalTypeClause();
             var body = ParseBlockStatement();
-            return new FunctionDeclarationSyntax(_syntaxTree, functionKeyword, identifier, openParenthesisToken, parameters, closeParenthesisToken, type, body);
+            return new FunctionDeclarationSyntax(_syntaxTree, functionKeyword, receiver, dotToken, identifier, openParenthesisToken, parameters, closeParenthesisToken, type, body);
         }
 
         private SeparatedSyntaxList<ParameterSyntax> ParseParameterList()
@@ -492,49 +508,6 @@ namespace Compiler.CodeAnalysis.Syntax
             return ParseBinaryExpression();
         }
 
-        private MemberAccessExpressionSyntax ParseMemberAccess()
-        {
-            var queue = new Queue<NameExpressionSyntax>();
-            var dotTokenQueue = new Queue<SyntaxToken>();
-            var condition = true;
-
-            while (condition)
-            {
-                queue.Enqueue(ParseNameOrCallExpression());
-
-                if (Current.Kind == SyntaxKind.DotToken)
-                {
-                    dotTokenQueue.Enqueue(MatchToken(SyntaxKind.DotToken));
-                }
-                else
-                {
-                    condition = false;
-                }
-            }
-
-            var first = queue.Dequeue();
-            return ParseMemberAccessInternal(queue, dotTokenQueue, first);
-        }
-
-        /// <summary>
-        /// MemberAccessExpr := IDENT (DOT IDENT)*
-        /// </summary>
-        /// <param name="queue"></param>
-        /// <param name="dotTokenQueue"></param>
-        /// <param name="parent"></param>
-        /// <returns></returns>
-        private MemberAccessExpressionSyntax ParseMemberAccessInternal(Queue<NameExpressionSyntax> queue, Queue<SyntaxToken> dotTokenQueue, ExpressionSyntax parent)
-        {
-            var result = parent;
-            while (queue.Count > 0)
-            {
-                var member = queue.Dequeue();
-                var operatorToken = dotTokenQueue.Dequeue();
-                result = new MemberAccessExpressionSyntax(_syntaxTree, result, operatorToken, member);
-            }
-            return (MemberAccessExpressionSyntax)result;
-        }
-
         /// <summary>
         /// UnaryExpr := (Op)? Expr
         /// BinaryExpr := UnaryExpr Op BinaryExpr
@@ -592,18 +565,8 @@ namespace Compiler.CodeAnalysis.Syntax
                 case SyntaxKind.DefaultKeyword:
                     return ParseDefaultLiteral();
 
-                case SyntaxKind.IdentifierToken:
-                    if (Peek(1).Kind == SyntaxKind.DotToken)
-                    {
-                        return ParseMemberAccess();
-                    }
-                    else
-                    {
-                        return ParseNameOrCallExpression();
-                    }
-
                 default:
-                    return ParseNameOrCallExpression();
+                    return ParseNameOrCallExpression(true);
             }
         }
 
@@ -641,13 +604,23 @@ namespace Compiler.CodeAnalysis.Syntax
             return new LiteralExpressionSyntax(_syntaxTree, keywordToken, isTrue);
         }
 
-        private NameExpressionSyntax ParseNameOrCallExpression()
+        private NameExpressionSyntax ParseNameOrCallExpression(bool withSuffix = false)
         {
-            if (Current.Kind == SyntaxKind.IdentifierToken && Peek(1).Kind == SyntaxKind.OpenParenthesisToken)
+            if (Peek(1).Kind == SyntaxKind.OpenParenthesisToken)
             {
                 return ParseCallExpression();
             }
-            return ParseNameExpression();
+            return ParseNameExpression(withSuffix);
+        }
+
+        private NameExpressionSyntax ParseNameExpression(bool withSuffix = false)
+        {
+            if (!withSuffix || Peek(1).Kind != SyntaxKind.DotToken)
+            {
+                var identifier = MatchToken(SyntaxKind.IdentifierToken);
+                return new NameExpressionSyntax(_syntaxTree, identifier);
+            }
+            return ParseMemberAccess();
         }
 
         private CallExpressionSyntax ParseCallExpression()
@@ -684,11 +657,50 @@ namespace Compiler.CodeAnalysis.Syntax
 
             return new SeparatedSyntaxList<ExpressionSyntax>(nodesAndSeparators.ToImmutable());
         }
-
-        private NameExpressionSyntax ParseNameExpression()
+        
+        private MemberAccessExpressionSyntax ParseMemberAccess()
         {
-            var identifierToken = MatchToken(SyntaxKind.IdentifierToken);
-            return new NameExpressionSyntax(_syntaxTree, identifierToken);
+            var queue = new Queue<NameExpressionSyntax>();
+            var dotTokenQueue = new Queue<SyntaxToken>();
+            var condition = true;
+
+            while (condition)
+            {
+                queue.Enqueue(ParseNameOrCallExpression());
+
+                if (Current.Kind == SyntaxKind.DotToken)
+                {
+                    dotTokenQueue.Enqueue(MatchToken(SyntaxKind.DotToken));
+                }
+                else
+                {
+                    condition = false;
+                }
+            }
+
+            var first = queue.Dequeue();
+            return ParseMemberAccessInternal(queue, dotTokenQueue, first);
+        }
+
+        /// <summary>
+        /// MemberAccessExpr := IDENT (DOT IDENT)*
+        /// </summary>
+        /// <param name="queue"></param>
+        /// <param name="dotTokenQueue"></param>
+        /// <param name="parent"></param>
+        /// <returns></returns>
+        private MemberAccessExpressionSyntax ParseMemberAccessInternal(Queue<NameExpressionSyntax> queue, Queue<SyntaxToken> dotTokenQueue, NameExpressionSyntax parent)
+        {
+            var member = queue.Dequeue();
+            var operatorToken = dotTokenQueue.Dequeue();
+            parent = new MemberAccessExpressionSyntax(_syntaxTree, parent, operatorToken, member);
+            while (queue.Count > 0)
+            {
+                member = queue.Dequeue();
+                operatorToken = dotTokenQueue.Dequeue();
+                parent = new MemberAccessExpressionSyntax(_syntaxTree, parent, operatorToken, member);
+            }
+            return (MemberAccessExpressionSyntax)parent;
         }
     }
 }

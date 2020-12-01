@@ -1,21 +1,26 @@
+using Compiler.CodeAnalysis.Syntax.Attributes;
+
 namespace Compiler.CodeAnalysis.Syntax
 {
-    public sealed partial class MemberAccessExpressionSyntax : ExpressionSyntax
+    public sealed partial class MemberAccessExpressionSyntax : NameExpressionSyntax
     {
         public ExpressionSyntax ParentExpression { get; }
         public SyntaxToken OperatorToken { get; }
+        [DiscardFromChildren]
         public NameExpressionSyntax MemberExpression { get; }
+        public bool CallExpression { get; }
         public override SyntaxKind Kind => SyntaxKind.MemberAccessExpression;
 
         internal MemberAccessExpressionSyntax(SyntaxTree syntaxTree,
                                             ExpressionSyntax parentExpression, 
                                             SyntaxToken operatorToken,
                                             NameExpressionSyntax memberExpression)
-            : base(syntaxTree)
+            : base(syntaxTree, memberExpression.IdentifierToken)
         {
             ParentExpression = parentExpression;
             OperatorToken = operatorToken;
             MemberExpression = memberExpression;
+            CallExpression = memberExpression.Kind == SyntaxKind.CallExpression;
         }
     }
 }

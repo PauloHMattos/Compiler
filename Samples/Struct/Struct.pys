@@ -1,34 +1,40 @@
-struct Test
+struct Vector2Int
 {
-    var i : int
-    var b : bool
+    var x : int
+    var y : int
 }
 
-
-function changeStruct(s : Test, i : int, b : bool) : Test
+function Vector2Int.scale(factor: int)
 {
-    s.i = i
-    s.b = b
+    print("Scale")
+}
+
+function changeStruct(s : Vector2Int, x : int, y : int) : Vector2Int
+{
+    s.x = x
+    s.y = y
     return s
 }
 
-function printStruct(s : Test)
+function printStruct(s : Vector2Int)
 {
-    print(s.i)
-    print(s.b)
+    print(s.x)
+    print(s.y)
 }
 
 function main()
 {
-    var test0 : Test
+    var test0 : Vector2Int
+    test0.scale(2)
+
     printStruct(test0)
 
-    var test1 : Test = Test()
+    var test1 : Vector2Int = Vector2Int()
     printStruct(test1)
     
-    var test2 : Test = Test(10, true)
+    var test2 = Vector2Int(10, 10)
     printStruct(test2)
 
-    var test3 = changeStruct(test2, 100, false)
+    var test3 = changeStruct(test2, 100, 100)
     printStruct(test3)
 }

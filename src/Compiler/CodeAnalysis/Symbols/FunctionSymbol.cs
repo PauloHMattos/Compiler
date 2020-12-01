@@ -6,8 +6,9 @@ namespace Compiler.CodeAnalysis.Symbols
     public sealed class FunctionSymbol : Symbol
     {
         public ImmutableArray<ParameterSymbol> Parameters { get; }
-        public TypeSymbol Type { get; }
+        public TypeSymbol ReturnType { get; }
         public FunctionDeclarationSyntax? Declaration { get; }
+        public TypeSymbol? Receiver { get; }
         public ImmutableArray<FunctionSymbol> Overloads { get; }
         public override SymbolKind Kind => SymbolKind.Function;
 
@@ -15,13 +16,15 @@ namespace Compiler.CodeAnalysis.Symbols
                                 ImmutableArray<ParameterSymbol> parameters,
                                 TypeSymbol type,
                                 ImmutableArray<FunctionSymbol> overloads,
-                                FunctionDeclarationSyntax? declaration = null)
+                                FunctionDeclarationSyntax? declaration = null,
+                                TypeSymbol? receiver = null)
             : base(name)
         {
             Parameters = parameters;
-            Type = type;
+            ReturnType = type;
             Overloads = overloads;
             Declaration = declaration;
+            Receiver = receiver;
         }
 
         

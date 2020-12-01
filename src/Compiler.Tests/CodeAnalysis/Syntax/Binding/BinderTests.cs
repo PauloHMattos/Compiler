@@ -640,12 +640,13 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             const string? text = @"
                 var p: int = 0
                 p.[length]
+                p.[length]()
             ";
             var diagnostics = new List<string>()
             {
                 DiagnosticCode.CannotAccessMember.GetDiagnostic("length", "int"),
+                DiagnosticCode.UndefinedFunction.GetDiagnostic("length", "int"),
             };
-
             AssertDiagnostics(text, diagnostics);
         }
 
@@ -761,6 +762,33 @@ namespace Compiler.Tests.CodeAnalysis.Binding
 
                     var test : Test
                     test.a += 100
+            ";
+
+            var diagnostics = new List<string>()
+            {
+            };
+
+            AssertDiagnostics(text, diagnostics);
+        }
+        
+        [Fact]
+        public void Binder_MemberAccess_CallExpression()
+        {
+            var text = @"
+                    struct TestStruct
+                    {
+                        var a : int
+                        var b : bool = default
+                        var c = ""abc""
+                    }
+
+                    function TestStruct.f(i : int)
+                    {
+                        print(""i"")
+                    }
+
+                    var test : TestStruct
+                    test.f(10)
             ";
 
             var diagnostics = new List<string>()

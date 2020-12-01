@@ -1,9 +1,10 @@
-﻿namespace Compiler.CodeAnalysis.Syntax
+﻿using System;
+using Compiler.CodeAnalysis.Syntax.Attributes;
+
+namespace Compiler.CodeAnalysis.Syntax
 {
     public partial class CallExpressionSyntax : NameExpressionSyntax
     {
-        // HACK: This should not be necessary. The source generator
-        // should get the properties from the base class as well
         public override SyntaxToken IdentifierToken => base.IdentifierToken;
         public SyntaxToken OpenParenthesisToken { get; }
         public SeparatedSyntaxList<ExpressionSyntax> Arguments { get; }
