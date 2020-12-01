@@ -32,5 +32,6 @@
         MemberAccessExpression,
         MemberAssignmentExpression,
         CompoundMemberAssignmentExpression,
+        SelfExpression,
     }
 }

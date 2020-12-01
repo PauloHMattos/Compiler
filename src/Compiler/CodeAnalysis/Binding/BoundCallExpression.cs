@@ -38,5 +38,14 @@ namespace Compiler.CodeAnalysis.Binding
         {
             Instance = instance;
         }
+
+        public BoundCallExpression(SyntaxNode syntax,
+                                   BoundSelfExpression instance,
+                                   FunctionSymbol function,
+                                   ImmutableArray<BoundExpression> arguments)
+            :this (syntax, function, arguments)
+        {
+            Instance = instance;
+        }
     }
 }

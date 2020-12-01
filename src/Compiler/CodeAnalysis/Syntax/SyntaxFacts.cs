@@ -129,6 +129,8 @@ namespace Compiler.CodeAnalysis.Syntax
                     return SyntaxKind.EnumKeyword;
                 case "struct":
                     return SyntaxKind.StructKeyword;
+                case "self":
+                    return SyntaxKind.SelfKeyword;
                 default:
                     return SyntaxKind.IdentifierToken;
             }
@@ -188,6 +190,8 @@ namespace Compiler.CodeAnalysis.Syntax
                     return "enum";
                 case SyntaxKind.StructKeyword:
                     return "struct";
+                case SyntaxKind.SelfKeyword:
+                    return "self";
                 case SyntaxKind.PlusToken:
                     return "+";
                 case SyntaxKind.PlusEqualsToken:

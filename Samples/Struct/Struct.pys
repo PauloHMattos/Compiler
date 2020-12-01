@@ -6,7 +6,15 @@ struct Vector2Int
 
 function Vector2Int.scale(factor: int)
 {
+    self.x = self.x * factor
+    self.y = self.y * factor
     print("Scale")
+}
+
+function Vector2Int.double()
+{
+    print("Double")
+    self.scale(2)
 }
 
 function changeStruct(s : Vector2Int, x : int, y : int) : Vector2Int
@@ -24,7 +32,8 @@ function printStruct(s : Vector2Int)
 
 function main()
 {
-    var test0 : Vector2Int
+    var test0 : Vector2Int= Vector2Int(10, 10)
+    test0.double()
     test0.scale(2)
 
     printStruct(test0)

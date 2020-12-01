@@ -228,6 +228,8 @@ namespace Compiler.CodeAnalysis.Binding
                     return RewriteMemberAssignmentExpression((BoundMemberAssignmentExpression)expression);
                 case BoundNodeKind.CompoundMemberAssignmentExpression:
                     return RewriteCompoundMemberAssignmentExpression((BoundCompoundMemberAssignmentExpression)expression);
+                case BoundNodeKind.SelfExpression:
+                    return RewriteSelfExpression((BoundSelfExpression)expression);
                 case BoundNodeKind.TypeReferenceExpression:
                     return RewriteTypeReferenceExpression((BoundTypeReferenceExpression)expression);
                 default:
@@ -322,6 +324,11 @@ namespace Compiler.CodeAnalysis.Binding
         }
 
         protected virtual BoundExpression RewriteTypeReferenceExpression(BoundTypeReferenceExpression node)
+        {
+            return node;
+        }
+
+        protected virtual BoundExpression RewriteSelfExpression(BoundSelfExpression node)
         {
             return node;
         }

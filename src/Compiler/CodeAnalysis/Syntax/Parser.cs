@@ -115,6 +115,16 @@ namespace Compiler.CodeAnalysis.Syntax
                                    ImmutableArray<SyntaxTrivia>.Empty,
                                    ImmutableArray<SyntaxTrivia>.Empty);
         }
+        
+        private SyntaxToken MatchToken(SyntaxKind kind1, SyntaxKind kind2)
+        {
+            if (Current.Kind == kind1 || Current.Kind == kind2)
+            {
+                return NextToken();
+            }
+            Diagnostics.ReportUnexpectedToken(Current.Location, Current.Kind, kind1);
+            return new SyntaxToken(_syntaxTree, kind1, Current.Position, null, null, ImmutableArray<SyntaxTrivia>.Empty, ImmutableArray<SyntaxTrivia>.Empty);
+        }
 
         public CompilationUnitSyntax ParseCompilationUnit()
         {
@@ -666,7 +676,14 @@ namespace Compiler.CodeAnalysis.Syntax
 
             while (condition)
             {
-                queue.Enqueue(ParseNameOrCallExpression());
+                if (Current.Kind == SyntaxKind.SelfKeyword)
+                {
+                    queue.Enqueue(new SelfKeywordSyntax(_syntaxTree, MatchToken(SyntaxKind.SelfKeyword)));
+                }
+                else
+                {
+                    queue.Enqueue(ParseNameOrCallExpression());
+                }
 
                 if (Current.Kind == SyntaxKind.DotToken)
                 {

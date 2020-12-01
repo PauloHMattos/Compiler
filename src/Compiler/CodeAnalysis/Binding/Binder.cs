@@ -1047,6 +1047,7 @@ namespace Compiler.CodeAnalysis.Binding
             var boundArguments = callExpression.Arguments;
             return memberAccessExpression switch
             {
+                BoundSelfExpression i => new BoundCallExpression(syntax, i, function, boundArguments),
                 BoundVariableExpression i => new BoundCallExpression(syntax, i, function, boundArguments),
                 BoundMemberAccessExpression i => new BoundCallExpression(syntax, i, function, boundArguments),
                 _ => new BoundErrorExpression(syntax)
@@ -1055,30 +1056,14 @@ namespace Compiler.CodeAnalysis.Binding
 
         private BoundExpression BindMemberAccessExpression(MemberAccessExpressionSyntax syntax)
         {
-            var nameExpression = BindNameExpression((NameExpressionSyntax)syntax.ParentExpression, true);
-            if (syntax.ParentExpression.Kind == SyntaxKind.NameExpression)
+            if (syntax.ParentExpression.Kind == SyntaxKind.MemberAccessExpression)
             {
-                if (syntax.CallExpression)
-                {
-                    var func = BindFunctionReference(syntax.IdentifierToken);
-                    if (func != null)
-                    {
-                        return BindCallExpression((CallExpressionSyntax)syntax.MemberExpression, nameExpression);
-                    }
-                    return new BoundErrorExpression(syntax);
-                }
-                else
-                {
-                    var member = BindMemberReference(nameExpression.Type, syntax.IdentifierToken);
-                    if (member != null)
-                    {
-                        return new BoundMemberAccessExpression(syntax, nameExpression, member);
-                    }
-                    return new BoundErrorExpression(syntax);
-                }
+                return BindMemberAccessExpression((MemberAccessExpressionSyntax)syntax.ParentExpression);
             }
-            else if (syntax.ParentExpression.Kind == SyntaxKind.MemberAccessExpression)
+            else if (syntax.ParentExpression.Kind == SyntaxKind.NameExpression || 
+                     syntax.ParentExpression.Kind == SyntaxKind.SelfKeyword)
             {
+                var nameExpression = BindNameExpression((NameExpressionSyntax)syntax.ParentExpression, true);
                 if (syntax.CallExpression)
                 {
                     var func = BindFunctionReference(syntax.IdentifierToken);
@@ -1174,7 +1159,12 @@ namespace Compiler.CodeAnalysis.Binding
                 // An error has already been reported so we can just return an error expression.
                 return new BoundErrorExpression(syntax);
             }
-
+            
+            if (syntax.IdentifierToken.Kind == SyntaxKind.SelfKeyword)
+            {
+                return BindSelfKeyword(syntax);
+            }
+            
             var name = syntax.IdentifierToken.Text;
             var symbol = BindSymbolReference(name, syntax.IdentifierToken.Location);
             if (symbol == null)
@@ -1200,6 +1190,23 @@ namespace Compiler.CodeAnalysis.Binding
                     Diagnostics.ReportNotAVariable(syntax.Location, syntax.IdentifierToken.Text);
                     return new BoundErrorExpression(syntax);
             }
+        }
+        
+        private BoundExpression BindSelfKeyword(NameExpressionSyntax syntax)
+        {
+            if (_function == null)
+            {
+                Diagnostics.ReportCannotUseSelfOutsideOfAFunction(syntax.IdentifierToken.Location);
+                return new BoundErrorExpression(syntax);
+            }
+
+            if (_function.Receiver == null)
+            {
+                Diagnostics.ReportCannotUseSelfOutsideOfReceiverFunctions(syntax.IdentifierToken.Location, _function.Name);
+                return new BoundErrorExpression(syntax);
+            }
+
+            return new BoundSelfExpression(syntax, _function.Receiver);
         }
 
         private TypeSymbol? LookupType(string name)

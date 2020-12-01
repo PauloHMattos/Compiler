@@ -798,6 +798,39 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             AssertDiagnostics(text, diagnostics);
         }
         
+        
+        [Fact]
+        public void Binder_MemberAccess_CallExpressionWithReceiver()
+        {
+            var text = @"
+                    struct TestStruct
+                    {
+                        var a : int
+                        var b : bool = default
+                        var c = ""abc""
+                    }
+
+                    function TestStruct.f(i : int)
+                    {
+                        self.printI()
+                    }
+                    
+                    function TestStruct.printI()
+                    {
+                        print(""i"")
+                    }
+
+                    var test : TestStruct
+                    test.f(10)
+            ";
+
+            var diagnostics = new List<string>()
+            {
+            };
+
+            AssertDiagnostics(text, diagnostics);
+        }
+        
         private static Compilation AssertDiagnostics(string text, List<string> expectedDiagnostics)
         {
             var annotatedText = AnnotatedText.Parse(text);

@@ -237,5 +237,15 @@ namespace Compiler.CodeAnalysis.Diagnostics
         {
             throw new NotImplementedException();
         }
+
+        internal void ReportCannotUseSelfOutsideOfAFunction(TextLocation location)
+        {
+            ReportError(location, DiagnosticCode.CannotUseSelfOutsideOfAFunction.GetDiagnostic());
+        }
+
+        internal void ReportCannotUseSelfOutsideOfReceiverFunctions(TextLocation location, string name)
+        {
+            ReportError(location, DiagnosticCode.CannotUseSelfOutsideOfReceiverFunctions.GetDiagnostic(name));
+        }
     }
 }

@@ -649,6 +649,9 @@ namespace Compiler.CodeAnalysis.Emit
                 case BoundNodeKind.MemberAssignmentExpression:
                     EmitMemberAssignmentExpression(ilProcessor, (BoundMemberAssignmentExpression)node);
                     break;
+                case BoundNodeKind.SelfExpression:
+                    EmitThisExpression(ilProcessor, (BoundSelfExpression)node);
+                    break;
                 default:
                     throw new InvalidOperationException($"Unexpected node kind {node.Kind}");
             }
@@ -696,7 +699,8 @@ namespace Compiler.CodeAnalysis.Emit
                 }
                 else
                 {
-                    ilProcessor.Emit(OpCodes.Ldarg, parameter.Ordinal);
+                    ilProcessor.Emit(OpCodes.Ldarg, ilProcessor.Body.Method.HasThis ? parameter.Ordinal + 1 : parameter.Ordinal);
+                    // ilProcessor.Emit(OpCodes.Ldarg, parameter.Ordinal);
                 }
             }
             else
@@ -860,6 +864,10 @@ namespace Compiler.CodeAnalysis.Emit
                 {
                     EmitMemberAccessExpression(ilProcessor, field);
                 }
+                else if (node.Instance is BoundSelfExpression instance)
+                {
+                    EmitThisExpression(ilProcessor, instance);
+                }
                 else
                 {
                     throw new Exception("Unexpected node type in call expression");
@@ -987,12 +995,6 @@ namespace Compiler.CodeAnalysis.Emit
             var typeReference = Import(node.Instance.Type);
             var typeDefinition = typeReference.Resolve();
 
-            ilProcessor.Emit(OpCodes.Dup);
-            var expressionTypeReference = Import(node.Expression.Type);
-            var variableDefinition = new VariableDefinition(expressionTypeReference);
-            ilProcessor.Body.Variables.Add(variableDefinition);
-            ilProcessor.Emit(OpCodes.Stloc, variableDefinition);
-
             switch (node.Member.MemberKind)
             {
                 case MemberKind.Field:
@@ -1003,7 +1005,8 @@ namespace Compiler.CodeAnalysis.Emit
                     throw new InvalidOperationException($"Unexpected member type {node.Member.Kind}");
             }
 
-            ilProcessor.Emit(OpCodes.Ldloc, variableDefinition);
+            // Tmp variable that will get popped
+            ilProcessor.Emit(OpCodes.Ldc_I4_0);
         }
 
         private static void EmitFieldAssignmentExpression(ILProcessor ilProcessor, BoundMemberAssignmentExpression node, TypeDefinition typeDefinition)
@@ -1016,6 +1019,11 @@ namespace Compiler.CodeAnalysis.Emit
                     break;
                 }
             }
+        }
+
+        private void EmitThisExpression(ILProcessor ilProcessor, BoundSelfExpression node)
+        {
+            ilProcessor.Emit(OpCodes.Ldarg_0);
         }
     }
 }
