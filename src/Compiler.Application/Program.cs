@@ -86,11 +86,6 @@ namespace Compiler.Application
             var compilation = Compilation.Create(syntaxTrees.ToArray());
             var diagnostics = compilation.Emit(moduleName, referencePaths.ToArray(), outputPath);
             
-            foreach (var tree in compilation.SyntaxTrees)
-            {
-                //tree.Root.WriteTo(Console.Out);
-            }
-
             if (diagnostics.Any())
             {
                 Console.Error.WriteDiagnostics(diagnostics);

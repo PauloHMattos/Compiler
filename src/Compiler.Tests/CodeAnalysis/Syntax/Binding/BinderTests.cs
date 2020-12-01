@@ -831,6 +831,66 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             AssertDiagnostics(text, diagnostics);
         }
         
+        [Fact]
+        public void Binder_MemberAccess_AccessMemberWithoutSelf()
+        {
+            var text = @"
+                    struct TestStruct
+                    {
+                        var a : int
+                        var b : bool = default
+                        var c = ""abc""
+                    }
+
+                    function TestStruct.f(i : int)
+                    {
+                        print(self.a + 1)
+                        print(i)
+                        print(b)
+                    }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+            };
+
+            AssertDiagnostics(text, diagnostics);
+        }
+        
+        
+        [Fact]
+        public void Binder_MemberAccess_Self()
+        {
+            var text = @"
+                    struct TestStruct
+                    {
+                        var a : int
+                        var b : bool = default
+                        var c = ""abc""
+                    }
+
+                    function TestStruct.f()
+                    {
+                        print(self.a)
+                        print(self.b)
+                        printTest(self)
+                    }
+                    
+                    function printTest(t : TestStruct)
+                    {
+                        print(t.a)
+                        print(t.b)
+                    }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+            };
+
+            AssertDiagnostics(text, diagnostics);
+        }
+        
+        
         private static Compilation AssertDiagnostics(string text, List<string> expectedDiagnostics)
         {
             var annotatedText = AnnotatedText.Parse(text);

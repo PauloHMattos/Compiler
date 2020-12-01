@@ -310,7 +310,7 @@ namespace Compiler.CodeAnalysis.Binding
 
             foreach (var varDeclarationSyntax in members)
             {
-                var decl = BindVariableDeclarationStatement(varDeclarationSyntax);
+                var decl = BindVariableDeclarationStatement(varDeclarationSyntax, false);
 
                 if (decl is BoundVariableDeclarationStatement d)
                 {
@@ -404,7 +404,6 @@ namespace Compiler.CodeAnalysis.Binding
 
                 if (!isAllowedExpression)
                 {
-                    Console.WriteLine($"{es.Expression.Kind} != SyntaxKind.VariableDeclarationStatement");
                     Diagnostics.ReportInvalidExpressionStatement(syntax.Location);
                 }
             }
@@ -461,7 +460,7 @@ namespace Compiler.CodeAnalysis.Binding
             return new BoundExpressionStatement(syntax, boundExpression);
         }
 
-        private BoundStatement BindVariableDeclarationStatement(VariableDeclarationStatementSyntax syntax)
+        private BoundStatement BindVariableDeclarationStatement(VariableDeclarationStatementSyntax syntax, bool addToScope = true)
         {
             var isReadOnly = syntax.Keyword.Kind == SyntaxKind.ConstKeyword;
             var type = BindTypeClause(syntax.TypeClause);
@@ -470,7 +469,7 @@ namespace Compiler.CodeAnalysis.Binding
             {
                 var initializer = BindExpression(syntax.Initializer);
                 var variableType = type ?? initializer.Type;
-                var variable = BindVariableDeclaration(syntax.Identifier, isReadOnly, variableType, initializer.ConstantValue);
+                var variable = BindVariableDeclaration(syntax.Identifier, isReadOnly, variableType, initializer.ConstantValue, addToScope);
                 var convertedInitializer = BindConversion(syntax.Initializer.Location, initializer, variableType);
 
                 return new BoundVariableDeclarationStatement(syntax, variable, convertedInitializer);
@@ -481,7 +480,7 @@ namespace Compiler.CodeAnalysis.Binding
                     ? BindDefaultExpression((DefaultKeywordSyntax)syntax.Initializer, syntax.TypeClause)
                     : BindSyntheticDefaultExpression(syntax, syntax.TypeClause);
                 var variableType = type;
-                var variable = BindVariableDeclaration(syntax.Identifier, isReadOnly, variableType);
+                var variable = BindVariableDeclaration(syntax.Identifier, isReadOnly, variableType, null, addToScope);
                 var convertedInitializer = BindConversion(syntax.TypeClause!.Location, initializer!, variableType);
 
                 return new BoundVariableDeclarationStatement(syntax, variable, convertedInitializer);
@@ -568,7 +567,7 @@ namespace Compiler.CodeAnalysis.Binding
             return type;
         }
 
-        private VariableSymbol BindVariableDeclaration(SyntaxToken identifier, bool isReadOnly, TypeSymbol type, BoundConstant? constant = null)
+        private VariableSymbol BindVariableDeclaration(SyntaxToken identifier, bool isReadOnly, TypeSymbol type, BoundConstant? constant = null, bool addToScope = true)
         {
             var declare = !identifier.IsMissing;
             var name = declare ? identifier.Text : "?";
@@ -576,7 +575,7 @@ namespace Compiler.CodeAnalysis.Binding
                 ? (VariableSymbol)new GlobalVariableSymbol(name, isReadOnly, type, constant)
                 : new LocalVariableSymbol(name, isReadOnly, type, constant);
 
-            if (declare && !_scope.TryDeclareVariable(variable))
+            if (declare && addToScope && !_scope.TryDeclareVariable(variable))
             {
                 Diagnostics.ReportSymbolAlreadyDeclared(identifier.Location, name);
             }
@@ -584,9 +583,9 @@ namespace Compiler.CodeAnalysis.Binding
             return variable;
         }
 
-        private Symbol? BindSymbolReference(string name, TextLocation location)
+        private Symbol? BindSymbolReference(SyntaxToken identifier, TextLocation location)
         {
-            switch (_scope.TryLookupSymbol(name))
+            switch (_scope.TryLookupSymbol(identifier.Text))
             {
                 case VariableSymbol variable:
                     return variable;
@@ -598,7 +597,12 @@ namespace Compiler.CodeAnalysis.Binding
                     return function;
 
                 default:
-                    Diagnostics.ReportUndefinedName(location, name);
+                    if (_function?.Receiver != null)
+                    {
+                        return BindMemberReference(_function.Receiver, identifier, false);
+                    }
+                    
+                    Diagnostics.ReportUndefinedName(location, identifier.Text);
                     return null;
             }
         }
@@ -629,7 +633,7 @@ namespace Compiler.CodeAnalysis.Binding
         {
             _scope = new BoundScope(_scope);
 
-            var variable = BindVariableDeclaration(syntax.Identifier, false, TypeSymbol.Int);
+            var variable = BindVariableDeclaration(syntax.Identifier, false, TypeSymbol.Int, null, true);
 
             var lowerBound = BindExpression(syntax.LowerBound, TypeSymbol.Int);
             var upperBound = BindExpression(syntax.UpperBound, TypeSymbol.Int);
@@ -803,6 +807,8 @@ namespace Compiler.CodeAnalysis.Binding
                     return BindUnaryExpression((UnaryExpressionSyntax)syntax);
                 case SyntaxKind.NameExpression:
                     return BindNameExpression((NameExpressionSyntax)syntax);
+                case SyntaxKind.SelfKeyword:
+                    return BindSelfKeyword((SelfKeywordSyntax)syntax);
                 default:
                     throw new InvalidExpressionException($"Unexpected expression syntax {syntax.Kind}");
             }
@@ -1090,7 +1096,7 @@ namespace Compiler.CodeAnalysis.Binding
             return new BoundErrorExpression(syntax);
         }
 
-        private MemberSymbol? BindMemberReference(TypeSymbol typeSymbol, SyntaxToken identifierToken)
+        private MemberSymbol? BindMemberReference(TypeSymbol typeSymbol, SyntaxToken identifierToken, bool report = true)
         {
             var memberName = identifierToken.Text;
             foreach (var member in typeSymbol.Members)
@@ -1100,7 +1106,10 @@ namespace Compiler.CodeAnalysis.Binding
                     return member;
                 }
             }
-            Diagnostics.ReportCannotAccessMember(identifierToken.Location, typeSymbol.Name, identifierToken.Text);
+            if (report)
+            {
+                Diagnostics.ReportCannotAccessMember(identifierToken.Location, typeSymbol.Name, identifierToken.Text);
+            }
             return null;
         }
 
@@ -1162,11 +1171,10 @@ namespace Compiler.CodeAnalysis.Binding
             
             if (syntax.IdentifierToken.Kind == SyntaxKind.SelfKeyword)
             {
-                return BindSelfKeyword(syntax);
+                return BindSelfKeyword((SelfKeywordSyntax)syntax);
             }
             
-            var name = syntax.IdentifierToken.Text;
-            var symbol = BindSymbolReference(name, syntax.IdentifierToken.Location);
+            var symbol = BindSymbolReference(syntax.IdentifierToken, syntax.IdentifierToken.Location);
             if (symbol == null)
             {
                 // No need to report an error
@@ -1181,6 +1189,14 @@ namespace Compiler.CodeAnalysis.Binding
                 case SymbolKind.Parameter:
                     return new BoundVariableExpression(syntax, (VariableSymbol)symbol, byReference);
 
+
+                case SymbolKind.Member:
+                    var selfKeyword = new SyntaxToken(syntax.SyntaxTree, SyntaxKind.SelfKeyword, syntax.Span.End, "self", null, ImmutableArray<SyntaxTrivia>.Empty, ImmutableArray<SyntaxTrivia>.Empty);
+                    var injectedSelf = new SelfKeywordSyntax(syntax.SyntaxTree, selfKeyword);
+                    var dotToken = new SyntaxToken(syntax.SyntaxTree, SyntaxKind.DotToken, syntax.Span.End, ".", null, ImmutableArray<SyntaxTrivia>.Empty, ImmutableArray<SyntaxTrivia>.Empty);
+                    var memberAccess = new MemberAccessExpressionSyntax(syntax.SyntaxTree, injectedSelf, dotToken, syntax);
+                    return BindMemberAccessExpression(memberAccess);
+
                 case SymbolKind.Type:
                 case SymbolKind.Enum:
                 case SymbolKind.Struct:
@@ -1192,7 +1208,7 @@ namespace Compiler.CodeAnalysis.Binding
             }
         }
         
-        private BoundExpression BindSelfKeyword(NameExpressionSyntax syntax)
+        private BoundExpression BindSelfKeyword(SelfKeywordSyntax syntax)
         {
             if (_function == null)
             {

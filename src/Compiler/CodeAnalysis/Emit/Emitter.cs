@@ -260,7 +260,7 @@ namespace Compiler.CodeAnalysis.Emit
         private void EmitFunctionDeclaration(FunctionSymbol function)
         {
             var functionType = Import(function.ReturnType);
-            var methodAttributes = function.Receiver == null ? MethodAttributes.Static | MethodAttributes.Private : MethodAttributes.Public;
+            var methodAttributes = function.Receiver == null ? MethodAttributes.Static : MethodAttributes.Public;
             var method = new MethodDefinition(function.Name, methodAttributes, functionType);
 
             foreach (var parameter in function.Parameters)
@@ -612,7 +612,7 @@ namespace Compiler.CodeAnalysis.Emit
             }
         }
 
-        private void EmitExpression(ILProcessor ilProcessor, BoundExpression node)
+        private void EmitExpression(ILProcessor ilProcessor, BoundExpression node, BoundNodeKind statementKind = BoundNodeKind.ExpressionStatement)
         {
             if (node.ConstantValue != null)
             {
@@ -650,7 +650,7 @@ namespace Compiler.CodeAnalysis.Emit
                     EmitMemberAssignmentExpression(ilProcessor, (BoundMemberAssignmentExpression)node);
                     break;
                 case BoundNodeKind.SelfExpression:
-                    EmitThisExpression(ilProcessor, (BoundSelfExpression)node);
+                    EmitSelfExpression(ilProcessor, (BoundSelfExpression)node);
                     break;
                 default:
                     throw new InvalidOperationException($"Unexpected node kind {node.Kind}");
@@ -700,7 +700,6 @@ namespace Compiler.CodeAnalysis.Emit
                 else
                 {
                     ilProcessor.Emit(OpCodes.Ldarg, ilProcessor.Body.Method.HasThis ? parameter.Ordinal + 1 : parameter.Ordinal);
-                    // ilProcessor.Emit(OpCodes.Ldarg, parameter.Ordinal);
                 }
             }
             else
@@ -866,11 +865,11 @@ namespace Compiler.CodeAnalysis.Emit
                 }
                 else if (node.Instance is BoundSelfExpression instance)
                 {
-                    EmitThisExpression(ilProcessor, instance);
+                    EmitSelfExpression(ilProcessor, instance);
                 }
                 else
                 {
-                    throw new Exception("Unexpected node type in call expression");
+                    throw new InvalidOperationException("Unexpected node type in call expression");
                 }
                 EmitExpressions(ilProcessor, node.Arguments);
                 ilProcessor.Emit(OpCodes.Call, methodDefinition);
@@ -909,6 +908,16 @@ namespace Compiler.CodeAnalysis.Emit
         {
             foreach (var argument in arguments)
             {
+                if (argument.Kind == BoundNodeKind.SelfExpression)
+                {
+                    EmitSelfExpression(ilProcessor, (BoundSelfExpression)argument);
+                    var type = Import(argument.Type);
+                    if (type.IsValueType)
+                    {
+                        ilProcessor.Emit(OpCodes.Ldobj, type);
+                    }
+                    continue;
+                }
                 EmitExpression(ilProcessor, argument);
             }
         }
@@ -953,8 +962,15 @@ namespace Compiler.CodeAnalysis.Emit
             var typeDefinition = Import(node.Instance.Type).Resolve();
             Debug.Assert(typeDefinition != null);
 
-            EmitExpression(ilProcessor, node.Instance);
-
+            if (node.Instance.Kind == BoundNodeKind.SelfExpression)
+            {
+                EmitSelfExpression(ilProcessor, (BoundSelfExpression)node.Instance);
+                //ilProcessor.RemoveAt(ilProcessor.Body.Instructions.Count - 1);
+            }
+            else
+            {
+                EmitExpression(ilProcessor, node.Instance);
+            }
             switch (node.Member.MemberKind)
             {
                 case MemberKind.Field:
@@ -1021,9 +1037,12 @@ namespace Compiler.CodeAnalysis.Emit
             }
         }
 
-        private void EmitThisExpression(ILProcessor ilProcessor, BoundSelfExpression node)
+        private void EmitSelfExpression(ILProcessor ilProcessor, BoundSelfExpression node)
         {
-            ilProcessor.Emit(OpCodes.Ldarg_0);
+            ilProcessor.Emit(OpCodes.Ldarg, ilProcessor.Body.ThisParameter);
+            // var type = ilProcessor.Body.ThisParameter.ParameterType;
+            // ilProcessor.Emit(OpCodes.Ldarg_0);
+            // ilProcessor.Emit(type.IsValueType ? OpCodes.Ldarg : OpCodes.Ldarga, ilProcessor.Body.ThisParameter);
         }
     }
 }

@@ -116,16 +116,6 @@ namespace Compiler.CodeAnalysis.Syntax
                                    ImmutableArray<SyntaxTrivia>.Empty);
         }
         
-        private SyntaxToken MatchToken(SyntaxKind kind1, SyntaxKind kind2)
-        {
-            if (Current.Kind == kind1 || Current.Kind == kind2)
-            {
-                return NextToken();
-            }
-            Diagnostics.ReportUnexpectedToken(Current.Location, Current.Kind, kind1);
-            return new SyntaxToken(_syntaxTree, kind1, Current.Position, null, null, ImmutableArray<SyntaxTrivia>.Empty, ImmutableArray<SyntaxTrivia>.Empty);
-        }
-
         public CompilationUnitSyntax ParseCompilationUnit()
         {
             var members = ParseMembers();
@@ -625,11 +615,24 @@ namespace Compiler.CodeAnalysis.Syntax
 
         private NameExpressionSyntax ParseNameExpression(bool withSuffix = false)
         {
-            if (!withSuffix || Peek(1).Kind != SyntaxKind.DotToken)
+            var hasSuffix = withSuffix && Peek(1).Kind == SyntaxKind.DotToken;
+            
+            if (Current.Kind == SyntaxKind.SelfKeyword)
+            {
+                var selfExpression = new SelfKeywordSyntax(_syntaxTree, MatchToken(SyntaxKind.SelfKeyword));
+                if (!hasSuffix)
+                {
+                    return selfExpression;
+                }
+                return ParseMemberAccess(selfExpression);
+            }
+
+            if (!hasSuffix)
             {
                 var identifier = MatchToken(SyntaxKind.IdentifierToken);
                 return new NameExpressionSyntax(_syntaxTree, identifier);
             }
+
             return ParseMemberAccess();
         }
 
@@ -668,23 +671,21 @@ namespace Compiler.CodeAnalysis.Syntax
             return new SeparatedSyntaxList<ExpressionSyntax>(nodesAndSeparators.ToImmutable());
         }
         
-        private MemberAccessExpressionSyntax ParseMemberAccess()
+        private MemberAccessExpressionSyntax ParseMemberAccess(NameExpressionSyntax? first = null)
         {
             var queue = new Queue<NameExpressionSyntax>();
             var dotTokenQueue = new Queue<SyntaxToken>();
             var condition = true;
+            if (first != null)
+            {
+                queue.Enqueue(first);
+                dotTokenQueue.Enqueue(MatchToken(SyntaxKind.DotToken));
+            }
 
             while (condition)
             {
-                if (Current.Kind == SyntaxKind.SelfKeyword)
-                {
-                    queue.Enqueue(new SelfKeywordSyntax(_syntaxTree, MatchToken(SyntaxKind.SelfKeyword)));
-                }
-                else
-                {
-                    queue.Enqueue(ParseNameOrCallExpression());
-                }
-
+                queue.Enqueue(ParseNameOrCallExpression());
+                
                 if (Current.Kind == SyntaxKind.DotToken)
                 {
                     dotTokenQueue.Enqueue(MatchToken(SyntaxKind.DotToken));
@@ -695,7 +696,7 @@ namespace Compiler.CodeAnalysis.Syntax
                 }
             }
 
-            var first = queue.Dequeue();
+            first = queue.Dequeue();
             return ParseMemberAccessInternal(queue, dotTokenQueue, first);
         }
 

@@ -1,7 +1,4 @@
-﻿using System;
-using Compiler.CodeAnalysis.Syntax.Attributes;
-
-namespace Compiler.CodeAnalysis.Syntax
+﻿namespace Compiler.CodeAnalysis.Syntax
 {
     public partial class CallExpressionSyntax : NameExpressionSyntax
     {
