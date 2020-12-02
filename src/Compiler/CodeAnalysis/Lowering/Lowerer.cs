@@ -77,7 +77,7 @@ namespace Compiler.CodeAnalysis.Lowering
                 }
             }
 
-            if (symbol is FunctionSymbol function && function.Type == TypeSymbol.Void &&
+            if (symbol is FunctionSymbol function && function.ReturnType == TypeSymbol.Void &&
                 (builder.Count == 0 || CanFallThrough(builder.Last())))
             {
                 builder.Add(new BoundReturnStatement(statement.Syntax, null));
@@ -246,12 +246,12 @@ namespace Compiler.CodeAnalysis.Lowering
 
             return Assignment(
                 newNode.Syntax, 
-                newNode.Variable,
+                newNode.Left,
                 Binary(
                     newNode.Syntax, 
-                    Variable(newNode.Syntax, newNode.Variable, false),
+                    newNode.Left,
                     newNode.Operator,
-                    newNode.Expression
+                    newNode.Right
                 )
             );
         }
@@ -266,28 +266,6 @@ namespace Compiler.CodeAnalysis.Lowering
         {
             var rewrittenNode = base.RewriteVariableDeclarationStatement(node);
             return new BoundSequencePointStatement(rewrittenNode.Syntax, rewrittenNode, rewrittenNode.Syntax.Location);
-        }
-
-        protected override BoundExpression RewriteCompoundMemberAssignmentExpression(BoundCompoundMemberAssignmentExpression node)
-        {
-            var newNode = (BoundCompoundMemberAssignmentExpression)base.RewriteCompoundMemberAssignmentExpression(node);
-            
-            // a.f <op>= b
-            //
-            // --->
-            //
-            // a.f = (a.f <op> b)
-            return Assignment(
-                newNode.Syntax,
-                newNode.Instance,
-                newNode.Member,
-                Binary(
-                    newNode.Syntax,
-                    Member(newNode.Syntax, newNode.Instance, newNode.Member),
-                    newNode.Operator,
-                    newNode.Expression
-                )
-            );
         }
     }
 }

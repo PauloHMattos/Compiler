@@ -114,7 +114,7 @@ namespace Compiler.CodeAnalysis.Binding
             FunctionSymbol? mainFunction;
 
             mainFunction = functions.FirstOrDefault(f => f.Name == "main");
-            if (mainFunction != null && (mainFunction.Type != TypeSymbol.Void || mainFunction.Parameters.Any()))
+            if (mainFunction != null && (mainFunction.ReturnType != TypeSymbol.Void || mainFunction.Parameters.Any()))
             {
                 binder.Diagnostics.ReportMainMustHaveCorrectSignature(mainFunction.Declaration!.Identifier.Location);
             }
@@ -183,7 +183,7 @@ namespace Compiler.CodeAnalysis.Binding
                 // We will skip attempting to lower the bodies for these and allow the Emitter to automatically
                 // generate the code necessary.  This will avoid the potential of reporting diagnostic errors to
                 // the user for code they never wrote.
-                if (function.Type is StructSymbol && function.Name.EndsWith(".ctor"))
+                if (function.ReturnType is StructSymbol && function.Name.EndsWith(".ctor"))
                 {
                     continue;
                 }
@@ -192,7 +192,7 @@ namespace Compiler.CodeAnalysis.Binding
                 var body = binder.BindStatement(function.Declaration!.Body);
                 var loweredBody = Lowerer.Lower(function, body);
 
-                if (function.Type != TypeSymbol.Void && !ControlFlowGraph.AllPathsReturn(loweredBody))
+                if (function.ReturnType != TypeSymbol.Void && !ControlFlowGraph.AllPathsReturn(loweredBody))
                 {
                     binder.Diagnostics.ReportAllPathsMustReturn(function.Declaration!.Identifier.Location);
                 }
@@ -242,7 +242,9 @@ namespace Compiler.CodeAnalysis.Binding
             }
 
             var type = BindTypeClause(syntax.Type) ?? TypeSymbol.Void;
-            var function = new FunctionSymbol(syntax.Identifier.Text, parameters.ToImmutable(), type, syntax);
+            var receiver = BindTypeClause(syntax.Receiver);
+
+            var function = new FunctionSymbol(syntax.Identifier.Text, parameters.ToImmutable(), type, ImmutableArray<FunctionSymbol>.Empty, syntax, receiver);
             if (function.Name != null && !_scope.TryDeclareFunction(function))
             {
                 Diagnostics.ReportSymbolAlreadyDeclared(syntax.Identifier.Location, function.Name);
@@ -308,7 +310,7 @@ namespace Compiler.CodeAnalysis.Binding
 
             foreach (var varDeclarationSyntax in members)
             {
-                var decl = BindVariableDeclarationStatement(varDeclarationSyntax);
+                var decl = BindVariableDeclarationStatement(varDeclarationSyntax, false);
 
                 if (decl is BoundVariableDeclarationStatement d)
                 {
@@ -353,11 +355,11 @@ namespace Compiler.CodeAnalysis.Binding
             var ctorWithParams = new FunctionSymbol(structIdentifier + ".ctor", ctorParameters.ToImmutable(), structSymbol);
             if (structIdentifier != null)
             {
-                if(!_scope.TryDeclareFunction(ctor))
+                if (!_scope.TryDeclareFunction(ctor))
                 {
                     Diagnostics.ReportSymbolAlreadyDeclared(syntax.Identifier.Location, ctor.Name);
                 }
-                if(!_scope.TryDeclareFunction(ctorWithParams))
+                if (!_scope.TryDeclareFunction(ctorWithParams))
                 {
                     Diagnostics.ReportSymbolAlreadyDeclared(syntax.Identifier.Location, ctorWithParams.Name);
                 }
@@ -396,10 +398,8 @@ namespace Compiler.CodeAnalysis.Binding
                 var isAllowedExpression = es.Expression.Kind == BoundNodeKind.ErrorExpression ||
                                             es.Expression.Kind == BoundNodeKind.CallExpression ||
                                             es.Expression.Kind == BoundNodeKind.AssignmentExpression ||
-                                            es.Expression.Kind == BoundNodeKind.CompoundAssignmentExpression ||
-                                            es.Expression.Kind == BoundNodeKind.MemberAssignmentExpression ||
-                                            es.Expression.Kind == BoundNodeKind.CompoundMemberAssignmentExpression;
-                
+                                            es.Expression.Kind == BoundNodeKind.CompoundAssignmentExpression;
+
                 if (!isAllowedExpression)
                 {
                     Diagnostics.ReportInvalidExpressionStatement(syntax.Location);
@@ -458,7 +458,7 @@ namespace Compiler.CodeAnalysis.Binding
             return new BoundExpressionStatement(syntax, boundExpression);
         }
 
-        private BoundStatement BindVariableDeclarationStatement(VariableDeclarationStatementSyntax syntax)
+        private BoundStatement BindVariableDeclarationStatement(VariableDeclarationStatementSyntax syntax, bool addToScope = true)
         {
             var isReadOnly = syntax.Keyword.Kind == SyntaxKind.ConstKeyword;
             var type = BindTypeClause(syntax.TypeClause);
@@ -467,7 +467,7 @@ namespace Compiler.CodeAnalysis.Binding
             {
                 var initializer = BindExpression(syntax.Initializer);
                 var variableType = type ?? initializer.Type;
-                var variable = BindVariableDeclaration(syntax.Identifier, isReadOnly, variableType, initializer.ConstantValue);
+                var variable = BindVariableDeclaration(syntax.Identifier, isReadOnly, variableType, initializer.ConstantValue, addToScope);
                 var convertedInitializer = BindConversion(syntax.Initializer.Location, initializer, variableType);
 
                 return new BoundVariableDeclarationStatement(syntax, variable, convertedInitializer);
@@ -478,7 +478,7 @@ namespace Compiler.CodeAnalysis.Binding
                     ? BindDefaultExpression((DefaultKeywordSyntax)syntax.Initializer, syntax.TypeClause)
                     : BindSyntheticDefaultExpression(syntax, syntax.TypeClause);
                 var variableType = type;
-                var variable = BindVariableDeclaration(syntax.Identifier, isReadOnly, variableType);
+                var variable = BindVariableDeclaration(syntax.Identifier, isReadOnly, variableType, null, addToScope);
                 var convertedInitializer = BindConversion(syntax.TypeClause!.Location, initializer!, variableType);
 
                 return new BoundVariableDeclarationStatement(syntax, variable, convertedInitializer);
@@ -517,11 +517,17 @@ namespace Compiler.CodeAnalysis.Binding
             if (type is StructSymbol s)
             {
                 // Struct types default to calling their empty constructor
-                var ctorSyntaxToken = new SyntaxToken(syntax.SyntaxTree, SyntaxKind.IdentifierToken, syntax.Span.End, s.Name, null, ImmutableArray<SyntaxTrivia>.Empty, ImmutableArray<SyntaxTrivia>.Empty);
+                var ctorSyntaxExpression = new SyntaxToken(syntax.SyntaxTree,
+                                                                SyntaxKind.IdentifierToken,
+                                                                syntax.Span.End,
+                                                                s.Name,
+                                                                null,
+                                                                ImmutableArray<SyntaxTrivia>.Empty,
+                                                                ImmutableArray<SyntaxTrivia>.Empty);
                 var openParenToken = new SyntaxToken(syntax.SyntaxTree, SyntaxKind.OpenParenthesisToken, syntax.Span.End, "(", null, ImmutableArray<SyntaxTrivia>.Empty, ImmutableArray<SyntaxTrivia>.Empty);
                 var closeParenToken = new SyntaxToken(syntax.SyntaxTree, SyntaxKind.CloseParenthesisToken, syntax.Span.End, ")", null, ImmutableArray<SyntaxTrivia>.Empty, ImmutableArray<SyntaxTrivia>.Empty);
 
-                return BindCallExpression(new CallExpressionSyntax(syntax.SyntaxTree, ctorSyntaxToken, openParenToken, new SeparatedSyntaxList<ExpressionSyntax>(ImmutableArray<SyntaxNode>.Empty), closeParenToken));
+                return BindCallExpression(new CallExpressionSyntax(syntax.SyntaxTree, ctorSyntaxExpression, openParenToken, new SeparatedSyntaxList<ExpressionSyntax>(ImmutableArray<SyntaxNode>.Empty), closeParenToken));
             }
 
             return new BoundLiteralExpression(syntax, type, type.DefaultValue!);
@@ -544,7 +550,22 @@ namespace Compiler.CodeAnalysis.Binding
             return type!;
         }
 
-        private VariableSymbol BindVariableDeclaration(SyntaxToken identifier, bool isReadOnly, TypeSymbol type, BoundConstant? constant = null)
+        private TypeSymbol? BindTypeClause(SyntaxToken? identifier)
+        {
+            if (identifier == null || identifier.IsMissing)
+            {
+                return null;
+            }
+
+            var type = LookupType(identifier.Text);
+            if (type == null)
+            {
+                Diagnostics.ReportUndefinedType(identifier.Location, identifier.Text);
+            }
+            return type;
+        }
+
+        private VariableSymbol BindVariableDeclaration(SyntaxToken identifier, bool isReadOnly, TypeSymbol type, BoundConstant? constant = null, bool addToScope = true)
         {
             var declare = !identifier.IsMissing;
             var name = declare ? identifier.Text : "?";
@@ -552,7 +573,7 @@ namespace Compiler.CodeAnalysis.Binding
                 ? (VariableSymbol)new GlobalVariableSymbol(name, isReadOnly, type, constant)
                 : new LocalVariableSymbol(name, isReadOnly, type, constant);
 
-            if (declare && !_scope.TryDeclareVariable(variable))
+            if (declare && addToScope && !_scope.TryDeclareVariable(variable))
             {
                 Diagnostics.ReportSymbolAlreadyDeclared(identifier.Location, name);
             }
@@ -560,9 +581,9 @@ namespace Compiler.CodeAnalysis.Binding
             return variable;
         }
 
-        private Symbol? BindSymbolReference(string name, TextLocation location)
+        private Symbol? BindSymbolReference(SyntaxToken identifier, TextLocation location)
         {
-            switch (_scope.TryLookupSymbol(name))
+            switch (_scope.TryLookupSymbol(identifier.Text))
             {
                 case VariableSymbol variable:
                     return variable;
@@ -574,7 +595,12 @@ namespace Compiler.CodeAnalysis.Binding
                     return function;
 
                 default:
-                    Diagnostics.ReportUndefinedName(location, name);
+                    if (_function?.Receiver != null)
+                    {
+                        return BindMemberReference(_function.Receiver, identifier, false);
+                    }
+                    
+                    Diagnostics.ReportUndefinedName(location, identifier.Text);
                     return null;
             }
         }
@@ -605,7 +631,7 @@ namespace Compiler.CodeAnalysis.Binding
         {
             _scope = new BoundScope(_scope);
 
-            var variable = BindVariableDeclaration(syntax.Identifier, false, TypeSymbol.Int);
+            var variable = BindVariableDeclaration(syntax.Identifier, false, TypeSymbol.Int, null, true);
 
             var lowerBound = BindExpression(syntax.LowerBound, TypeSymbol.Int);
             var upperBound = BindExpression(syntax.UpperBound, TypeSymbol.Int);
@@ -671,7 +697,7 @@ namespace Compiler.CodeAnalysis.Binding
             }
             else
             {
-                if (_function.Type == TypeSymbol.Void)
+                if (_function.ReturnType == TypeSymbol.Void)
                 {
                     if (syntax.Expression != null)
                     {
@@ -682,11 +708,11 @@ namespace Compiler.CodeAnalysis.Binding
                 {
                     if (expression != null)
                     {
-                        expression = BindConversion(syntax.Expression!.Location, expression, _function.Type, false);
+                        expression = BindConversion(syntax.Expression!.Location, expression, _function.ReturnType, false);
                     }
                     else
                     {
-                        Diagnostics.ReportMissingReturnExpression(syntax.ReturnKeyword.Location, _function.Type);
+                        Diagnostics.ReportMissingReturnExpression(syntax.ReturnKeyword.Location, _function.ReturnType);
                     }
                 }
             }
@@ -779,6 +805,8 @@ namespace Compiler.CodeAnalysis.Binding
                     return BindUnaryExpression((UnaryExpressionSyntax)syntax);
                 case SyntaxKind.NameExpression:
                     return BindNameExpression((NameExpressionSyntax)syntax);
+                case SyntaxKind.SelfKeyword:
+                    return BindSelfKeyword((SelfKeywordSyntax)syntax);
                 default:
                     throw new InvalidExpressionException($"Unexpected expression syntax {syntax.Kind}");
             }
@@ -846,7 +874,7 @@ namespace Compiler.CodeAnalysis.Binding
 
         private BoundExpression BindAssignmentExpression(BinaryExpressionSyntax syntax, BoundExpression boundLeft, BoundExpression boundRight)
         {
-            switch(boundLeft.Kind)
+            switch (boundLeft.Kind)
             {
                 case BoundNodeKind.VariableExpression:
                     return BindVariableAssignment(syntax, boundRight, (BoundVariableExpression)boundLeft);
@@ -859,31 +887,31 @@ namespace Compiler.CodeAnalysis.Binding
             }
         }
 
-        private BoundExpression BindVariableAssignment(BinaryExpressionSyntax syntax, BoundExpression boundRight, BoundVariableExpression variable)
+        private BoundExpression BindVariableAssignment(BinaryExpressionSyntax syntax, BoundExpression boundRight, BoundVariableExpression expression)
         {
-            if (variable.Variable.IsReadOnly)
+            if (expression.Variable.IsReadOnly)
             {
-                Diagnostics.ReportCannotReassign(syntax.OperatorToken.Location, variable.Variable.Name);
+                Diagnostics.ReportCannotReassign(syntax.OperatorToken.Location, expression.Variable.Name);
             }
 
             if (syntax.OperatorToken.Kind != SyntaxKind.EqualsToken)
             {
                 var equivalentOperatorTokenKind = SyntaxFacts.GetBinaryOperatorOfAssignmentOperator(syntax.OperatorToken.Kind);
-                var boundAssignOperator = BoundBinaryOperator.Bind(equivalentOperatorTokenKind, variable.Type, boundRight.Type);
+                var boundAssignOperator = BoundBinaryOperator.Bind(equivalentOperatorTokenKind, expression.Type, boundRight.Type);
 
                 if (boundAssignOperator == null)
                 {
-                    Diagnostics.ReportUndefinedBinaryOperator(syntax.OperatorToken.Location, syntax.OperatorToken.Text, variable.Type, boundRight.Type);
+                    Diagnostics.ReportUndefinedBinaryOperator(syntax.OperatorToken.Location, syntax.OperatorToken.Text, expression.Type, boundRight.Type);
                     return new BoundErrorExpression(syntax);
                 }
 
-                var convertedExpression = BindConversion(syntax.Right.Location, boundRight, variable.Type);
-                return new BoundCompoundAssignmentExpression(syntax, variable.Variable, boundAssignOperator, convertedExpression);
+                var convertedExpression = BindConversion(syntax.Right.Location, boundRight, expression.Type);
+                return new BoundCompoundAssignmentExpression(syntax, expression, boundAssignOperator, convertedExpression);
             }
             else
             {
-                var convertedExpression = BindConversion(syntax.Right.Location, boundRight, variable.Type);
-                return new BoundAssignmentExpression(syntax, variable.Variable, convertedExpression);
+                var convertedExpression = BindConversion(syntax.Right.Location, boundRight, expression.Type);
+                return new BoundAssignmentExpression(syntax, expression, convertedExpression);
             }
         }
 
@@ -912,12 +940,12 @@ namespace Compiler.CodeAnalysis.Binding
                 }
 
                 var convertedExpression = BindConversion(syntax.Right.Location, boundRight, expression.Type);
-                return new BoundCompoundMemberAssignmentExpression(syntax, expression.Instance, expression.Member, boundAssignOperator, convertedExpression);
+                return new BoundCompoundAssignmentExpression(syntax, expression, boundAssignOperator, convertedExpression);
             }
             else
             {
                 var convertedExpression = BindConversion(syntax.Right.Location, boundRight, expression.Type);
-                return new BoundMemberAssignmentExpression(syntax, expression.Instance, expression.Member, convertedExpression);
+                return new BoundAssignmentExpression(syntax, expression, convertedExpression);
             }
         }
 
@@ -1011,54 +1039,64 @@ namespace Compiler.CodeAnalysis.Binding
                 return new BoundErrorExpression(syntax);
             }
 
-            return new BoundCallExpression(syntax, matchFunction, boundArgumentBuilder.ToImmutable());
+            boundArguments = boundArgumentBuilder.ToImmutable();
+            return new BoundCallExpression(syntax, function, boundArguments);
+        }
+
+
+        private BoundExpression BindCallExpression(CallExpressionSyntax syntax, BoundExpression memberAccessExpression)
+        {
+            var callExpression = (BoundCallExpression)BindCallExpression(syntax); 
+            var function = callExpression.Function;
+            var boundArguments = callExpression.Arguments;
+            return memberAccessExpression switch
+            {
+                BoundSelfExpression i => new BoundCallExpression(syntax, i, function, boundArguments),
+                BoundVariableExpression i => new BoundCallExpression(syntax, i, function, boundArguments),
+                BoundMemberAccessExpression i => new BoundCallExpression(syntax, i, function, boundArguments),
+                _ => new BoundErrorExpression(syntax)
+            };
         }
 
         private BoundExpression BindMemberAccessExpression(MemberAccessExpressionSyntax syntax)
         {
-            if (syntax.ParentExpression.Kind == SyntaxKind.NameExpression)
+            if (syntax.ParentExpression.Kind == SyntaxKind.MemberAccessExpression)
+            {
+                return BindMemberAccessExpression((MemberAccessExpressionSyntax)syntax.ParentExpression);
+            }
+            else if (syntax.ParentExpression.Kind == SyntaxKind.NameExpression || 
+                     syntax.ParentExpression.Kind == SyntaxKind.SelfKeyword)
             {
                 var nameExpression = BindNameExpression((NameExpressionSyntax)syntax.ParentExpression, true);
-                var variable = BindMemberReference(nameExpression, syntax.MemberExpression);
-                if (variable == null)
+                if (syntax.CallExpression)
                 {
+                    var func = BindFunctionReference(syntax.IdentifierToken);
+                    if (func != null)
+                    {
+                        return BindCallExpression((CallExpressionSyntax)syntax.MemberExpression, nameExpression);
+                    }
                     return new BoundErrorExpression(syntax);
                 }
-
-                return new BoundMemberAccessExpression(syntax, nameExpression, variable);
-            }
-            else if (syntax.ParentExpression.Kind == SyntaxKind.MemberAccessExpression)
-            {
-                var nameExpression = BindExpression(syntax.ParentExpression);
-                var member = BindMemberReference(nameExpression, syntax.MemberExpression);
-                if (member == null)
+                else
                 {
+                    var member = BindMemberReference(nameExpression.Type, syntax.IdentifierToken);
+                    if (member != null)
+                    {
+                        return new BoundMemberAccessExpression(syntax, nameExpression, member);
+                    }
                     return new BoundErrorExpression(syntax);
                 }
-
-                return new BoundMemberAccessExpression(syntax, nameExpression, member);
             }
             else
             {
                 Diagnostics.ReportCannotAccessMember(syntax.ParentExpression.Location, syntax.ParentExpression.ToString(), "");
-                return new BoundErrorExpression(syntax);
             }
+            return new BoundErrorExpression(syntax);
         }
 
-        private MemberSymbol? BindMemberReference(BoundExpression variable, NameExpressionSyntax memberExpression)
+        private MemberSymbol? BindMemberReference(TypeSymbol typeSymbol, SyntaxToken identifierToken, bool report = true)
         {
-            return BindMemberReference(variable.Type, memberExpression);
-        }
-
-        private MemberSymbol? BindMemberReference(TypeSymbol typeSymbol, NameExpressionSyntax memberExpression)
-        {
-            var memberName = memberExpression.IdentifierToken.Text;
-            if (memberExpression is CallExpressionSyntax call)
-            {
-                Diagnostics.ReportUndefinedFunction(call.Location, memberName);
-                return null;
-            }
-
+            var memberName = identifierToken.Text;
             foreach (var member in typeSymbol.Members)
             {
                 if (member.Name == memberName)
@@ -1066,10 +1104,26 @@ namespace Compiler.CodeAnalysis.Binding
                     return member;
                 }
             }
-
-            var typeName = typeSymbol.Name;
-            Diagnostics.ReportCannotAccessMember(memberExpression.Location, typeName, memberName);
+            if (report)
+            {
+                Diagnostics.ReportCannotAccessMember(identifierToken.Location, typeSymbol.Name, identifierToken.Text);
+            }
             return null;
+        }
+
+        private FunctionSymbol? BindFunctionReference(SyntaxToken identifierToken)
+        {
+            var name = identifierToken.Text;
+
+            switch (_scope.TryLookupSymbol(name))
+            {
+                case FunctionSymbol func:
+                    return func;
+
+                default:
+                    Diagnostics.ReportUndefinedFunction(identifierToken.Location, name);
+                    return null;
+            }
         }
 
         private BoundExpression BindConversion(ExpressionSyntax syntax, TypeSymbol type, bool allowExplicit = false)
@@ -1112,9 +1166,13 @@ namespace Compiler.CodeAnalysis.Binding
                 // An error has already been reported so we can just return an error expression.
                 return new BoundErrorExpression(syntax);
             }
-
-            var name = syntax.IdentifierToken.Text;
-            var symbol = BindSymbolReference(name, syntax.IdentifierToken.Location);
+            
+            if (syntax.IdentifierToken.Kind == SyntaxKind.SelfKeyword)
+            {
+                return BindSelfKeyword((SelfKeywordSyntax)syntax);
+            }
+            
+            var symbol = BindSymbolReference(syntax.IdentifierToken, syntax.IdentifierToken.Location);
             if (symbol == null)
             {
                 // No need to report an error
@@ -1128,16 +1186,41 @@ namespace Compiler.CodeAnalysis.Binding
                 case SymbolKind.GlobalVariable:
                 case SymbolKind.Parameter:
                     return new BoundVariableExpression(syntax, (VariableSymbol)symbol, byReference);
-                    
+
+
+                case SymbolKind.Member:
+                    var selfKeyword = new SyntaxToken(syntax.SyntaxTree, SyntaxKind.SelfKeyword, syntax.Span.End, "self", null, ImmutableArray<SyntaxTrivia>.Empty, ImmutableArray<SyntaxTrivia>.Empty);
+                    var injectedSelf = new SelfKeywordSyntax(syntax.SyntaxTree, selfKeyword);
+                    var dotToken = new SyntaxToken(syntax.SyntaxTree, SyntaxKind.DotToken, syntax.Span.End, ".", null, ImmutableArray<SyntaxTrivia>.Empty, ImmutableArray<SyntaxTrivia>.Empty);
+                    var memberAccess = new MemberAccessExpressionSyntax(syntax.SyntaxTree, injectedSelf, dotToken, syntax);
+                    return BindMemberAccessExpression(memberAccess);
+
                 case SymbolKind.Type:
                 case SymbolKind.Enum:
                 case SymbolKind.Struct:
                     return new BoundTypeReferenceExpression(syntax, (TypeSymbol)symbol);
-                    
+
                 default:
                     Diagnostics.ReportNotAVariable(syntax.Location, syntax.IdentifierToken.Text);
                     return new BoundErrorExpression(syntax);
             }
+        }
+        
+        private BoundExpression BindSelfKeyword(SelfKeywordSyntax syntax)
+        {
+            if (_function == null)
+            {
+                Diagnostics.ReportCannotUseSelfOutsideOfAFunction(syntax.IdentifierToken.Location);
+                return new BoundErrorExpression(syntax);
+            }
+
+            if (_function.Receiver == null)
+            {
+                Diagnostics.ReportCannotUseSelfOutsideOfReceiverFunctions(syntax.IdentifierToken.Location, _function.Name);
+                return new BoundErrorExpression(syntax);
+            }
+
+            return new BoundSelfExpression(syntax, _function.Receiver);
         }
 
         private TypeSymbol? LookupType(string name)

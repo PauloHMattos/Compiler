@@ -85,7 +85,7 @@ namespace Compiler.Application
 
             var compilation = Compilation.Create(syntaxTrees.ToArray());
             var diagnostics = compilation.Emit(moduleName, referencePaths.ToArray(), outputPath);
-
+            
             if (diagnostics.Any())
             {
                 Console.Error.WriteDiagnostics(diagnostics);

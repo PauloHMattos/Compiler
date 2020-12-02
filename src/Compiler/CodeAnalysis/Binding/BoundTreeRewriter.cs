@@ -224,10 +224,8 @@ namespace Compiler.CodeAnalysis.Binding
                     return RewriteConversionExpression((BoundConversionExpression)expression);
                 case BoundNodeKind.MemberAccessExpression:
                     return RewriteMemberAccessExpression((BoundMemberAccessExpression)expression);
-                case BoundNodeKind.MemberAssignmentExpression:
-                    return RewriteMemberAssignmentExpression((BoundMemberAssignmentExpression)expression);
-                case BoundNodeKind.CompoundMemberAssignmentExpression:
-                    return RewriteCompoundMemberAssignmentExpression((BoundCompoundMemberAssignmentExpression)expression);
+                case BoundNodeKind.SelfExpression:
+                    return RewriteSelfExpression((BoundSelfExpression)expression);
                 case BoundNodeKind.TypeReferenceExpression:
                     return RewriteTypeReferenceExpression((BoundTypeReferenceExpression)expression);
                 default:
@@ -252,25 +250,26 @@ namespace Compiler.CodeAnalysis.Binding
 
         protected virtual BoundExpression RewriteAssignmentExpression(BoundAssignmentExpression node)
         {
-            var expression = RewriteExpression(node.Expression);
+            var expression = RewriteExpression(node.Right);
             if (expression == node)
             {
                 return node;
             }
-            return new BoundAssignmentExpression(node.Syntax, node.Variable, expression);
+            return new BoundAssignmentExpression(node.Syntax, node.Left, expression);
         }
 
         protected virtual BoundExpression RewriteCompoundAssignmentExpression(BoundCompoundAssignmentExpression node)
         {
-            var expression = RewriteExpression(node.Expression);
-            if (expression == node.Expression)
+            var left = RewriteExpression(node.Left);
+            var right = RewriteExpression(node.Right);
+            if (left == node.Left && right == node.Right)
             {
                 return node;
             }
             return new BoundCompoundAssignmentExpression(node.Syntax,
-                                                         node.Variable,
+                                                         left,
                                                          node.Operator,
-                                                         expression);
+                                                         right);
         }
 
         protected virtual BoundExpression RewriteUnaryExpression(BoundUnaryExpression node)
@@ -325,29 +324,10 @@ namespace Compiler.CodeAnalysis.Binding
         {
             return node;
         }
-        
-        protected virtual BoundExpression RewriteMemberAssignmentExpression(BoundMemberAssignmentExpression node)
+
+        protected virtual BoundExpression RewriteSelfExpression(BoundSelfExpression node)
         {
-            var instanceExpr = RewriteExpression(node.Instance);
-            var valueExpr = RewriteExpression(node.Expression);
-
-            if (instanceExpr == node.Instance && valueExpr == node.Expression)
-            {
-                return node;
-            }
-            return new BoundMemberAssignmentExpression(node.Instance.Syntax, instanceExpr, node.Member, valueExpr);
-        }
-
-        protected virtual BoundExpression RewriteCompoundMemberAssignmentExpression(BoundCompoundMemberAssignmentExpression node)
-        {
-            var instanceExpr = RewriteExpression(node.Instance);
-            var valueExpr = RewriteExpression(node.Expression);
-
-            if (instanceExpr == node.Instance && valueExpr == node.Expression)
-            {
-                return node;
-            }
-            return new BoundCompoundMemberAssignmentExpression(node.Syntax, instanceExpr, node.Member, node.Operator, valueExpr);
+            return node;
         }
     }
 }

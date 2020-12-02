@@ -43,7 +43,7 @@ namespace Compiler.CodeAnalysis.Binding
                     overloads.Add(function);
                     _symbols[f.Name] = new FunctionSymbol(f.Name,
                                                           f.Parameters,
-                                                          f.Type,
+                                                          f.ReturnType,
                                                           overloads.ToImmutable(),
                                                           f.Declaration);
                     return true;

@@ -640,12 +640,13 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             const string? text = @"
                 var p: int = 0
                 p.[length]
+                p.[length]()
             ";
             var diagnostics = new List<string>()
             {
                 DiagnosticCode.CannotAccessMember.GetDiagnostic("length", "int"),
+                DiagnosticCode.UndefinedFunction.GetDiagnostic("length", "int"),
             };
-
             AssertDiagnostics(text, diagnostics);
         }
 
@@ -769,6 +770,126 @@ namespace Compiler.Tests.CodeAnalysis.Binding
 
             AssertDiagnostics(text, diagnostics);
         }
+        
+        [Fact]
+        public void Binder_MemberAccess_CallExpression()
+        {
+            var text = @"
+                    struct TestStruct
+                    {
+                        var a : int
+                        var b : bool = default
+                        var c = ""abc""
+                    }
+
+                    function TestStruct.f(i : int)
+                    {
+                        print(""i"")
+                    }
+
+                    var test : TestStruct
+                    test.f(10)
+            ";
+
+            var diagnostics = new List<string>()
+            {
+            };
+
+            AssertDiagnostics(text, diagnostics);
+        }
+        
+        
+        [Fact]
+        public void Binder_MemberAccess_CallExpressionWithReceiver()
+        {
+            var text = @"
+                    struct TestStruct
+                    {
+                        var a : int
+                        var b : bool = default
+                        var c = ""abc""
+                    }
+
+                    function TestStruct.f(i : int)
+                    {
+                        self.printI()
+                    }
+                    
+                    function TestStruct.printI()
+                    {
+                        print(""i"")
+                    }
+
+                    var test : TestStruct
+                    test.f(10)
+            ";
+
+            var diagnostics = new List<string>()
+            {
+            };
+
+            AssertDiagnostics(text, diagnostics);
+        }
+        
+        [Fact]
+        public void Binder_MemberAccess_AccessMemberWithoutSelf()
+        {
+            var text = @"
+                    struct TestStruct
+                    {
+                        var a : int
+                        var b : bool = default
+                        var c = ""abc""
+                    }
+
+                    function TestStruct.f(i : int)
+                    {
+                        print(self.a + 1)
+                        print(i)
+                        print(b)
+                    }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+            };
+
+            AssertDiagnostics(text, diagnostics);
+        }
+        
+        
+        [Fact]
+        public void Binder_MemberAccess_Self()
+        {
+            var text = @"
+                    struct TestStruct
+                    {
+                        var a : int
+                        var b : bool = default
+                        var c = ""abc""
+                    }
+
+                    function TestStruct.f()
+                    {
+                        print(self.a)
+                        print(self.b)
+                        printTest(self)
+                    }
+                    
+                    function printTest(t : TestStruct)
+                    {
+                        print(t.a)
+                        print(t.b)
+                    }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+            };
+
+            AssertDiagnostics(text, diagnostics);
+        }
+        
         
         private static Compilation AssertDiagnostics(string text, List<string> expectedDiagnostics)
         {

@@ -73,14 +73,9 @@ namespace Compiler.CodeAnalysis.Binding
             return new BoundVariableDeclarationStatement(syntax, local, initializer);
         }
 
-        public static BoundAssignmentExpression Assignment(SyntaxNode syntax, VariableSymbol variable, BoundExpression expression)
+        public static BoundAssignmentExpression Assignment(SyntaxNode syntax, BoundExpression left, BoundExpression expression)
         {
-            return new BoundAssignmentExpression(syntax, variable, expression);
-        }
-
-        public static BoundMemberAssignmentExpression Assignment(SyntaxNode syntax, BoundExpression instance, MemberSymbol member, BoundExpression expression)
-        {
-            return new BoundMemberAssignmentExpression(syntax, instance, member, expression);
+            return new BoundAssignmentExpression(syntax, left, expression);
         }
 
         public static BoundBinaryExpression Binary(SyntaxNode syntax, BoundExpression left, SyntaxKind kind, BoundExpression right)
@@ -113,7 +108,7 @@ namespace Compiler.CodeAnalysis.Binding
         public static BoundExpressionStatement Increment(SyntaxNode syntax, BoundVariableExpression variable, BoundExpression step)
         {
             var increment = Add(syntax, variable, step);
-            var incrementAssign = new BoundAssignmentExpression(syntax, variable.Variable, increment);
+            var incrementAssign = new BoundAssignmentExpression(syntax, variable, increment);
             return new BoundExpressionStatement(syntax, incrementAssign);
         }
 

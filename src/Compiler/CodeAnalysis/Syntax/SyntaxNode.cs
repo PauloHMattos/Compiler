@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using Compiler.CodeAnalysis.Syntax.Attributes;
 using Compiler.CodeAnalysis.Text;
 using Compiler.IO;
 
@@ -70,7 +71,8 @@ namespace Compiler.CodeAnalysis.Syntax
         {
             var properties = GetType().
                     GetProperties(BindingFlags.Public | BindingFlags.Instance).
-                    Where(p => p.Name != nameof(Parent));	
+                    Where(p => p.Name != nameof(Parent) &&
+                               p.GetCustomAttribute<DiscardFromChildrenAttribute>() == null);	
 
             foreach (var property in properties)	
             {	
@@ -136,6 +138,13 @@ namespace Compiler.CodeAnalysis.Syntax
 
             writer.SetForeground(token != null ? ConsoleColor.Blue : ConsoleColor.Cyan);
             writer.Write(node.Kind);
+            if (token != null && token.Kind == SyntaxKind.IdentifierToken)
+            {
+                writer.Write(" (");
+                writer.Write(token.Text);
+                writer.Write(")");
+            }
+            
             if (token != null && token.Value != null)
             {
                 writer.Write($" {token.Value}");

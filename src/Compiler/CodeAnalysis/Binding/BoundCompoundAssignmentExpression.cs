@@ -1,25 +1,19 @@
-using Compiler.CodeAnalysis.Symbols;
 using Compiler.CodeAnalysis.Syntax;
 
 namespace Compiler.CodeAnalysis.Binding
 {
-    internal class BoundCompoundAssignmentExpression : BoundExpression
+    internal sealed class BoundCompoundAssignmentExpression : BoundAssignmentExpression
     {
 	    public override BoundNodeKind Kind => BoundNodeKind.CompoundAssignmentExpression;
-        public override TypeSymbol Type => Expression.Type;
-        public VariableSymbol Variable { get; }
         public BoundBinaryOperator Operator {get; }
-        public BoundExpression Expression { get; }
 
         public BoundCompoundAssignmentExpression(SyntaxNode syntax,
-                                                 VariableSymbol variable,
+                                                 BoundExpression left,
                                                  BoundBinaryOperator op,
-                                                 BoundExpression expression)
-            : base(syntax)
+                                                 BoundExpression right)
+            : base(syntax, left, right)
         {
-            Variable = variable;
             Operator = op;
-            Expression = expression;
         }
     }
 }

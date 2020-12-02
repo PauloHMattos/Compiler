@@ -41,6 +41,7 @@
         DefaultKeyword,
         EnumKeyword,
         StructKeyword,
+        SelfKeyword,
 
         // Literals
         NumberToken,

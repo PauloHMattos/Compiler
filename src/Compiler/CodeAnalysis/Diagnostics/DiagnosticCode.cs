@@ -41,6 +41,8 @@ namespace Compiler.CodeAnalysis.Diagnostics
         EnumerationAlreadyContainsValue,
         CannotAccessMember,
         UndefinedOverloadForArguments,
+        CannotUseSelfOutsideOfAFunction,
+        CannotUseSelfOutsideOfReceiverFunctions,
     }
 
 
@@ -85,6 +87,8 @@ namespace Compiler.CodeAnalysis.Diagnostics
             {DiagnosticCode.EnumerationAlreadyContainsValue, "The enumeration member '{0}' has the same constant value '{1}' as the member '{2}'."},
             {DiagnosticCode.CannotAccessMember, "Cannot access member '{0}' of type '{1}'."},
             {DiagnosticCode.UndefinedOverloadForArguments, "No overload of '{0}' for arguments '{1}' was found."},
+            {DiagnosticCode.CannotUseSelfOutsideOfAFunction, "This can only by used in functions with a struct receiver."},
+            {DiagnosticCode.CannotUseSelfOutsideOfReceiverFunctions, "This can only be used in functions with a struct receiver.  Function '{0}' has no receiver defined."},
         };
 
         public static string GetDiagnostic(this DiagnosticCode code, params object[] arguments)
