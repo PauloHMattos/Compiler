@@ -30,8 +30,6 @@
         ConversionExpression,
         TypeReferenceExpression,
         MemberAccessExpression,
-        MemberAssignmentExpression,
-        CompoundMemberAssignmentExpression,
         SelfExpression,
     }
 }

@@ -260,7 +260,7 @@ namespace Compiler.CodeAnalysis.Emit
         private void EmitFunctionDeclaration(FunctionSymbol function)
         {
             var functionType = Import(function.ReturnType);
-            var methodAttributes = function.Receiver == null ? MethodAttributes.Static : MethodAttributes.Public;
+            var methodAttributes = function.Receiver == null ? MethodAttributes.Static | MethodAttributes.Public : MethodAttributes.Public;
             var method = new MethodDefinition(function.Name, methodAttributes, functionType);
 
             foreach (var parameter in function.Parameters)
@@ -401,7 +401,6 @@ namespace Compiler.CodeAnalysis.Emit
             );
 
             // This constructor will be the second one on the class
-            structType.Methods.Insert(0, emptyCtorDefinition);
             structType.Methods.Insert(1, defaultCtorDefintion);
         }
 
@@ -612,7 +611,7 @@ namespace Compiler.CodeAnalysis.Emit
             }
         }
 
-        private void EmitExpression(ILProcessor ilProcessor, BoundExpression node, BoundNodeKind statementKind = BoundNodeKind.ExpressionStatement)
+        private void EmitExpression(ILProcessor ilProcessor, BoundExpression node)
         {
             if (node.ConstantValue != null)
             {
@@ -646,11 +645,8 @@ namespace Compiler.CodeAnalysis.Emit
                 case BoundNodeKind.MemberAccessExpression:
                     EmitMemberAccessExpression(ilProcessor, (BoundMemberAccessExpression)node);
                     break;
-                case BoundNodeKind.MemberAssignmentExpression:
-                    EmitMemberAssignmentExpression(ilProcessor, (BoundMemberAssignmentExpression)node);
-                    break;
                 case BoundNodeKind.SelfExpression:
-                    EmitSelfExpression(ilProcessor, (BoundSelfExpression)node);
+                    EmitSelfExpression(ilProcessor);
                     break;
                 default:
                     throw new InvalidOperationException($"Unexpected node kind {node.Kind}");
@@ -719,10 +715,59 @@ namespace Compiler.CodeAnalysis.Emit
 
         private void EmitAssignmentExpression(ILProcessor ilProcessor, BoundAssignmentExpression node)
         {
-            var variableDefinition = _locals[node.Variable];
-            EmitExpression(ilProcessor, node.Expression);
-            ilProcessor.Emit(OpCodes.Dup);
-            ilProcessor.Emit(OpCodes.Stloc, variableDefinition);
+            EmitAssignmentPreFix(ilProcessor, node);
+            EmitExpression(ilProcessor, node.Right);
+            EmitAssignmentPostFix(ilProcessor, node);
+        }
+
+        private void EmitAssignmentPreFix(ILProcessor ilProcessor, BoundAssignmentExpression node)
+        {
+            var expression = node.Left;
+            switch(expression.Kind)
+            {
+                case BoundNodeKind.VariableExpression:
+                    break;
+                    
+                case BoundNodeKind.MemberAccessExpression:
+                    var memberExpression = (BoundMemberAccessExpression)expression;
+                    EmitExpression(ilProcessor, memberExpression.Instance);
+                    break;
+                
+                default:
+                    throw new InvalidOperationException();
+            }
+        }
+
+        private void EmitAssignmentPostFix(ILProcessor ilProcessor, BoundAssignmentExpression node)
+        {
+            var expression = node.Left;
+            switch(expression.Kind)
+            {
+                case BoundNodeKind.VariableExpression:
+                    var variableExpression = (BoundVariableExpression)expression;
+                    var variableDefinition = _locals[variableExpression.Variable];
+                    ilProcessor.Emit(OpCodes.Dup);
+                    ilProcessor.Emit(OpCodes.Stloc, variableDefinition);
+                    break;
+                    
+                case BoundNodeKind.MemberAccessExpression:
+                    var memberExpression = (BoundMemberAccessExpression)expression;
+                    var typeDefinition = Import(memberExpression.Instance.Type).Resolve();
+                    var fieldDefinition = GetField(memberExpression.Member, typeDefinition);
+                    
+                    ilProcessor.Emit(OpCodes.Dup);
+                    var expressionTypeReference = Import(memberExpression.Type);
+                    var tempVariable = new VariableDefinition(expressionTypeReference);
+                    ilProcessor.Body.Variables.Add(tempVariable);
+                    ilProcessor.Emit(OpCodes.Stloc, tempVariable);
+
+                    ilProcessor.Emit(OpCodes.Stfld, fieldDefinition);
+                    ilProcessor.Emit(OpCodes.Ldloc, tempVariable);
+                    break;
+                
+                default:
+                    throw new InvalidOperationException();
+            }
         }
 
         private void EmitUnaryExpression(ILProcessor ilProcessor, BoundUnaryExpression node)
@@ -865,7 +910,7 @@ namespace Compiler.CodeAnalysis.Emit
                 }
                 else if (node.Instance is BoundSelfExpression instance)
                 {
-                    EmitSelfExpression(ilProcessor, instance);
+                    EmitSelfExpression(ilProcessor);
                 }
                 else
                 {
@@ -910,7 +955,7 @@ namespace Compiler.CodeAnalysis.Emit
             {
                 if (argument.Kind == BoundNodeKind.SelfExpression)
                 {
-                    EmitSelfExpression(ilProcessor, (BoundSelfExpression)argument);
+                    EmitSelfExpression(ilProcessor);
                     var type = Import(argument.Type);
                     if (type.IsValueType)
                     {
@@ -964,8 +1009,7 @@ namespace Compiler.CodeAnalysis.Emit
 
             if (node.Instance.Kind == BoundNodeKind.SelfExpression)
             {
-                EmitSelfExpression(ilProcessor, (BoundSelfExpression)node.Instance);
-                //ilProcessor.RemoveAt(ilProcessor.Body.Instructions.Count - 1);
+                EmitSelfExpression(ilProcessor);
             }
             else
             {
@@ -984,65 +1028,34 @@ namespace Compiler.CodeAnalysis.Emit
 
         private static void EmitFieldAccessExpression(ILProcessor ilProcessor, BoundMemberAccessExpression node, TypeDefinition typeDefinition)
         {
-            foreach (var field in typeDefinition.Fields)
+            var fieldDefinition = GetField(node.Member, typeDefinition);
+            Debug.Assert(fieldDefinition != null);
+
+            if (fieldDefinition.Constant != null)
             {
-                if (field.Name == node.Member.Name)
-                {
-                    if (field.Constant != null)
-                    {
-                        ilProcessor.Emit(OpCodes.Ldc_I4, (int)field.Constant);
-                    }
-                    else
-                    {
-                        ilProcessor.Emit(OpCodes.Ldfld, field);
-                    }
-                    break;
-                }
+                ilProcessor.Emit(OpCodes.Ldc_I4, (int)fieldDefinition.Constant);
+            }
+            else
+            {
+                ilProcessor.Emit(OpCodes.Ldfld, fieldDefinition);
             }
         }
 
-        private void EmitMemberAssignmentExpression(ILProcessor ilProcessor, BoundMemberAssignmentExpression node)
-        {
-            Debug.Assert(node.Instance.Type != null);
-
-            EmitExpression(ilProcessor, node.Instance);
-            EmitExpression(ilProcessor, node.Expression);
-
-            var typeReference = Import(node.Instance.Type);
-            var typeDefinition = typeReference.Resolve();
-
-            switch (node.Member.MemberKind)
-            {
-                case MemberKind.Field:
-                    EmitFieldAssignmentExpression(ilProcessor, node, typeDefinition);
-                    break;
-
-                default:
-                    throw new InvalidOperationException($"Unexpected member type {node.Member.Kind}");
-            }
-
-            // Tmp variable that will get popped
-            ilProcessor.Emit(OpCodes.Ldc_I4_0);
-        }
-
-        private static void EmitFieldAssignmentExpression(ILProcessor ilProcessor, BoundMemberAssignmentExpression node, TypeDefinition typeDefinition)
+        private static FieldDefinition? GetField(MemberSymbol member, TypeDefinition typeDefinition)
         {
             foreach (var field in typeDefinition.Fields)
             {
-                if (field.Name == node.Member.Name)
+                if (field.Name == member.Name)
                 {
-                    ilProcessor.Emit(OpCodes.Stfld, field);
-                    break;
+                    return field;
                 }
             }
+            return null;
         }
 
-        private void EmitSelfExpression(ILProcessor ilProcessor, BoundSelfExpression node)
+        private void EmitSelfExpression(ILProcessor ilProcessor)
         {
             ilProcessor.Emit(OpCodes.Ldarg, ilProcessor.Body.ThisParameter);
-            // var type = ilProcessor.Body.ThisParameter.ParameterType;
-            // ilProcessor.Emit(OpCodes.Ldarg_0);
-            // ilProcessor.Emit(type.IsValueType ? OpCodes.Ldarg : OpCodes.Ldarga, ilProcessor.Body.ThisParameter);
         }
     }
 }

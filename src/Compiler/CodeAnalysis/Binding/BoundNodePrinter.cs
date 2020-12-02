@@ -340,21 +340,21 @@ namespace Compiler.CodeAnalysis.Binding
 
         private static void WriteAssignmentExpression(BoundAssignmentExpression node, IndentedTextWriter writer)
         {
-            writer.WriteIdentifier(node.Variable.Name);
+            node.Left.WriteTo(writer);
             writer.WriteSpace();
             writer.WritePunctuation(SyntaxKind.EqualsToken);
             writer.WriteSpace();
-            node.Expression.WriteTo(writer);
+            node.Right.WriteTo(writer);
         }
 
         private static void WriteCompoundAssignmentExpression(BoundCompoundAssignmentExpression node, IndentedTextWriter writer)
         {
-            writer.WriteIdentifier(node.Variable.Name);
+            node.Left.WriteTo(writer);
             writer.WriteSpace();
             writer.WritePunctuation(node.Operator.SyntaxKind);
             writer.WritePunctuation(SyntaxKind.EqualsToken);
             writer.WriteSpace();
-            node.Expression.WriteTo(writer);
+            node.Right.WriteTo(writer);
         }
 
         private static void WriteUnaryExpression(BoundUnaryExpression node, IndentedTextWriter writer)

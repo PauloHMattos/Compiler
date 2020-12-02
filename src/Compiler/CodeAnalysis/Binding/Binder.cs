@@ -398,9 +398,7 @@ namespace Compiler.CodeAnalysis.Binding
                 var isAllowedExpression = es.Expression.Kind == BoundNodeKind.ErrorExpression ||
                                             es.Expression.Kind == BoundNodeKind.CallExpression ||
                                             es.Expression.Kind == BoundNodeKind.AssignmentExpression ||
-                                            es.Expression.Kind == BoundNodeKind.CompoundAssignmentExpression ||
-                                            es.Expression.Kind == BoundNodeKind.MemberAssignmentExpression ||
-                                            es.Expression.Kind == BoundNodeKind.CompoundMemberAssignmentExpression;
+                                            es.Expression.Kind == BoundNodeKind.CompoundAssignmentExpression;
 
                 if (!isAllowedExpression)
                 {
@@ -889,31 +887,31 @@ namespace Compiler.CodeAnalysis.Binding
             }
         }
 
-        private BoundExpression BindVariableAssignment(BinaryExpressionSyntax syntax, BoundExpression boundRight, BoundVariableExpression variable)
+        private BoundExpression BindVariableAssignment(BinaryExpressionSyntax syntax, BoundExpression boundRight, BoundVariableExpression expression)
         {
-            if (variable.Variable.IsReadOnly)
+            if (expression.Variable.IsReadOnly)
             {
-                Diagnostics.ReportCannotReassign(syntax.OperatorToken.Location, variable.Variable.Name);
+                Diagnostics.ReportCannotReassign(syntax.OperatorToken.Location, expression.Variable.Name);
             }
 
             if (syntax.OperatorToken.Kind != SyntaxKind.EqualsToken)
             {
                 var equivalentOperatorTokenKind = SyntaxFacts.GetBinaryOperatorOfAssignmentOperator(syntax.OperatorToken.Kind);
-                var boundAssignOperator = BoundBinaryOperator.Bind(equivalentOperatorTokenKind, variable.Type, boundRight.Type);
+                var boundAssignOperator = BoundBinaryOperator.Bind(equivalentOperatorTokenKind, expression.Type, boundRight.Type);
 
                 if (boundAssignOperator == null)
                 {
-                    Diagnostics.ReportUndefinedBinaryOperator(syntax.OperatorToken.Location, syntax.OperatorToken.Text, variable.Type, boundRight.Type);
+                    Diagnostics.ReportUndefinedBinaryOperator(syntax.OperatorToken.Location, syntax.OperatorToken.Text, expression.Type, boundRight.Type);
                     return new BoundErrorExpression(syntax);
                 }
 
-                var convertedExpression = BindConversion(syntax.Right.Location, boundRight, variable.Type);
-                return new BoundCompoundAssignmentExpression(syntax, variable.Variable, boundAssignOperator, convertedExpression);
+                var convertedExpression = BindConversion(syntax.Right.Location, boundRight, expression.Type);
+                return new BoundCompoundAssignmentExpression(syntax, expression, boundAssignOperator, convertedExpression);
             }
             else
             {
-                var convertedExpression = BindConversion(syntax.Right.Location, boundRight, variable.Type);
-                return new BoundAssignmentExpression(syntax, variable.Variable, convertedExpression);
+                var convertedExpression = BindConversion(syntax.Right.Location, boundRight, expression.Type);
+                return new BoundAssignmentExpression(syntax, expression, convertedExpression);
             }
         }
 
@@ -942,12 +940,12 @@ namespace Compiler.CodeAnalysis.Binding
                 }
 
                 var convertedExpression = BindConversion(syntax.Right.Location, boundRight, expression.Type);
-                return new BoundCompoundMemberAssignmentExpression(syntax, expression.Instance, expression.Member, boundAssignOperator, convertedExpression);
+                return new BoundCompoundAssignmentExpression(syntax, expression, boundAssignOperator, convertedExpression);
             }
             else
             {
                 var convertedExpression = BindConversion(syntax.Right.Location, boundRight, expression.Type);
-                return new BoundMemberAssignmentExpression(syntax, expression.Instance, expression.Member, convertedExpression);
+                return new BoundAssignmentExpression(syntax, expression, convertedExpression);
             }
         }
 
