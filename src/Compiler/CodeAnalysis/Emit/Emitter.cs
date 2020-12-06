@@ -27,7 +27,7 @@ namespace Compiler.CodeAnalysis.Emit
         private readonly Dictionary<VariableSymbol, VariableDefinition> _locals;
         private readonly Dictionary<BoundLabel, int> _labels;
         private readonly Dictionary<SourceText, Document> _documents;
-        private readonly List<Fixup> _fixups;
+        private readonly List<(int InstructionIndex, BoundLabel Target)> _fixups;
 
         private readonly MethodReference _objectEqualsReference;
         private readonly MethodReference _consoleReadLineReference;
@@ -48,7 +48,7 @@ namespace Compiler.CodeAnalysis.Emit
             _locals = new Dictionary<VariableSymbol, VariableDefinition>();
 
             _labels = new Dictionary<BoundLabel, int>();
-            _fixups = new List<Fixup>();
+            _fixups = new List<(int InstructionIndex, BoundLabel Target)>();
             _documents = new Dictionary<SourceText, Document>();
 
             var assemblyName = new AssemblyNameDefinition(moduleName, new Version("1.0"));
@@ -578,7 +578,7 @@ namespace Compiler.CodeAnalysis.Emit
 
         private void EmitGotoStatement(ILProcessor ilProcessor, BoundGotoStatement node)
         {
-            _fixups.Add(new Fixup(ilProcessor.Body.Instructions.Count, node.Label));
+            _fixups.Add((ilProcessor.Body.Instructions.Count, node.Label));
             ilProcessor.Emit(OpCodes.Br, Instruction.Create(OpCodes.Nop));
         }
 
@@ -587,7 +587,7 @@ namespace Compiler.CodeAnalysis.Emit
             EmitExpression(ilProcessor, node.Condition);
 
             var opCode = node.JumpIfTrue ? OpCodes.Brtrue : OpCodes.Brfalse;
-            _fixups.Add(new Fixup(ilProcessor.Body.Instructions.Count, node.Label));
+            _fixups.Add((ilProcessor.Body.Instructions.Count, node.Label));
             ilProcessor.Emit(opCode, Instruction.Create(OpCodes.Nop));
         }
 
