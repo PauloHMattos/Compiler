@@ -293,7 +293,7 @@ namespace Compiler.CodeAnalysis.Binding
             return new BoundBinaryExpression(node.Syntax, left, node.Operator, right);
         }
 
-        private BoundExpression RewriteCallExpression(BoundCallExpression node)
+        protected virtual BoundExpression RewriteCallExpression(BoundCallExpression node)
         {
             return node;
         }

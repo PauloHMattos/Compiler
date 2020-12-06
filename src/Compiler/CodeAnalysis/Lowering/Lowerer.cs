@@ -267,5 +267,12 @@ namespace Compiler.CodeAnalysis.Lowering
             var rewrittenNode = base.RewriteVariableDeclarationStatement(node);
             return new BoundSequencePointStatement(rewrittenNode.Syntax, rewrittenNode, rewrittenNode.Syntax.Location);
         }
+
+        
+        protected override BoundStatement RewriteReturnStatement(BoundReturnStatement node)
+        {
+            var rewrittenNode = base.RewriteReturnStatement(node);
+            return new BoundSequencePointStatement(rewrittenNode.Syntax, rewrittenNode, rewrittenNode.Syntax.Location);
+        }
     }
 }

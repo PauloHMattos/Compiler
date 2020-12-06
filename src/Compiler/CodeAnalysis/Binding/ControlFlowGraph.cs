@@ -344,6 +344,10 @@ namespace Compiler.CodeAnalysis.Binding
             foreach (var branch in graph.End.Incoming)
             {
                 var lastStatement = branch.From.Statements.LastOrDefault();
+                if (lastStatement is BoundSequencePointStatement s)
+                {
+                    lastStatement = s.Statement;
+                }
                 if (lastStatement == null || lastStatement.Kind != BoundNodeKind.ReturnStatement)
                 {
                     return false;

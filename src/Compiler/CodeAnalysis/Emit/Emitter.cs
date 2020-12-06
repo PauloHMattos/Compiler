@@ -285,12 +285,17 @@ namespace Compiler.CodeAnalysis.Emit
 
         private void EmitFunctionBody(FunctionSymbol function, BoundBlockStatement body)
         {
+            Debug.Assert(function.Declaration != null);
+
             var method = _methods[function];
             _locals.Clear();
             _labels.Clear();
             _fixups.Clear();
 
             var ilProcessor = method.Body.GetILProcessor();
+            var index = ilProcessor.Body.Instructions.Count;
+            EmitNopStatement(ilProcessor);
+            EmitSequencePoint(ilProcessor, index, function.Declaration.OpenParenthesisToken.Location);
 
             foreach (var statement in body.Statements)
             {
@@ -491,7 +496,7 @@ namespace Compiler.CodeAnalysis.Emit
             switch (node.Kind)
             {
                 case BoundNodeKind.NopStatement:
-                    EmitNopStatement(ilProcessor, (BoundNopStatement)node);
+                    EmitNopStatement(ilProcessor);
                     break;
                 case BoundNodeKind.SequencePointStatement:
                     EmitSequencePointStatement(ilProcessor, (BoundSequencePointStatement)node);
@@ -523,15 +528,19 @@ namespace Compiler.CodeAnalysis.Emit
         {
             var index = ilProcessor.Body.Instructions.Count;
             EmitStatement(ilProcessor, node.Statement);
-            var instruction = ilProcessor.Body.Instructions[index];
+            EmitSequencePoint(ilProcessor, index, node.Location);
+        }
 
-            var document = GetDocument(node.Location.Text);
+        private void EmitSequencePoint(ILProcessor ilProcessor, int index, TextLocation location)
+        {
+            var instruction = ilProcessor.Body.Instructions[index];
+            var document = GetDocument(location.Text);
             var sequencePoint = new SequencePoint(instruction, document)
             {
-                StartLine = node.Location.StartLine + 1,
-                EndLine = node.Location.EndLine + 1,
-                StartColumn = node.Location.StartCharacter + 1,
-                EndColumn = node.Location.EndCharacter + 1
+                StartLine = location.StartLine + 1,
+                EndLine = location.EndLine + 1,
+                StartColumn = location.StartCharacter + 1,
+                EndColumn = location.EndCharacter + 1
             };
 
             ilProcessor.Body.Method.DebugInformation.SequencePoints.Add(sequencePoint);
@@ -548,7 +557,7 @@ namespace Compiler.CodeAnalysis.Emit
             return document;
         }
 
-        private void EmitNopStatement(ILProcessor ilProcessor, BoundNopStatement node)
+        private static void EmitNopStatement(ILProcessor ilProcessor)
         {
             ilProcessor.Emit(OpCodes.Nop);
         }
