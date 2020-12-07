@@ -291,7 +291,7 @@ namespace Compiler.CodeAnalysis.Emit
             _locals.Clear();
             _labels.Clear();
             _fixups.Clear();
-
+            
             var ilProcessor = method.Body.GetILProcessor();
             var index = ilProcessor.Body.Instructions.Count;
             EmitNopStatement(ilProcessor);
@@ -393,7 +393,7 @@ namespace Compiler.CodeAnalysis.Emit
                 MethodAttributes.HideBySig,
                 Import(TypeSymbol.Void)
             );
-            structType.Methods.Insert(0, emptyCtorDefinition);
+            structType.Methods.Add(emptyCtorDefinition);
 
             // Forward-declare initializer constructor
             var defaultCtorDefintion = new MethodDefinition(
@@ -406,7 +406,7 @@ namespace Compiler.CodeAnalysis.Emit
             );
 
             // This constructor will be the second one on the class
-            structType.Methods.Insert(1, defaultCtorDefintion);
+            structType.Methods.Add(defaultCtorDefintion);
         }
 
         private void EmitStructBody(StructSymbol key, BoundBlockStatement value)
@@ -465,21 +465,17 @@ namespace Compiler.CodeAnalysis.Emit
                 var ctorParam = structSymbol.CtorParameters[i];
                 var paramType = Import(ctorParam.Type);
                 const ParameterAttributes parameterAttributes = ParameterAttributes.None;
-                var parameterDefinition = new ParameterDefinition(ctorParam.Name, parameterAttributes, paramType);
+                var parameterDefinition = new ParameterDefinition(ctorParam.Name,
+                                                                  parameterAttributes,
+                                                                  paramType);
 
                 constructor.Parameters.Add(parameterDefinition);
 
                 ilProcessor.Emit(OpCodes.Ldarg_0);
                 ilProcessor.Emit(OpCodes.Ldarg, i + 1);
 
-                foreach (var field in structType.Fields)
-                {
-                    if (field.Name == ctorParam.Name)
-                    {
-                        ilProcessor.Emit(OpCodes.Stfld, field);
-                        break;
-                    }
-                }
+                var field = GetField(ctorParam.Name, structType);
+                ilProcessor.Emit(OpCodes.Stfld, field);
             }
 
             ilProcessor.Emit(OpCodes.Ret);
@@ -498,27 +494,35 @@ namespace Compiler.CodeAnalysis.Emit
                 case BoundNodeKind.NopStatement:
                     EmitNopStatement(ilProcessor);
                     break;
+
                 case BoundNodeKind.SequencePointStatement:
                     EmitSequencePointStatement(ilProcessor, (BoundSequencePointStatement)node);
                     break;
+
                 case BoundNodeKind.VariableDeclarationStatement:
                     EmitVariableDeclaration(ilProcessor, (BoundVariableDeclarationStatement)node);
                     break;
+
                 case BoundNodeKind.LabelStatement:
                     EmitLabelStatement(ilProcessor, (BoundLabelStatement)node);
                     break;
+
                 case BoundNodeKind.GotoStatement:
                     EmitGotoStatement(ilProcessor, (BoundGotoStatement)node);
                     break;
+
                 case BoundNodeKind.ConditionalGotoStatement:
                     EmitConditionalGotoStatement(ilProcessor, (BoundConditionalGotoStatement)node);
                     break;
+
                 case BoundNodeKind.ReturnStatement:
                     EmitReturnStatement(ilProcessor, (BoundReturnStatement)node);
                     break;
+                    
                 case BoundNodeKind.ExpressionStatement:
                     EmitExpressionStatement(ilProcessor, (BoundExpressionStatement)node);
                     break;
+
                 default:
                     throw new InvalidOperationException($"Unexpected node kind {node.Kind}");
             }
@@ -633,42 +637,51 @@ namespace Compiler.CodeAnalysis.Emit
                 case BoundNodeKind.VariableExpression:
                     EmitVariableExpression(ilProcessor, (BoundVariableExpression)node);
                     break;
+
                 case BoundNodeKind.AssignmentExpression:
                     EmitAssignmentExpression(ilProcessor, (BoundAssignmentExpression)node);
                     break;
+
                 case BoundNodeKind.UnaryExpression:
                     EmitUnaryExpression(ilProcessor, (BoundUnaryExpression)node);
                     break;
+
                 case BoundNodeKind.BinaryExpression:
                     EmitBinaryExpression(ilProcessor, (BoundBinaryExpression)node);
                     break;
+
                 case BoundNodeKind.CallExpression:
                     EmitCallExpression(ilProcessor, (BoundCallExpression)node);
                     break;
+
                 case BoundNodeKind.ConversionExpression:
                     EmitConversionExpression(ilProcessor, (BoundConversionExpression)node);
                     break;
+
                 case BoundNodeKind.TypeReferenceExpression:
                     EmitTypeReferenceExpression(ilProcessor, (BoundTypeReferenceExpression)node);
                     break;
+
                 case BoundNodeKind.MemberAccessExpression:
                     EmitMemberAccessExpression(ilProcessor, (BoundMemberAccessExpression)node);
                     break;
+
                 case BoundNodeKind.SelfExpression:
                     EmitSelfExpression(ilProcessor);
                     break;
+
                 default:
                     throw new InvalidOperationException($"Unexpected node kind {node.Kind}");
             }
         }
 
-        private void EmitTypeReferenceExpression(ILProcessor ilProcessor, BoundTypeReferenceExpression node)
+        private static void EmitTypeReferenceExpression(ILProcessor ilProcessor, BoundTypeReferenceExpression node)
         {
             // HACK - This is not the rigth way to handle statics
             // Currently I don't know how to properly do it, so...
         }
 
-        private void EmitConstantExpression(ILProcessor ilProcessor, BoundExpression node)
+        private static void EmitConstantExpression(ILProcessor ilProcessor, BoundExpression node)
         {
             Debug.Assert(node.ConstantValue != null);
 
@@ -696,29 +709,45 @@ namespace Compiler.CodeAnalysis.Emit
 
         private void EmitVariableExpression(ILProcessor ilProcessor, BoundVariableExpression node)
         {
-            if (node.Variable is ParameterSymbol parameter)
+            var byReference = node.ByReference;
+            switch (node.Variable.Kind)
             {
-                if (node.ByReference)
-                {
-                    ilProcessor.Emit(OpCodes.Ldarga, parameter.Ordinal);
-                }
-                else
-                {
-                    ilProcessor.Emit(OpCodes.Ldarg, ilProcessor.Body.Method.HasThis ? parameter.Ordinal + 1 : parameter.Ordinal);
-                }
+                case SymbolKind.Parameter:
+                    EmitParameterSymbol(ilProcessor, (ParameterSymbol)node.Variable, byReference);
+                    break;
+
+                case SymbolKind.LocalVariable:
+                    EmitLocalSymbol(ilProcessor, (LocalVariableSymbol)node.Variable, byReference);
+                    break;
+
+                default:
+                    throw new InvalidOperationException($"Invalid kind {node.Variable.Kind}");
+            }
+        }
+
+        private void EmitLocalSymbol(ILProcessor ilProcessor, LocalVariableSymbol local, bool byReference)
+        {
+            var variableDefinition = _locals[local];
+            if (byReference)
+            {
+                ilProcessor.Emit(OpCodes.Ldloca_S, variableDefinition);
             }
             else
             {
-                var variableDefinition = _locals[node.Variable];
+                ilProcessor.Emit(OpCodes.Ldloc, variableDefinition);
+            }
+        }
 
-                if (node.ByReference)
-                {
-                    ilProcessor.Emit(OpCodes.Ldloca_S, variableDefinition);
-                }
-                else
-                {
-                    ilProcessor.Emit(OpCodes.Ldloc, variableDefinition);
-                }
+        private static void EmitParameterSymbol(ILProcessor ilProcessor, ParameterSymbol parameter, bool byReference)
+        {
+            var ordinal = ilProcessor.Body.Method.HasThis ? parameter.Ordinal + 1 : parameter.Ordinal;
+            if (byReference)
+            {
+                ilProcessor.Emit(OpCodes.Ldarga, ordinal);
+            }
+            else
+            {
+                ilProcessor.Emit(OpCodes.Ldarg, ordinal);
             }
         }
 
@@ -732,16 +761,16 @@ namespace Compiler.CodeAnalysis.Emit
         private void EmitAssignmentPreFix(ILProcessor ilProcessor, BoundAssignmentExpression node)
         {
             var expression = node.Left;
-            switch(expression.Kind)
+            switch (expression.Kind)
             {
                 case BoundNodeKind.VariableExpression:
                     break;
-                    
+
                 case BoundNodeKind.MemberAccessExpression:
                     var memberExpression = (BoundMemberAccessExpression)expression;
                     EmitExpression(ilProcessor, memberExpression.Instance);
                     break;
-                
+
                 default:
                     throw new InvalidOperationException();
             }
@@ -750,7 +779,7 @@ namespace Compiler.CodeAnalysis.Emit
         private void EmitAssignmentPostFix(ILProcessor ilProcessor, BoundAssignmentExpression node)
         {
             var expression = node.Left;
-            switch(expression.Kind)
+            switch (expression.Kind)
             {
                 case BoundNodeKind.VariableExpression:
                     var variableExpression = (BoundVariableExpression)expression;
@@ -758,12 +787,12 @@ namespace Compiler.CodeAnalysis.Emit
                     ilProcessor.Emit(OpCodes.Dup);
                     ilProcessor.Emit(OpCodes.Stloc, variableDefinition);
                     break;
-                    
+
                 case BoundNodeKind.MemberAccessExpression:
                     var memberExpression = (BoundMemberAccessExpression)expression;
                     var typeDefinition = Import(memberExpression.Instance.Type).Resolve();
                     var fieldDefinition = GetField(memberExpression.Member, typeDefinition);
-                    
+
                     ilProcessor.Emit(OpCodes.Dup);
                     var expressionTypeReference = Import(memberExpression.Type);
                     var tempVariable = new VariableDefinition(expressionTypeReference);
@@ -773,7 +802,7 @@ namespace Compiler.CodeAnalysis.Emit
                     ilProcessor.Emit(OpCodes.Stfld, fieldDefinition);
                     ilProcessor.Emit(OpCodes.Ldloc, tempVariable);
                     break;
-                
+
                 default:
                     throw new InvalidOperationException();
             }
@@ -1052,9 +1081,14 @@ namespace Compiler.CodeAnalysis.Emit
 
         private static FieldDefinition? GetField(MemberSymbol member, TypeDefinition typeDefinition)
         {
+            return GetField(member.Name, typeDefinition);
+        }
+
+        private static FieldDefinition? GetField(string fieldName, TypeDefinition typeDefinition)
+        {
             foreach (var field in typeDefinition.Fields)
             {
-                if (field.Name == member.Name)
+                if (field.Name == fieldName)
                 {
                     return field;
                 }
@@ -1062,7 +1096,7 @@ namespace Compiler.CodeAnalysis.Emit
             return null;
         }
 
-        private void EmitSelfExpression(ILProcessor ilProcessor)
+        private static void EmitSelfExpression(ILProcessor ilProcessor)
         {
             ilProcessor.Emit(OpCodes.Ldarg, ilProcessor.Body.ThisParameter);
         }

@@ -569,9 +569,7 @@ namespace Compiler.CodeAnalysis.Binding
         {
             var declare = !identifier.IsMissing;
             var name = declare ? identifier.Text : "?";
-            var variable = _function == null
-                ? (VariableSymbol)new GlobalVariableSymbol(name, isReadOnly, type, constant)
-                : new LocalVariableSymbol(name, isReadOnly, type, constant);
+            var variable = new LocalVariableSymbol(name, isReadOnly, type, constant);
 
             if (declare && addToScope && !_scope.TryDeclareVariable(variable))
             {
@@ -1183,7 +1181,6 @@ namespace Compiler.CodeAnalysis.Binding
             switch (symbol.Kind)
             {
                 case SymbolKind.LocalVariable:
-                case SymbolKind.GlobalVariable:
                 case SymbolKind.Parameter:
                     return new BoundVariableExpression(syntax, (VariableSymbol)symbol, byReference);
 
