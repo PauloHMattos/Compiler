@@ -756,6 +756,33 @@ namespace Compiler.Tests.CodeAnalysis.Binding
 
             AssertDiagnostics(text, diagnostics);
         }
+
+        [Fact]
+        public void Binder_MemberAccess_Nested()
+        {
+            var text = @"
+                    struct Point
+                    {
+                        var x = 0
+                        var y: int
+                    }
+                    
+                    struct Line
+                    {
+                        var start: Point
+                        var end: Point
+                    }
+
+                    var nested = Line(Point(10, 10), Point(5, 5))
+                    var x = nested.start.x
+                    var y = nested.end.x
+            ";
+
+            var diagnostics = new List<string>()
+            {
+            };
+            AssertDiagnostics(text, diagnostics);
+        }
         
         [Fact]
         public void Binder_CompoundMemberAssignment()
