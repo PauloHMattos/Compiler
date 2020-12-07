@@ -790,8 +790,9 @@ namespace Compiler.CodeAnalysis.Emit
 
                 case BoundNodeKind.MemberAccessExpression:
                     var memberExpression = (BoundMemberAccessExpression)expression;
+                    var field = (FieldSymbol)memberExpression.Member.Symbol;
                     var typeDefinition = Import(memberExpression.Instance.Type).Resolve();
-                    var fieldDefinition = GetField(memberExpression.Member, typeDefinition);
+                    var fieldDefinition = GetField(field, typeDefinition);
 
                     ilProcessor.Emit(OpCodes.Dup);
                     var expressionTypeReference = Import(memberExpression.Type);
@@ -935,55 +936,31 @@ namespace Compiler.CodeAnalysis.Emit
 
         private void EmitCallExpression(ILProcessor ilProcessor, BoundCallExpression node)
         {
-            if (node.Instance != null)
+            var function = (FunctionSymbol)node.Symbol;
+            EmitExpressions(ilProcessor, node.Arguments);
+
+            if (node.Symbol == BuiltinFunctions.Input)
             {
-                var methodDefinition = _methods[node.Function];
-                if (node.Instance is BoundVariableExpression variable)
-                {
-                    EmitVariableExpression(ilProcessor, variable);
-                }
-                else if (node.Instance is BoundMemberAccessExpression field)
-                {
-                    EmitMemberAccessExpression(ilProcessor, field);
-                }
-                else if (node.Instance is BoundSelfExpression instance)
-                {
-                    EmitSelfExpression(ilProcessor);
-                }
-                else
-                {
-                    throw new InvalidOperationException("Unexpected node type in call expression");
-                }
-                EmitExpressions(ilProcessor, node.Arguments);
-                ilProcessor.Emit(OpCodes.Call, methodDefinition);
+                ilProcessor.Emit(OpCodes.Call, _consoleReadLineReference);
+            }
+            else if (node.Symbol == BuiltinFunctions.Print)
+            {
+                ilProcessor.Emit(OpCodes.Call, _consoleWriteLineReference);
+            }
+            else if (node.Symbol.Name.EndsWith(".ctor"))
+            {
+                var className = function.Name[..^5];
+                var structSymbol = _declaredTypes.First(s => s.Key.Name == className).Value;
+
+                // TODO: We should use a general overload resolution algorithm instead
+                ilProcessor.Emit(OpCodes.Newobj, node.Arguments.Length == 0 ?
+                                                    structSymbol.Methods[0] :
+                                                    structSymbol.Methods[1]);
             }
             else
             {
-                EmitExpressions(ilProcessor, node.Arguments);
-
-                if (node.Function == BuiltinFunctions.Input)
-                {
-                    ilProcessor.Emit(OpCodes.Call, _consoleReadLineReference);
-                }
-                else if (node.Function == BuiltinFunctions.Print)
-                {
-                    ilProcessor.Emit(OpCodes.Call, _consoleWriteLineReference);
-                }
-                else if (node.Function.Name.EndsWith(".ctor"))
-                {
-                    var className = node.Function.Name[..^5];
-                    var structSymbol = _declaredTypes.First(s => s.Key.Name == className).Value;
-
-                    // TODO: We should use a general overload resolution algorithm instead
-                    ilProcessor.Emit(OpCodes.Newobj, node.Arguments.Length == 0 ?
-                                                        structSymbol.Methods[0] :
-                                                        structSymbol.Methods[1]);
-                }
-                else
-                {
-                    var methodDefinition = _methods[node.Function];
-                    ilProcessor.Emit(OpCodes.Call, methodDefinition);
-                }
+                var methodDefinition = _methods[function];
+                ilProcessor.Emit(OpCodes.Call, methodDefinition);
             }
         }
 
@@ -1053,20 +1030,26 @@ namespace Compiler.CodeAnalysis.Emit
             {
                 EmitExpression(ilProcessor, node.Instance);
             }
+
             switch (node.Member.MemberKind)
             {
                 case MemberKind.Field:
-                    EmitFieldAccessExpression(ilProcessor, node, typeDefinition);
+                    EmitFieldAccessExpression(ilProcessor, (BoundFieldExpression)node.Member, typeDefinition);
+                    break;
+                    
+                case MemberKind.Method:
+                    EmitCallExpression(ilProcessor, (BoundCallExpression)node.Member);
                     break;
 
                 default:
-                    throw new InvalidOperationException($"Unexpected member type {node.Member.Kind}");
+                    throw new InvalidOperationException($"Unexpected member type {node.Member.MemberKind}");
             }
         }
 
-        private static void EmitFieldAccessExpression(ILProcessor ilProcessor, BoundMemberAccessExpression node, TypeDefinition typeDefinition)
+        private static void EmitFieldAccessExpression(ILProcessor ilProcessor, BoundFieldExpression node, TypeDefinition typeDefinition)
         {
-            var fieldDefinition = GetField(node.Member, typeDefinition);
+            var field = (FieldSymbol)node.Symbol;
+            var fieldDefinition = GetField(field, typeDefinition);
             Debug.Assert(fieldDefinition != null);
 
             if (fieldDefinition.Constant != null)

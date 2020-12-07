@@ -395,10 +395,15 @@ namespace Compiler.CodeAnalysis.Binding
             var result = BindStatementInternal(syntax);
             if (!isGlobal && result is BoundExpressionStatement es)
             {
-                var isAllowedExpression = es.Expression.Kind == BoundNodeKind.ErrorExpression ||
-                                            es.Expression.Kind == BoundNodeKind.CallExpression ||
-                                            es.Expression.Kind == BoundNodeKind.AssignmentExpression ||
-                                            es.Expression.Kind == BoundNodeKind.CompoundAssignmentExpression;
+                var expression = es.Expression;
+                if (expression is BoundMemberAccessExpression memberAccessExpression)
+                {
+                    expression = memberAccessExpression.Member;
+                }
+                var isAllowedExpression = expression.Kind == BoundNodeKind.ErrorExpression ||
+                                          expression.Kind == BoundNodeKind.CallExpression ||
+                                          expression.Kind == BoundNodeKind.AssignmentExpression ||
+                                          expression.Kind == BoundNodeKind.CompoundAssignmentExpression;
 
                 if (!isAllowedExpression)
                 {
@@ -595,7 +600,7 @@ namespace Compiler.CodeAnalysis.Binding
                 default:
                     if (_function?.Receiver != null)
                     {
-                        return BindMemberReference(_function.Receiver, identifier, false);
+                        return GetMemberSymbol(_function.Receiver, identifier);
                     }
                     
                     Diagnostics.ReportUndefinedName(location, identifier.Text);
@@ -915,15 +920,16 @@ namespace Compiler.CodeAnalysis.Binding
 
         private BoundExpression BindMemberAssignment(BinaryExpressionSyntax syntax, BoundExpression boundRight, BoundMemberAccessExpression expression)
         {
-            if (expression.Member.MemberKind == MemberKind.Method)
+            if (expression.Member.Symbol.MemberKind == MemberKind.Method)
             {
-                Diagnostics.ReportCannotAssignMethodMember(syntax.OperatorToken.Location, expression.Member.Name);
+                Diagnostics.ReportCannotAssignMethodMember(syntax.OperatorToken.Location, expression.Member.Symbol.Name);
                 return new BoundErrorExpression(syntax);
             }
 
-            if (expression.Member.IsReadOnly)
+            var field = (FieldSymbol)expression.Member.Symbol;
+            if (field.IsReadOnly)
             {
-                Diagnostics.ReportCannotReassign(syntax.OperatorToken.Location, expression.Member.Name);
+                Diagnostics.ReportCannotReassign(syntax.OperatorToken.Location, expression.Member.Symbol.Name);
             }
 
             if (syntax.OperatorToken.Kind != SyntaxKind.EqualsToken)
@@ -1041,21 +1047,6 @@ namespace Compiler.CodeAnalysis.Binding
             return new BoundCallExpression(syntax, function, boundArguments);
         }
 
-
-        private BoundExpression BindCallExpression(CallExpressionSyntax syntax, BoundExpression memberAccessExpression)
-        {
-            var callExpression = (BoundCallExpression)BindCallExpression(syntax); 
-            var function = callExpression.Function;
-            var boundArguments = callExpression.Arguments;
-            return memberAccessExpression switch
-            {
-                BoundSelfExpression i => new BoundCallExpression(syntax, i, function, boundArguments),
-                BoundVariableExpression i => new BoundCallExpression(syntax, i, function, boundArguments),
-                BoundMemberAccessExpression i => new BoundCallExpression(syntax, i, function, boundArguments),
-                _ => new BoundErrorExpression(syntax)
-            };
-        }
-
         private BoundExpression BindMemberAccessExpression(MemberAccessExpressionSyntax syntax)
         {
             if (syntax.ParentExpression.Kind == SyntaxKind.MemberAccessExpression)
@@ -1066,23 +1057,26 @@ namespace Compiler.CodeAnalysis.Binding
                      syntax.ParentExpression.Kind == SyntaxKind.SelfKeyword)
             {
                 var nameExpression = BindNameExpression((NameExpressionSyntax)syntax.ParentExpression, true);
-                if (syntax.CallExpression)
+                switch (syntax.MemberExpression.Kind)
                 {
-                    var func = BindFunctionReference(syntax.IdentifierToken);
-                    if (func != null)
-                    {
-                        return BindCallExpression((CallExpressionSyntax)syntax.MemberExpression, nameExpression);
-                    }
-                    return new BoundErrorExpression(syntax);
-                }
-                else
-                {
-                    var member = BindMemberReference(nameExpression.Type, syntax.IdentifierToken);
-                    if (member != null)
-                    {
+                    case SyntaxKind.CallExpression:
+                        var func = BindFunctionReference(syntax.IdentifierToken);
+                        if (func == null)
+                        {
+                            return new BoundErrorExpression(syntax);
+                        }
+                        var boundCall = (BoundCallExpression)BindCallExpression((CallExpressionSyntax)syntax.MemberExpression);
+                        return new BoundMemberAccessExpression(syntax, nameExpression, boundCall);
+
+                    default:
+                        var member = BindMemberReference(nameExpression.Type, syntax);
+                        if (member == null)
+                        {
+                            Diagnostics.ReportCannotAccessMember(syntax.MemberExpression.Location, nameExpression.Type.Name, syntax.MemberExpression.IdentifierToken.Text);
+                            return new BoundErrorExpression(syntax);
+                        }
+
                         return new BoundMemberAccessExpression(syntax, nameExpression, member);
-                    }
-                    return new BoundErrorExpression(syntax);
                 }
             }
             else
@@ -1092,19 +1086,26 @@ namespace Compiler.CodeAnalysis.Binding
             return new BoundErrorExpression(syntax);
         }
 
-        private MemberSymbol? BindMemberReference(TypeSymbol typeSymbol, SyntaxToken identifierToken, bool report = true)
+        private BoundMemberExpression? BindMemberReference(TypeSymbol typeSymbol, MemberAccessExpressionSyntax syntax)
         {
-            var memberName = identifierToken.Text;
+            var memberSymbol = GetMemberSymbol(typeSymbol, syntax.IdentifierToken);
+
+            if (memberSymbol != null)
+            {
+                return new BoundFieldExpression(syntax, (FieldSymbol)memberSymbol);
+            }
+            return null;
+        }
+
+        private static MemberSymbol? GetMemberSymbol(TypeSymbol typeSymbol, SyntaxToken identifier)
+        {
+            var memberName = identifier.Text;
             foreach (var member in typeSymbol.Members)
             {
                 if (member.Name == memberName)
                 {
                     return member;
                 }
-            }
-            if (report)
-            {
-                Diagnostics.ReportCannotAccessMember(identifierToken.Location, typeSymbol.Name, identifierToken.Text);
             }
             return null;
         }

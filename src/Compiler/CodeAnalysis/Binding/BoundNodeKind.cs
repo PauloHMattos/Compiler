@@ -31,5 +31,6 @@
         TypeReferenceExpression,
         MemberAccessExpression,
         SelfExpression,
+        FieldExpression,
     }
 }

@@ -378,7 +378,7 @@ namespace Compiler.CodeAnalysis.Binding
 
         private static void WriteCallExpression(BoundCallExpression node, IndentedTextWriter writer)
         {
-            writer.WriteIdentifier(node.Function.Name);
+            writer.WriteIdentifier(node.Symbol.Name);
             writer.WritePunctuation(SyntaxKind.OpenParenthesisToken);
 
             var isFirst = true;

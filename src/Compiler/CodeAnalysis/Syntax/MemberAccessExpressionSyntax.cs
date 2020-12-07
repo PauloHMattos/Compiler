@@ -8,7 +8,6 @@ namespace Compiler.CodeAnalysis.Syntax
         public SyntaxToken OperatorToken { get; }
         [DiscardFromChildren]
         public NameExpressionSyntax MemberExpression { get; }
-        public bool CallExpression { get; }
         public override SyntaxKind Kind => SyntaxKind.MemberAccessExpression;
 
         internal MemberAccessExpressionSyntax(SyntaxTree syntaxTree,
@@ -20,7 +19,6 @@ namespace Compiler.CodeAnalysis.Syntax
             ParentExpression = parentExpression;
             OperatorToken = operatorToken;
             MemberExpression = memberExpression;
-            CallExpression = memberExpression.Kind == SyntaxKind.CallExpression;
         }
     }
 }

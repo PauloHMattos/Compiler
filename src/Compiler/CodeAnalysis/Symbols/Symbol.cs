@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using Compiler.CodeAnalysis.Binding;
 
 namespace Compiler.CodeAnalysis.Symbols
 {

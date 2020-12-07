@@ -51,7 +51,7 @@ namespace Compiler.CodeAnalysis.Binding
             return new BoundVariableExpression(syntax, variable, byReference);
         }
 
-        public static BoundMemberAccessExpression Member(SyntaxNode syntax, BoundExpression instance, MemberSymbol member)
+        public static BoundMemberAccessExpression Member(SyntaxNode syntax, BoundExpression instance, BoundMemberExpression member)
         {
             return new BoundMemberAccessExpression(syntax, instance, member);
         }

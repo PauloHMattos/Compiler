@@ -3,7 +3,7 @@ using Compiler.CodeAnalysis.Syntax;
 
 namespace Compiler.CodeAnalysis.Symbols
 {
-    public sealed class FunctionSymbol : Symbol
+    public sealed class FunctionSymbol : MemberSymbol
     {
         public ImmutableArray<ParameterSymbol> Parameters { get; }
         public TypeSymbol ReturnType { get; }
@@ -11,6 +11,7 @@ namespace Compiler.CodeAnalysis.Symbols
         public TypeSymbol? Receiver { get; }
         public ImmutableArray<FunctionSymbol> Overloads { get; }
         public override SymbolKind Kind => SymbolKind.Function;
+        public override MemberKind MemberKind => MemberKind.Method;
 
         internal FunctionSymbol(string name,
                                 ImmutableArray<ParameterSymbol> parameters,
@@ -18,7 +19,7 @@ namespace Compiler.CodeAnalysis.Symbols
                                 ImmutableArray<FunctionSymbol> overloads,
                                 FunctionDeclarationSyntax? declaration = null,
                                 TypeSymbol? receiver = null)
-            : base(name)
+            : base(name, type, null)
         {
             Parameters = parameters;
             ReturnType = type;

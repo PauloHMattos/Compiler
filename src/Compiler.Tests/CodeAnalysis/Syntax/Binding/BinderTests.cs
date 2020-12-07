@@ -5,11 +5,19 @@ using Compiler.CodeAnalysis.Diagnostics;
 using Compiler.CodeAnalysis.Symbols;
 using Compiler.CodeAnalysis.Syntax;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Compiler.Tests.CodeAnalysis.Binding
 {
     public class BinderTests
     {
+        private readonly ITestOutputHelper _output;
+
+        public BinderTests(ITestOutputHelper output)
+        {
+            _output = output;
+        }
+
         [Fact]
         public void Evaluator_IfStatement_Reports_CannotConvert()
         {
@@ -891,7 +899,38 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         }
         
         
-        private static Compilation AssertDiagnostics(string text, List<string> expectedDiagnostics)
+        [Fact]
+        public void Binder_MemberAssignment_CannontAssignFunction()
+        {
+            var text = @"
+                    struct TestStruct
+                    {
+                        var a : int
+                        var b : bool = default
+                        var c = ""abc""
+                    }
+
+                    function TestStruct.f() : int
+                    {
+                        return 1
+                    }
+                    
+                    function printTest(t : TestStruct)
+                    {
+                        t.[f] = 10
+                    }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.CannotAccessMember.GetDiagnostic("f", "TestStruct")
+            };
+
+            AssertDiagnostics(text, diagnostics);
+        }
+        
+        
+        private Compilation AssertDiagnostics(string text, List<string> expectedDiagnostics)
         {
             var annotatedText = AnnotatedText.Parse(text);
             var syntaxTree = SyntaxTree.Parse(annotatedText.Text);
@@ -901,6 +940,14 @@ namespace Compiler.Tests.CodeAnalysis.Binding
 
             if (annotatedText.Spans.Length != diagnostic.Length)
             {
+                _output.WriteLine($"Expected:  {annotatedText.Spans.Length}");
+                _output.WriteLine($"Actual:  {diagnostic.Length}");
+
+                for (var i = 0; i < diagnostic.Length; i++)
+                {
+                    _output.WriteLine(diagnostic[i].Message);
+                }
+
                 throw new InvalidOperationException("ERROR: Must mark the same number os spans as there are expected diagnostics");
             }
 

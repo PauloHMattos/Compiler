@@ -2,17 +2,14 @@
 
 namespace Compiler.CodeAnalysis.Symbols
 {
-    public abstract class VariableSymbol : Symbol
+    public abstract class VariableSymbol : TypedSymbol
     {
         public bool IsReadOnly { get; }
-        public TypeSymbol Type { get; }
-        internal virtual BoundConstant? Constant { get; }
 
-        private protected VariableSymbol(string name, bool isReadOnly, TypeSymbol type, BoundConstant? constant) : base(name)
+        private protected VariableSymbol(string name, bool isReadOnly, TypeSymbol type, BoundConstant? constant)
+            : base(name, type, isReadOnly ? constant : null)
         {
             IsReadOnly = isReadOnly;
-            Type = type;
-            Constant = isReadOnly ? constant : null;
         }
     }
 }
