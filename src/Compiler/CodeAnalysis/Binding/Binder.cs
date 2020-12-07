@@ -170,7 +170,7 @@ namespace Compiler.CodeAnalysis.Binding
             {
                 var binder = new Binder(parentScope, null);
                 var body = binder.BindMemberBlockStatement(structSymbol.Declaration!.Body);
-                var loweredBody = Lowerer.Lower(structSymbol, body);
+                var loweredBody = Lowerer.Lower(structSymbol, body, binder.Diagnostics);
 
                 structBodies.Add(structSymbol, loweredBody);
 
@@ -190,9 +190,9 @@ namespace Compiler.CodeAnalysis.Binding
 
                 var binder = new Binder(parentScope, function);
                 var body = binder.BindStatement(function.Declaration!.Body);
-                var loweredBody = Lowerer.Lower(function, body);
+                var loweredBody = Lowerer.Lower(function, body, binder.Diagnostics);
 
-                if (function.ReturnType != TypeSymbol.Void && !ControlFlowGraph.AllPathsReturn(loweredBody))
+                if (function.ReturnType != TypeSymbol.Void && !ControlFlowGraph.AllPathsReturn(loweredBody, binder.Diagnostics))
                 {
                     binder.Diagnostics.ReportAllPathsMustReturn(function.Declaration!.Identifier.Location);
                 }
@@ -208,8 +208,10 @@ namespace Compiler.CodeAnalysis.Binding
 
             if (globalScope.MainFunction != null && globalScope.Statements.Any())
             {
-                var body = Lowerer.Lower(globalScope.MainFunction, new BoundBlockStatement(compilationUnit!, globalScope.Statements));
+                var diagnosticBag = new DiagnosticBag();
+                var body = Lowerer.Lower(globalScope.MainFunction, new BoundBlockStatement(compilationUnit!, globalScope.Statements), diagnosticBag);
                 functionBodies.Add(globalScope.MainFunction, body);
+                diagnostics.AddRange(diagnosticBag);
             }
 
             return new BoundProgram(previous,

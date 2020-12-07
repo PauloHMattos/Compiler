@@ -3,6 +3,7 @@ using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Compiler.CodeAnalysis.Diagnostics;
 
 namespace Compiler.CodeAnalysis.Binding
 {
@@ -153,14 +154,16 @@ namespace Compiler.CodeAnalysis.Binding
             private readonly List<BasicBlockBranch> _branches;
             private readonly BasicBlock _start;
             private readonly BasicBlock _end;
+            private readonly DiagnosticBag _diagnosticBag;
 
-            public GraphBuilder()
+            public GraphBuilder(DiagnosticBag diagnosticBag)
             {
                 _blockFromStatement = new Dictionary<BoundStatement, BasicBlock>();
                 _blockFromLabel = new Dictionary<BoundLabel, BasicBlock>();
                 _branches = new List<BasicBlockBranch>();
                 _start = new BasicBlock(true);
                 _end = new BasicBlock(false);
+                _diagnosticBag = diagnosticBag;
             }
 
             public ControlFlowGraph Build(List<BasicBlock> blocks)
@@ -249,16 +252,16 @@ namespace Compiler.CodeAnalysis.Binding
 
             private void Connect(BasicBlock from, BasicBlock to, BoundExpression? condition = null)
             {
-                if (condition is BoundLiteralExpression l)
+                if (condition?.ConstantValue != null)
                 {
-                    var value = (bool)l.Value;
+                    var value = (bool)condition.ConstantValue.Value;
                     if (!value)
                     {
                         return;
                     }
                     condition = null;
                 }
-
+                
                 var branch = new BasicBlockBranch(from, to, condition);
                 from.Outgoing.Add(branch);
                 to.Incoming.Add(branch);
@@ -280,6 +283,7 @@ namespace Compiler.CodeAnalysis.Binding
                 }
 
                 blocks.Remove(block);
+                _diagnosticBag.ReportUnreachableCode(block.Statements[0].Syntax.Location);
             }
 
             private BoundExpression Negate(BoundExpression condition)
@@ -328,18 +332,18 @@ namespace Compiler.CodeAnalysis.Binding
             writer.WriteLine("}");
         }
 
-        public static ControlFlowGraph Create(BoundBlockStatement body)
+        public static ControlFlowGraph Create(BoundBlockStatement body, DiagnosticBag diagnostics)
         {
             var basicBlockBuilder = new BasicBlockBuilder();
             var blocks = basicBlockBuilder.Build(body);
 
-            var graphBuilder = new GraphBuilder();
+            var graphBuilder = new GraphBuilder(diagnostics);
             return graphBuilder.Build(blocks);
         }
 
-        public static bool AllPathsReturn(BoundBlockStatement body)
+        public static bool AllPathsReturn(BoundBlockStatement body, DiagnosticBag diagnostics)
         {
-            var graph = Create(body);
+            var graph = Create(body, diagnostics);
 
             foreach (var branch in graph.End.Incoming)
             {

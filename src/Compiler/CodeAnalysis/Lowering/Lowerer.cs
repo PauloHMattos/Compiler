@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Compiler.CodeAnalysis.Binding;
+using Compiler.CodeAnalysis.Diagnostics;
 using Compiler.CodeAnalysis.Symbols;
 using static Compiler.CodeAnalysis.Binding.BoundNodeFactory;
 
@@ -12,8 +13,11 @@ namespace Compiler.CodeAnalysis.Lowering
     {
         private int _labelCount;
 
-        private Lowerer()
+        public DiagnosticBag Diagnostics { get; }
+
+        private Lowerer(DiagnosticBag diagnostics)
         {
+            Diagnostics = diagnostics;
         }
 
         private BoundLabel GenerateNewLabel()
@@ -22,21 +26,21 @@ namespace Compiler.CodeAnalysis.Lowering
             return new BoundLabel(name);
         }
 
-        public static BoundBlockStatement Lower(Symbol symbol, BoundStatement statement)
+        public static BoundBlockStatement Lower(Symbol symbol, BoundStatement statement, DiagnosticBag diagnostics)
         {
             if (symbol is not (FunctionSymbol or StructSymbol))
             {
                 throw new InvalidOperationException($"Symbol of type {symbol.Kind} not expected in Lowerer.");
             }
 
-            var lowerer = new Lowerer();
+            var lowerer = new Lowerer(diagnostics);
             var result = lowerer.RewriteStatement(statement);
-            return RemoveDeadCode(Flatten(symbol, result));
+            return RemoveDeadCode(Flatten(symbol, result), diagnostics);
         }
 
-        private static BoundBlockStatement RemoveDeadCode(BoundBlockStatement statement)
+        private static BoundBlockStatement RemoveDeadCode(BoundBlockStatement statement, DiagnosticBag diagnostics)
         {
-            var controlFlow = ControlFlowGraph.Create(statement);
+            var controlFlow = ControlFlowGraph.Create(statement, diagnostics);
             var reachableStatements = new HashSet<BoundStatement>(controlFlow.Blocks.SelectMany(b => b.Statements));
 
             var builder = statement.Statements.ToBuilder();
@@ -267,7 +271,6 @@ namespace Compiler.CodeAnalysis.Lowering
             var rewrittenNode = base.RewriteVariableDeclarationStatement(node);
             return new BoundSequencePointStatement(rewrittenNode.Syntax, rewrittenNode, rewrittenNode.Syntax.Location);
         }
-
         
         protected override BoundStatement RewriteReturnStatement(BoundReturnStatement node)
         {

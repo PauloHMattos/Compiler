@@ -43,6 +43,7 @@ namespace Compiler.CodeAnalysis.Diagnostics
         UndefinedOverloadForArguments,
         CannotUseSelfOutsideOfAFunction,
         CannotUseSelfOutsideOfReceiverFunctions,
+        UnreachableCode,
     }
 
 
@@ -89,6 +90,7 @@ namespace Compiler.CodeAnalysis.Diagnostics
             {DiagnosticCode.UndefinedOverloadForArguments, "No overload of '{0}' for arguments '{1}' was found."},
             {DiagnosticCode.CannotUseSelfOutsideOfAFunction, "This can only by used in functions with a struct receiver."},
             {DiagnosticCode.CannotUseSelfOutsideOfReceiverFunctions, "This can only be used in functions with a struct receiver.  Function '{0}' has no receiver defined."},
+            {DiagnosticCode.UnreachableCode, "Unreachable code detected."},
         };
 
         public static string GetDiagnostic(this DiagnosticCode code, params object[] arguments)
