@@ -49,10 +49,13 @@ namespace Compiler.CodeAnalysis
         }
 
 
-        public ImmutableArray<Diagnostic> Validate()
+        public ImmutableArray<Diagnostic> Validate(bool generateGraph)
         {
             var program = GetProgram();
-            GenerateFlowGraph(program);
+            if (generateGraph)
+            {
+                GenerateFlowGraph(program);
+            }
             return program.Diagnostics;
         }
 
@@ -133,10 +136,14 @@ namespace Compiler.CodeAnalysis
 
         internal static void GenerateFlowGraph(BoundProgram program)
         {
+            var function = program.Functions.FirstOrDefault();
+            if (function.Value == null)
+            {
+                return;
+            }
             var appPath = Environment.CurrentDirectory;
             var appDirectory = Path.GetDirectoryName(appPath);
             var cfgPath = Path.Combine(appDirectory!, "cfg.dot");
-            var function = program.Functions.First();
             var diagnostics = new DiagnosticBag();
             var cfg = ControlFlowGraph.Create(function.Value, diagnostics);
 

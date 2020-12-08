@@ -244,7 +244,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_MemberAccess()
         {
             var text = @"
-                enum A { A1, A2, A3 }
+                enum A { A1, A2, A3 }	
                 print(A.A1)
             ";
             var diagnostics = new List<string>()
@@ -979,7 +979,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
                 DiagnosticCode.UnreachableCode.GetDiagnostic()
             };
 
-            AssertDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics, true);
         }
 
         [Fact]
@@ -1001,7 +1001,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
                 DiagnosticCode.UnreachableCode.GetDiagnostic()
             };
 
-            AssertDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics, true);
         }
 
         [Fact]
@@ -1022,7 +1022,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
                 DiagnosticCode.UnreachableCode.GetDiagnostic()
             };
 
-            AssertDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics, true);
         }
         
 
@@ -1044,17 +1044,17 @@ namespace Compiler.Tests.CodeAnalysis.Binding
                 DiagnosticCode.UnreachableCode.GetDiagnostic()
             };
 
-            AssertDiagnostics(text, diagnostics);
+            AssertDiagnostics(text, diagnostics, true);
         }
 
 
-        private Compilation AssertDiagnostics(string text, List<string> expectedDiagnostics)
+        private Compilation AssertDiagnostics(string text, List<string> expectedDiagnostics, bool generateGraph = false)
         {
             var annotatedText = AnnotatedText.Parse(text);
             var syntaxTree = SyntaxTree.Parse(annotatedText.Text);
 
             var compilation = Compilation.Create(syntaxTree);
-            var diagnostic = compilation.Validate();
+            var diagnostic = compilation.Validate(generateGraph);
 
             if (annotatedText.Spans.Length != diagnostic.Length)
             {

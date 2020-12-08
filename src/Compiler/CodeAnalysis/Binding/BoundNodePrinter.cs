@@ -92,9 +92,26 @@ namespace Compiler.CodeAnalysis.Binding
                 case BoundNodeKind.ConversionExpression:
                     WriteConversionExpression((BoundConversionExpression)node, writer);
                     break;
+                case BoundNodeKind.MemberAccessExpression:
+                    WriteMemberAccessExpression((BoundMemberAccessExpression)node, writer);
+                    break;
+                case BoundNodeKind.TypeReferenceExpression:
+                    WriteTypeReferenceExpression((BoundTypeReferenceExpression)node, writer);
+                    break;
+                case BoundNodeKind.FieldExpression:
+                    WriteFieldExpression((BoundFieldExpression)node, writer);
+                    break;
+                case BoundNodeKind.SelfExpression:
+                    WriteSelfExpression((BoundSelfExpression)node, writer);
+                    break;
                 default:
                     throw new InvalidOperationException($"Unexpected node {node.Kind}");
             }
+        }
+
+        private static void WriteFieldExpression(BoundFieldExpression node, IndentedTextWriter writer)
+        {
+            node.Symbol.WriteTo(writer);
         }
 
         private static void WriteSequencePointStatement(BoundSequencePointStatement node, IndentedTextWriter writer)
@@ -406,6 +423,24 @@ namespace Compiler.CodeAnalysis.Binding
             writer.WritePunctuation(SyntaxKind.OpenParenthesisToken);
             node.Expression.WriteTo(writer);
             writer.WritePunctuation(SyntaxKind.CloseParenthesisToken);
+        }
+
+        private static void WriteMemberAccessExpression(BoundMemberAccessExpression node, IndentedTextWriter writer)
+        {
+            node.Instance.WriteTo(writer);
+            writer.WritePunctuation(SyntaxKind.DotToken);
+            node.Member.WriteTo(writer);
+        }
+
+        // TODO - Remove this
+        private static void WriteTypeReferenceExpression(BoundTypeReferenceExpression node, IndentedTextWriter writer)
+        {
+            writer.WriteIdentifier(node.Type.Name);
+        }
+        
+        private static void WriteSelfExpression(BoundSelfExpression node, IndentedTextWriter writer)
+        {
+            writer.WriteKeyword(SyntaxKind.SelfKeyword);
         }
     }
 }
