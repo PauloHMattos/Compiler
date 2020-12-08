@@ -9,6 +9,7 @@ using Compiler.CodeAnalysis.Syntax;
 using Compiler.CodeAnalysis.Emit;
 using System;
 using System.Linq;
+using Compiler.CodeAnalysis.Binding.FlowControl;
 
 namespace Compiler.CodeAnalysis
 {
@@ -130,17 +131,17 @@ namespace Compiler.CodeAnalysis
             return accumulatedDiagnostics.ToImmutable();
         }
 
-        internal void GenerateFlowGraph(BoundProgram program)
+        internal static void GenerateFlowGraph(BoundProgram program)
         {
-            
             var appPath = Environment.CurrentDirectory;
             var appDirectory = Path.GetDirectoryName(appPath);
-            var cfgPath = Path.Combine(appDirectory, "cfg.dot");
+            var cfgPath = Path.Combine(appDirectory!, "cfg.dot");
             var function = program.Functions.First();
             var diagnostics = new DiagnosticBag();
             var cfg = ControlFlowGraph.Create(function.Value, diagnostics);
-            using (var streamWriter = new StreamWriter(cfgPath))
-                cfg.WriteTo(streamWriter);
+
+            using var streamWriter = new StreamWriter(cfgPath);
+            cfg.WriteTo(streamWriter);
         }
     }
 }

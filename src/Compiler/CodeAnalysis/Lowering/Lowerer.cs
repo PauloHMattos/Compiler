@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Compiler.CodeAnalysis.Binding;
+using Compiler.CodeAnalysis.Binding.FlowControl;
 using Compiler.CodeAnalysis.Diagnostics;
 using Compiler.CodeAnalysis.Symbols;
 using static Compiler.CodeAnalysis.Binding.BoundNodeFactory;
