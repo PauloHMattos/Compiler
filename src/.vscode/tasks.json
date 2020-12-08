@@ -47,7 +47,7 @@
             "command": "dotnet",
             "type": "process",
             "args": [
-                "test",
+                "test"
             ],
             "presentation": {
                 "focus": true,
