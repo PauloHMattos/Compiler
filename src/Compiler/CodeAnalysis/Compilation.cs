@@ -7,6 +7,9 @@ using Compiler.CodeAnalysis.Diagnostics;
 using Compiler.CodeAnalysis.Symbols;
 using Compiler.CodeAnalysis.Syntax;
 using Compiler.CodeAnalysis.Emit;
+using System;
+using System.Linq;
+using Compiler.CodeAnalysis.Binding.FlowControl;
 
 namespace Compiler.CodeAnalysis
 {
@@ -46,9 +49,14 @@ namespace Compiler.CodeAnalysis
         }
 
 
-        public ImmutableArray<Diagnostic> Validate()
+        public ImmutableArray<Diagnostic> Validate(bool generateGraph)
         {
-            return GetProgram().Diagnostics;
+            var program = GetProgram();
+            if (generateGraph)
+            {
+                GenerateFlowGraph(program);
+            }
+            return program.Diagnostics;
         }
 
         private BoundProgram GetProgram()
@@ -124,6 +132,23 @@ namespace Compiler.CodeAnalysis
             var accumulatedDiagnostics = emittionDiagnostics.ToBuilder();
             accumulatedDiagnostics.AddRange(GlobalScope.Diagnostics);
             return accumulatedDiagnostics.ToImmutable();
+        }
+
+        internal static void GenerateFlowGraph(BoundProgram program)
+        {
+            var function = program.Functions.FirstOrDefault();
+            if (function.Value == null)
+            {
+                return;
+            }
+            var appPath = Environment.CurrentDirectory;
+            var appDirectory = Path.GetDirectoryName(appPath);
+            var cfgPath = Path.Combine(appDirectory!, "cfg.dot");
+            var diagnostics = new DiagnosticBag();
+            var cfg = ControlFlowGraph.Create(function.Value, diagnostics);
+
+            using var streamWriter = new StreamWriter(cfgPath);
+            cfg.WriteTo(streamWriter);
         }
     }
 }

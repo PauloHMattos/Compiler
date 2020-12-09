@@ -30,7 +30,7 @@ namespace Compiler.CodeAnalysis.Symbols
                     WriteStructTo((StructSymbol)symbol, writer);
                     break;
                 case SymbolKind.Member:
-                    WriteFieldTo((FieldSymbol)symbol, writer);
+                    WriteMemberTo((MemberSymbol)symbol, writer);
                     break;
                 default:
                     throw new InvalidOperationException($"Unexpected symbol: {symbol.Kind}");
@@ -105,7 +105,7 @@ namespace Compiler.CodeAnalysis.Symbols
             writer.WriteIdentifier(symbol.Name);
         }
 
-        private static void WriteFieldTo(FieldSymbol symbol, TextWriter writer)
+        private static void WriteMemberTo(MemberSymbol symbol, TextWriter writer)
         {
             writer.WriteIdentifier(symbol.Name);
         }

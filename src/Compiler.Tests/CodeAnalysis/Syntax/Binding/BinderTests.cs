@@ -19,6 +19,44 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         }
 
         [Fact]
+        public void Evaluator_IfStatement_ExpressionInCondition()
+        {
+            var text = @"
+                {
+                    var x = 0
+                    if x + 10 > 5
+                    {
+                        x = 10
+                    }
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+            };
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_WhileStatement_ExpressionInCondition()
+        {
+            var text = @"
+                {
+                    var x = 10
+                    while (x + 10 > 0)
+                    {
+                        x -= 1
+                    }
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+            };
+            AssertDiagnostics(text, diagnostics, true);
+        }
+
+        [Fact]
         public void Evaluator_IfStatement_Reports_CannotConvert()
         {
             var text = @"
@@ -244,7 +282,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_MemberAccess()
         {
             var text = @"
-                enum A { A1, A2, A3 }
+                enum A { A1, A2, A3 }	
                 print(A.A1)
             ";
             var diagnostics = new List<string>()
@@ -956,14 +994,106 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             AssertDiagnostics(text, diagnostics);
         }
         
+        /*
+        [Fact]
+        public void Binder_IfStatement_Reports_UnreachableCode_Warning()
+        {
+            var text = @"
+                function test()
+                {
+                    const x = 4 * 3
+                    if x > 12
+                    {
+                        [print(""x > 12"")]
+                    }
+                    else
+                    {
+                        print(""else"")
+                    }
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.UnreachableCode.GetDiagnostic()
+            };
+
+            AssertDiagnostics(text, diagnostics, true);
+        }
+
+        [Fact]
+        public void Binder_ElseStatement_Reports_UnreachableCode_Warning()
+        {
+            var text = @"
+                function test(): int
+                {
+                    if true
+                    {
+                        return 1
+                    }
+                    [return 0]
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.UnreachableCode.GetDiagnostic()
+            };
+
+            AssertDiagnostics(text, diagnostics, true);
+        }
+
+        [Fact]
+        public void Binder_WhileStatement_Reports_UnreachableCode_Warning()
+        {
+            var text = @"
+                function test()
+                {
+                    while true
+                    {
+                        [continue]
+                    }
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.UnreachableCode.GetDiagnostic()
+            };
+
+            AssertDiagnostics(text, diagnostics, true);
+        }
         
-        private Compilation AssertDiagnostics(string text, List<string> expectedDiagnostics)
+
+        [Fact]
+        public void Binder_InfiniteWhileStatement_Reports_UnreachableCode_Warning()
+        {
+            var text = @"
+                function test() : int
+                {
+                    while true
+                    {
+                    }
+                    [return 10]
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.UnreachableCode.GetDiagnostic()
+            };
+
+            AssertDiagnostics(text, diagnostics, true);
+        }
+        //*/
+
+        private Compilation AssertDiagnostics(string text, List<string> expectedDiagnostics, bool generateGraph = false)
         {
             var annotatedText = AnnotatedText.Parse(text);
             var syntaxTree = SyntaxTree.Parse(annotatedText.Text);
 
             var compilation = Compilation.Create(syntaxTree);
-            var diagnostic = compilation.Validate();
+            var diagnostic = compilation.Validate(generateGraph);
 
             if (annotatedText.Spans.Length != diagnostic.Length)
             {
@@ -972,7 +1102,8 @@ namespace Compiler.Tests.CodeAnalysis.Binding
 
                 for (var i = 0; i < diagnostic.Length; i++)
                 {
-                    _output.WriteLine(diagnostic[i].Message);
+                    var textSpan = syntaxTree.Text.ToString(diagnostic[i].Location.Span);
+                    _output.WriteLine($"{diagnostic[i].Message} - {textSpan}");
                 }
 
                 throw new InvalidOperationException("ERROR: Must mark the same number os spans as there are expected diagnostics");
@@ -981,8 +1112,8 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             Assert.Equal(expectedDiagnostics.Count, diagnostic.Length);
             for (var i = 0; i < diagnostic.Length; i++)
             {
-                Assert.Equal(annotatedText.Spans[i], diagnostic[i].Location.Span);
                 Assert.Equal(expectedDiagnostics[i], diagnostic[i].Message);
+                Assert.Equal(annotatedText.Spans[i], diagnostic[i].Location.Span);
             }
 
             return compilation;

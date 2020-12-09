@@ -56,6 +56,11 @@ namespace Compiler.CodeAnalysis.Diagnostics
             ReportError(location, DiagnosticCode.InvalidLiteralType.GetDiagnostic(text, type));
         }
 
+        internal void ReportUnreachableCode(TextLocation location)
+        {
+            ReportWarning(location, DiagnosticCode.UnreachableCode.GetDiagnostic());
+        }
+
         public void ReportUnterminatedString(in TextLocation location)
         {
             ReportError(location, DiagnosticCode.UnterminatedString.GetDiagnostic());
