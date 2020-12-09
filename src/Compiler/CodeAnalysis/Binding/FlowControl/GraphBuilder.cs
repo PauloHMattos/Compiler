@@ -39,62 +39,14 @@ namespace Compiler.CodeAnalysis.Binding.FlowControl
 
                 foreach (var block in blocks)
                 {
-                    foreach (var statement in block.Statements)
-                    {
-                        _blockFromStatement.Add(statement, block);
-                        if (statement is BoundLabelStatement labelStatement)
-                        {
-                            _blockFromLabel.Add(labelStatement.Label, block);
-                        }
-                    }
+                    RegisterLabels(block);
                 }
 
                 for (int i = 0; i < blocks.Count; i++)
                 {
                     var current = blocks[i];
                     var next = i == blocks.Count - 1 ? _end : blocks[i + 1];
-
-                    foreach (var statement in current.Statements)
-                    {
-                        var isLastStatementInBlock = statement == current.Statements.Last();
-                        switch (statement.Kind)
-                        {
-                            case BoundNodeKind.GotoStatement:
-                                var gs = (BoundGotoStatement)statement;
-                                var toBlock = _blockFromLabel[gs.Label];
-                                Connect(current, toBlock);
-                                break;
-                                
-                            case BoundNodeKind.ConditionalGotoStatement:
-                                var cgs = (BoundConditionalGotoStatement)statement;
-                                var thenBlock = _blockFromLabel[cgs.Label];
-                                var elseBlock = next;
-                                var negatedCondition = Negate(cgs.Condition);
-                                var thenCondition = cgs.JumpIfTrue ? cgs.Condition : negatedCondition;
-                                var elseCondition = cgs.JumpIfTrue ? negatedCondition : cgs.Condition;
-                                Connect(current, thenBlock, thenCondition);
-                                Connect(current, elseBlock, elseCondition);
-                                break;
-
-                            case BoundNodeKind.ReturnStatement:
-                                Connect(current, _end);
-                                break;
-
-                            case BoundNodeKind.NopStatement:
-                            case BoundNodeKind.SequencePointStatement:
-                            case BoundNodeKind.VariableDeclarationStatement:
-                            case BoundNodeKind.LabelStatement:
-                            case BoundNodeKind.ExpressionStatement:
-                                if (isLastStatementInBlock)
-                                {
-                                    Connect(current, next);
-                                }
-                                break;
-
-                            default:
-                                throw new InvalidOperationException($"Unexpected statement: {statement.Kind}");
-                        }
-                    }
+                    BuildBlock(current, next);
                 }
 
             ScanAgain:
@@ -112,6 +64,63 @@ namespace Compiler.CodeAnalysis.Binding.FlowControl
                 blocks.Add(_end);
 
                 return new ControlFlowGraph(_start, _end, blocks, _branches);
+            }
+
+            private void BuildBlock(BasicBlock current, BasicBlock next)
+            {
+                foreach (var statement in current.Statements)
+                {
+                    var isLastStatementInBlock = statement == current.Statements.Last();
+                    switch (statement.Kind)
+                    {
+                        case BoundNodeKind.GotoStatement:
+                            var gs = (BoundGotoStatement)statement;
+                            var toBlock = _blockFromLabel[gs.Label];
+                            Connect(current, toBlock);
+                            break;
+
+                        case BoundNodeKind.ConditionalGotoStatement:
+                            var cgs = (BoundConditionalGotoStatement)statement;
+                            var thenBlock = _blockFromLabel[cgs.Label];
+                            var elseBlock = next;
+                            var negatedCondition = Negate(cgs.Condition);
+                            var thenCondition = cgs.JumpIfTrue ? cgs.Condition : negatedCondition;
+                            var elseCondition = cgs.JumpIfTrue ? negatedCondition : cgs.Condition;
+                            Connect(current, thenBlock, thenCondition);
+                            Connect(current, elseBlock, elseCondition);
+                            break;
+
+                        case BoundNodeKind.ReturnStatement:
+                            Connect(current, _end);
+                            break;
+
+                        case BoundNodeKind.NopStatement:
+                        case BoundNodeKind.SequencePointStatement:
+                        case BoundNodeKind.VariableDeclarationStatement:
+                        case BoundNodeKind.LabelStatement:
+                        case BoundNodeKind.ExpressionStatement:
+                            if (isLastStatementInBlock)
+                            {
+                                Connect(current, next);
+                            }
+                            break;
+
+                        default:
+                            throw new InvalidOperationException($"Unexpected statement: {statement.Kind}");
+                    }
+                }
+            }
+
+            private void RegisterLabels(BasicBlock block)
+            {
+                foreach (var statement in block.Statements)
+                {
+                    _blockFromStatement.Add(statement, block);
+                    if (statement is BoundLabelStatement labelStatement)
+                    {
+                        _blockFromLabel.Add(labelStatement.Label, block);
+                    }
+                }
             }
 
             private void Connect(BasicBlock from, BasicBlock to, BoundExpression? condition = null)
