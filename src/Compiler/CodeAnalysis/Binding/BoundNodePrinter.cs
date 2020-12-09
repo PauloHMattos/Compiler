@@ -102,7 +102,7 @@ namespace Compiler.CodeAnalysis.Binding
                     WriteFieldExpression((BoundFieldExpression)node, writer);
                     break;
                 case BoundNodeKind.SelfExpression:
-                    WriteSelfExpression((BoundSelfExpression)node, writer);
+                    WriteSelfExpression(writer);
                     break;
                 default:
                     throw new InvalidOperationException($"Unexpected node {node.Kind}");
@@ -432,13 +432,12 @@ namespace Compiler.CodeAnalysis.Binding
             node.Member.WriteTo(writer);
         }
 
-        // TODO - Remove this
         private static void WriteTypeReferenceExpression(BoundTypeReferenceExpression node, IndentedTextWriter writer)
         {
             writer.WriteIdentifier(node.Type.Name);
         }
         
-        private static void WriteSelfExpression(BoundSelfExpression node, IndentedTextWriter writer)
+        private static void WriteSelfExpression(IndentedTextWriter writer)
         {
             writer.WriteKeyword(SyntaxKind.SelfKeyword);
         }
