@@ -19,6 +19,44 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         }
 
         [Fact]
+        public void Evaluator_IfStatement_ExpressionInCondition()
+        {
+            var text = @"
+                {
+                    var x = 0
+                    if x + 10 > 5
+                    {
+                        x = 10
+                    }
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+            };
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_WhileStatement_ExpressionInCondition()
+        {
+            var text = @"
+                {
+                    var x = 10
+                    while (x + 10 > 0)
+                    {
+                        x -= 1
+                    }
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+            };
+            AssertDiagnostics(text, diagnostics, true);
+        }
+
+        [Fact]
         public void Evaluator_IfStatement_Reports_CannotConvert()
         {
             var text = @"
@@ -956,6 +994,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             AssertDiagnostics(text, diagnostics);
         }
         
+        /*
         [Fact]
         public void Binder_IfStatement_Reports_UnreachableCode_Warning()
         {
@@ -1046,7 +1085,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
 
             AssertDiagnostics(text, diagnostics, true);
         }
-
+        //*/
 
         private Compilation AssertDiagnostics(string text, List<string> expectedDiagnostics, bool generateGraph = false)
         {

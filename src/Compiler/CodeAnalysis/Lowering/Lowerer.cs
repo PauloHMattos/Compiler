@@ -14,11 +14,8 @@ namespace Compiler.CodeAnalysis.Lowering
     {
         private int _labelCount;
 
-        public DiagnosticBag Diagnostics { get; }
-
-        private Lowerer(DiagnosticBag diagnostics)
+        private Lowerer()
         {
-            Diagnostics = diagnostics;
         }
 
         private BoundLabel GenerateNewLabel()
@@ -34,7 +31,7 @@ namespace Compiler.CodeAnalysis.Lowering
                 throw new InvalidOperationException($"Symbol of type {symbol.Kind} not expected in Lowerer.");
             }
 
-            var lowerer = new Lowerer(diagnostics);
+            var lowerer = new Lowerer();
             var result = lowerer.RewriteStatement(statement);
             return RemoveDeadCode(Flatten(symbol, result), diagnostics);
         }
