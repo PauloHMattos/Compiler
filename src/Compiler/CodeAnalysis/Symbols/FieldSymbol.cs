@@ -2,7 +2,7 @@ using Compiler.CodeAnalysis.Binding;
 
 namespace Compiler.CodeAnalysis.Symbols
 {
-    public class FieldSymbol : MemberSymbol
+    public sealed class FieldSymbol : MemberSymbol
     {
         public bool IsReadOnly { get; }
         public override MemberKind MemberKind => MemberKind.Field;

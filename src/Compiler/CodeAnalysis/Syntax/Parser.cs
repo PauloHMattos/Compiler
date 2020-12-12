@@ -209,10 +209,20 @@ namespace Compiler.CodeAnalysis.Syntax
         {
             var enumKeyword = MatchToken(SyntaxKind.EnumKeyword);
             var identifier = MatchToken(SyntaxKind.IdentifierToken);
+            var body = ParseEnumBlockStatement();
+            return new EnumDeclarationSyntax(_syntaxTree, enumKeyword, identifier, body);
+        }
+
+
+        private MemberBlockStatementSyntax ParseEnumBlockStatement()
+        {
             var openBraceToken = MatchToken(SyntaxKind.OpenBraceToken);
-            var values = ParseEnumValueList();
+
+            var valuesStatementSyntax = new EnumValuesStatementSyntax(_syntaxTree, ParseEnumValueList());
+            var statements = ImmutableArray.Create<StatementSyntax>(valuesStatementSyntax);
+
             var closeBraceToken = MatchToken(SyntaxKind.CloseBraceToken);
-            return new EnumDeclarationSyntax(_syntaxTree, enumKeyword, identifier, openBraceToken, values, closeBraceToken);
+            return new MemberBlockStatementSyntax(_syntaxTree, openBraceToken, statements, closeBraceToken);
         }
 
         private SeparatedSyntaxList<EnumSyntax> ParseEnumValueList()

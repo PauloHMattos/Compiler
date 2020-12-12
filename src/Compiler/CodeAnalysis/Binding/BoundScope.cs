@@ -1,7 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using Compiler.CodeAnalysis.Symbols;
+using Compiler.CodeAnalysis.Syntax;
 
 namespace Compiler.CodeAnalysis.Binding
 {
@@ -60,6 +63,7 @@ namespace Compiler.CodeAnalysis.Binding
         public ImmutableArray<FunctionSymbol> GetDeclaredFunctions() => GetDeclaredSymbols<FunctionSymbol>();
         public ImmutableArray<EnumSymbol> GetDeclaredEnums() => GetDeclaredSymbols<EnumSymbol>();
         public ImmutableArray<StructSymbol> GetDeclaredStructs() => GetDeclaredSymbols<StructSymbol>();
+        public ImmutableArray<TypeSymbol> GetDeclaredTypes() => GetDeclaredSymbols<TypeSymbol>();
 
         private bool TryDeclareSymbol<TSymbol>(TSymbol symbol, out Symbol? alreadyDeclaredSymbol) where TSymbol : Symbol
         {
@@ -74,6 +78,24 @@ namespace Compiler.CodeAnalysis.Binding
         private ImmutableArray<TSymbol> GetDeclaredSymbols<TSymbol>() where TSymbol : Symbol
         {
             return _symbols.Values.OfType<TSymbol>().ToImmutableArray();
+        }
+
+        internal void TryDeclareType(TypeSymbol s)
+        {
+            Debug.Assert(s.Declaration != null);
+            switch (s.Declaration.TypeKind)
+            {
+                case TypeDeclarationKind.Enum:
+                    TryDeclareEnum((EnumSymbol)s);
+                    break;
+
+                case TypeDeclarationKind.Struct:
+                    TryDeclareStruct((StructSymbol)s);
+                    break;
+
+                default:
+                    throw new InvalidOperationException($"Unexpected declaration kind {s.Declaration.TypeKind}");
+            }
         }
     }
 }

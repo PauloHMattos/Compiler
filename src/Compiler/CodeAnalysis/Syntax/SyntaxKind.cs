@@ -78,9 +78,8 @@
         // Nodes
         CompilationUnit,
         FunctionDeclaration,
-        EnumDeclaration,
+        TypeDeclaration,
         EnumValue,
-        StructDeclaration,
         MemberBlockStatement,
         GlobalStatement,
         Parameter,
@@ -93,6 +92,7 @@
         BlockStatement,
         ExpressionStatement,
         VariableDeclarationStatement,
+        EnumElementDeclarationStatement,
         IfStatement,
         DoWhileStatement,
         WhileStatement,

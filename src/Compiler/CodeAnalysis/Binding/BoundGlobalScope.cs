@@ -10,8 +10,7 @@ namespace Compiler.CodeAnalysis.Binding
         public ImmutableArray<Diagnostic> Diagnostics { get; }
         public FunctionSymbol? MainFunction { get; }
         public ImmutableArray<FunctionSymbol> Functions { get; }
-        public ImmutableArray<EnumSymbol> Enums { get; }
-        public ImmutableArray<StructSymbol> Structs { get; }
+        public ImmutableArray<TypeSymbol> Types { get; }
         public ImmutableArray<VariableSymbol> Variables { get; }
         public ImmutableArray<BoundStatement> Statements { get; }
 
@@ -19,8 +18,7 @@ namespace Compiler.CodeAnalysis.Binding
                                 ImmutableArray<Diagnostic> diagnostics,
                                 FunctionSymbol? mainFunction,
                                 ImmutableArray<FunctionSymbol> functions,
-                                ImmutableArray<EnumSymbol> enums,
-                                ImmutableArray<StructSymbol> structs,
+                                ImmutableArray<TypeSymbol> types,
                                 ImmutableArray<VariableSymbol> variables,
                                 ImmutableArray<BoundStatement> statements)
         {
@@ -28,8 +26,7 @@ namespace Compiler.CodeAnalysis.Binding
             Diagnostics = diagnostics;
             MainFunction = mainFunction;
             Functions = functions;
-            Enums = enums;
-            Structs = structs;
+            Types = types;
             Variables = variables;
             Statements = statements;
         }

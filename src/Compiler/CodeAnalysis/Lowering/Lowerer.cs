@@ -26,7 +26,7 @@ namespace Compiler.CodeAnalysis.Lowering
 
         public static BoundBlockStatement Lower(Symbol symbol, BoundStatement statement, DiagnosticBag diagnostics)
         {
-            if (symbol is not (FunctionSymbol or StructSymbol))
+            if (symbol is not (FunctionSymbol or StructSymbol or EnumSymbol))
             {
                 throw new InvalidOperationException($"Symbol of type {symbol.Kind} not expected in Lowerer.");
             }

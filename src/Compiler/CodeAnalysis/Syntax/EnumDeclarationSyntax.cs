@@ -1,27 +1,28 @@
 namespace Compiler.CodeAnalysis.Syntax
 {
-    public sealed partial class EnumDeclarationSyntax : MemberSyntax
+    public sealed partial class EnumValuesStatementSyntax : StatementSyntax
     {
-        public SyntaxToken FunctionKeyword { get; }
-        public SyntaxToken Identifier { get; }
-        public SyntaxToken OpenBraceToken { get; }
         public SeparatedSyntaxList<EnumSyntax> Values { get; }
-        public SyntaxToken CloseBraceToken { get; }
-        public override SyntaxKind Kind => SyntaxKind.EnumDeclaration;
+        public override SyntaxKind Kind => SyntaxKind.EnumElementDeclarationStatement;
 
-        internal EnumDeclarationSyntax(SyntaxTree syntaxTree, 
-            SyntaxToken functionKeyword, 
-            SyntaxToken identifier, 
-            SyntaxToken openBraceToken, 
-            SeparatedSyntaxList<EnumSyntax> values, 
-            SyntaxToken closeBraceToken)
+        public EnumValuesStatementSyntax(SyntaxTree syntaxTree,
+                                         SeparatedSyntaxList<EnumSyntax> values)
             : base(syntaxTree)
         {
-            FunctionKeyword = functionKeyword;
-            Identifier = identifier;
-            OpenBraceToken = openBraceToken;
             Values = values;
-            CloseBraceToken = closeBraceToken;
+        }
+    }
+
+    public sealed partial class EnumDeclarationSyntax : TypeDeclarationSyntax
+    {
+        public override TypeDeclarationKind TypeKind => TypeDeclarationKind.Enum;
+
+        internal EnumDeclarationSyntax(SyntaxTree syntaxTree,
+                                         SyntaxToken enumKeyword,
+                                         SyntaxToken identifier,
+                                         MemberBlockStatementSyntax body)
+            : base(syntaxTree, enumKeyword, identifier, body)
+        {
         }
     }
 }

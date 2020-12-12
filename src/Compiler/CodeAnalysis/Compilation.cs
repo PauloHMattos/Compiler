@@ -20,8 +20,7 @@ namespace Compiler.CodeAnalysis
         public ImmutableArray<SyntaxTree> SyntaxTrees { get; }
         public FunctionSymbol? MainFunction => GlobalScope.MainFunction;
         public ImmutableArray<FunctionSymbol> Functions => GlobalScope.Functions;
-        public ImmutableArray<EnumSymbol> Enums => GlobalScope.Enums;
-        public ImmutableArray<StructSymbol> Structs => GlobalScope.Structs;
+        public ImmutableArray<TypeSymbol> Types => GlobalScope.Types;
         public ImmutableArray<VariableSymbol> Variables => GlobalScope.Variables;
 
         internal BoundGlobalScope GlobalScope
@@ -100,11 +99,11 @@ namespace Compiler.CodeAnalysis
                     }
                 }
 
-                foreach (var enumSymbol in submission.Enums)
+                foreach (var typeSymbol in submission.Types)
                 {
-                    if (seenSymbolNames.Add(enumSymbol.Name))
+                    if (seenSymbolNames.Add(typeSymbol.Name))
                     {
-                        yield return enumSymbol;
+                        yield return typeSymbol;
                     }
                 }
 

@@ -211,8 +211,7 @@ namespace Compiler.CodeAnalysis.Emit
                 return _diagnostics.ToImmutableArray();
             }
 
-            EmitEnumDeclarations(program.Enums);
-            EmitStructDeclarations(program.Structs);
+            EmitTypeDeclarations(program.Types);
             EmitFunctionDeclarations(program.Functions);
 
             if (program.MainFunction != null)
@@ -242,6 +241,73 @@ namespace Compiler.CodeAnalysis.Emit
                 _assemblyDefinition.Write(outputStream, writerParameters);
             }
             return _diagnostics.ToImmutableArray();
+        }
+
+        private void EmitTypeDeclarations(ImmutableDictionary<TypeSymbol, BoundBlockStatement> types)
+        {
+            foreach (var (typeSymbol, _) in types)
+            {
+                Debug.Assert(typeSymbol.Declaration != null);
+                EmitTypeDeclaration(typeSymbol);
+            }
+
+            foreach (var (typeSymbol, body) in types)
+            {
+                Debug.Assert(typeSymbol.Declaration != null);
+                EmitTypeBody(typeSymbol, body);
+            }
+        }
+
+        private void EmitTypeBody(TypeSymbol typeSymbol, BoundBlockStatement body)
+        {
+            switch (typeSymbol.Declaration!.TypeKind)
+            {
+                case TypeDeclarationKind.Enum:
+                    EmitEnumBody((EnumSymbol)typeSymbol, body);
+                    break;
+
+                case TypeDeclarationKind.Struct:
+                    EmitStructBody((StructSymbol)typeSymbol, body);
+                    break;
+
+                default:
+                    throw new InvalidOperationException($"Unexpected declaration kind {typeSymbol.Declaration.TypeKind}");
+            }
+        }
+
+        private void EmitEnumBody(EnumSymbol enumSymbol, BoundBlockStatement body)
+        {
+            const FieldAttributes _enumFieldAttributes = FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.Literal | FieldAttributes.HasDefault;
+            
+            var enumType = _declaredTypes[enumSymbol];
+            var values = body.Statements.OfType<BoundVariableDeclarationStatement>();
+            foreach (var member in values)
+            {
+                Debug.Assert(member.Variable.Constant != null);
+                
+                var valueField = new FieldDefinition(member.Variable.Name, _enumFieldAttributes, enumType)
+                {
+                    Constant = member.Variable.Constant.Value
+                };
+                enumType.Fields.Add(valueField);
+            }
+        }
+
+        private void EmitTypeDeclaration(TypeSymbol typeSymbol)
+        {
+            switch (typeSymbol.Declaration!.TypeKind)
+            {
+                case TypeDeclarationKind.Enum:
+                    EmitEnumDeclaration((EnumSymbol)typeSymbol);
+                    break;
+
+                case TypeDeclarationKind.Struct:
+                    EmitStructDeclaration((StructSymbol)typeSymbol);
+                    break;
+
+                default:
+                    throw new InvalidOperationException($"Unexpected declaration kind {typeSymbol.Declaration.TypeKind}");
+            }
         }
 
         private void EmitFunctionDeclarations(ImmutableDictionary<FunctionSymbol, BoundBlockStatement> functions)
@@ -325,18 +391,9 @@ namespace Compiler.CodeAnalysis.Emit
             }
         }
 
-        private void EmitEnumDeclarations(ImmutableArray<EnumSymbol> enums)
-        {
-            foreach (var enumSymbol in enums)
-            {
-                EmitEnumDeclaration(enumSymbol);
-            }
-        }
-
         private void EmitEnumDeclaration(EnumSymbol enumSymbol)
         {
             const TypeAttributes _enumAttributes = TypeAttributes.Class | TypeAttributes.NotPublic | TypeAttributes.AnsiClass | TypeAttributes.Sealed;
-            const FieldAttributes _enumFieldAttributes = FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.Literal | FieldAttributes.HasDefault;
             const FieldAttributes _enumSpecialAttributes = FieldAttributes.Public | FieldAttributes.SpecialName | FieldAttributes.RTSpecialName;
 
             var enumType = new TypeDefinition("", enumSymbol.Name, _enumAttributes, Import(TypeSymbol.Enum));
@@ -346,31 +403,6 @@ namespace Compiler.CodeAnalysis.Emit
 
             var specialField = new FieldDefinition("value__", _enumSpecialAttributes, Import(TypeSymbol.Int));
             enumType.Fields.Add(specialField);
-            foreach (var member in enumSymbol.Members)
-            {
-                if (member is not EnumValueSymbol value)
-                {
-                    continue;
-                }
-
-                var valueField = new FieldDefinition(value.Name, _enumFieldAttributes, enumType)
-                {
-                    Constant = value.Constant.Value
-                };
-                enumType.Fields.Add(valueField);
-            }
-        }
-
-        private void EmitStructDeclarations(ImmutableDictionary<StructSymbol, BoundBlockStatement> structs)
-        {
-            foreach (var (declaration, _) in structs)
-            {
-                EmitStructDeclaration(declaration);
-            }
-            foreach (var (declaration, body) in structs)
-            {
-                EmitStructBody(declaration, body);
-            }
         }
 
         private void EmitStructDeclaration(StructSymbol structSymbol)
