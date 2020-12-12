@@ -49,15 +49,20 @@ namespace Compiler.CodeAnalysis.Binding.FlowControl
                     BuildBlock(current, next);
                 }
 
-            ScanAgain:
-                foreach (var block in blocks)
+                bool scan = true;
+                while(scan)
                 {
-                    if (block.Incoming.Any())
+                    scan = false;
+                    foreach (var block in blocks)
                     {
-                        continue;
+                        if (block.Incoming.Any())
+                        {
+                            continue;
+                        }
+                        RemoveBlock(blocks, block);
+                        scan = true;
+                        break;
                     }
-                    RemoveBlock(blocks, block);
-                    goto ScanAgain;
                 }
 
                 blocks.Insert(0, _start);
