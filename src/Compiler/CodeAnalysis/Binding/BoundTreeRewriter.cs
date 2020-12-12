@@ -15,8 +15,6 @@ namespace Compiler.CodeAnalysis.Binding
                     return RewriteSequencePointStatement((BoundSequencePointStatement)statement);
                 case BoundNodeKind.BlockStatement:
                     return RewriteBlockStatement((BoundBlockStatement)statement);
-                case BoundNodeKind.MemberBlockStatement:
-                    return RewriteMemberBlockStatement((BoundMemberBlockStatement)statement);
                 case BoundNodeKind.ExpressionStatement:
                     return RewriteExpressionStatement((BoundExpressionStatement)statement);
                 case BoundNodeKind.VariableDeclarationStatement:
@@ -88,17 +86,6 @@ namespace Compiler.CodeAnalysis.Binding
             return builder;
         }
         
-        private BoundStatement RewriteMemberBlockStatement(BoundMemberBlockStatement node)
-        {
-            ImmutableArray<BoundStatement>.Builder? builder = RewriteStatements(node.Statements);
-            if (builder == null)
-            {
-                return node;
-            }
-            return new BoundBlockStatement(node.Syntax, builder.ToImmutable());
-        }
-
-
         protected virtual BoundStatement RewriteExpressionStatement(BoundExpressionStatement node)
         {
             var expression = RewriteExpression(node.Expression);

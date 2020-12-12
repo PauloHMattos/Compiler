@@ -161,7 +161,7 @@ namespace Compiler.CodeAnalysis.Binding.FlowControl
                 }
 
                 blocks.Remove(block);
-                _diagnosticBag.ReportUnreachableCode(block.Statements[0].Syntax.Location);
+                //_diagnosticBag.ReportUnreachableCode(block.Statements[0].Syntax.Location);
             }
 
             private static BoundExpression Negate(BoundExpression condition)

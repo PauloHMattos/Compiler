@@ -132,7 +132,10 @@ namespace Compiler.CodeAnalysis.Syntax
                 var startToken = Current;
 
                 var member = ParseMember();
-                members.Add(member);
+                if (member != null)
+                {
+                    members.Add(member);
+                }
 
                 // If ParseMember() did not consume any tokens,
                 // we need to skip the current token and continue
@@ -150,7 +153,7 @@ namespace Compiler.CodeAnalysis.Syntax
             return members.ToImmutable();
         }
 
-        private MemberSyntax ParseMember()
+        private MemberSyntax? ParseMember()
         {
             switch (Current.Kind)
             {
@@ -161,7 +164,10 @@ namespace Compiler.CodeAnalysis.Syntax
                 case SyntaxKind.StructKeyword:
                     return ParseStructDeclaration();
                 default:
-                    return ParseGlobalStatement();
+                    // Discard statement and report error on it's location
+                    var statement = ParseStatement();
+                    Diagnostics.ReportInvalidGlobalStatement(statement.Location);
+                    return null;
             }
         }
 
@@ -311,12 +317,6 @@ namespace Compiler.CodeAnalysis.Syntax
             }
 
             return new SeparatedSyntaxList<T>(nodesAndSeparators.ToImmutable());
-        }
-
-        private MemberSyntax ParseGlobalStatement()
-        {
-            var statement = ParseStatement();
-            return new GlobalStatementSyntax(_syntaxTree, statement);
         }
 
         public StatementSyntax ParseStatement()

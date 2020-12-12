@@ -11,24 +11,18 @@ namespace Compiler.CodeAnalysis.Binding
         public FunctionSymbol? MainFunction { get; }
         public ImmutableArray<FunctionSymbol> Functions { get; }
         public ImmutableArray<TypeSymbol> Types { get; }
-        public ImmutableArray<VariableSymbol> Variables { get; }
-        public ImmutableArray<BoundStatement> Statements { get; }
 
         public BoundGlobalScope(BoundGlobalScope? previous,
                                 ImmutableArray<Diagnostic> diagnostics,
                                 FunctionSymbol? mainFunction,
                                 ImmutableArray<FunctionSymbol> functions,
-                                ImmutableArray<TypeSymbol> types,
-                                ImmutableArray<VariableSymbol> variables,
-                                ImmutableArray<BoundStatement> statements)
+                                ImmutableArray<TypeSymbol> types)
         {
             Previous = previous;
             Diagnostics = diagnostics;
             MainFunction = mainFunction;
             Functions = functions;
             Types = types;
-            Variables = variables;
-            Statements = statements;
         }
     }
 }

@@ -51,9 +51,7 @@ namespace Compiler.CodeAnalysis.Binding
                     binder.Diagnostics.ToImmutableArray(),
                     null,
                     ImmutableArray<FunctionSymbol>.Empty,
-                    ImmutableArray<TypeSymbol>.Empty,
-                    ImmutableArray<VariableSymbol>.Empty,
-                    ImmutableArray<BoundStatement>.Empty);
+                    ImmutableArray<TypeSymbol>.Empty);
             }
 
 
@@ -73,32 +71,6 @@ namespace Compiler.CodeAnalysis.Binding
                 binder.BindFunctionDeclaration(function);
             }
 
-            var globalStatements = syntaxTrees
-                                    .SelectMany(st => st.Root.Members)
-                                    .OfType<GlobalStatementSyntax>();
-            var statements = ImmutableArray.CreateBuilder<BoundStatement>();
-
-            foreach (var globalStatement in globalStatements)
-            {
-                var s = binder.BindGlobalStatement(globalStatement.Statement);
-                statements.Add(s);
-            }
-            // Check global statements
-
-            var firstGlobalStatementPerSyntaxTree = syntaxTrees
-                        .Select(st => st.Root.Members.OfType<GlobalStatementSyntax>().FirstOrDefault())
-                        .Where(g => g != null)
-                        .Select(g => g!)
-                        .ToArray();
-
-            if (firstGlobalStatementPerSyntaxTree.Length > 1)
-            {
-                foreach (var globalStatement in firstGlobalStatementPerSyntaxTree)
-                {
-                    binder.Diagnostics.ReportOnlyOneFileCanHaveGlobalStatements(globalStatement.Location);
-                }
-            }
-
             // Check for main/script with global statements
             var functions = binder._scope.GetDeclaredFunctions();
 
@@ -110,25 +82,7 @@ namespace Compiler.CodeAnalysis.Binding
                 binder.Diagnostics.ReportMainMustHaveCorrectSignature(mainFunction.Declaration!.Identifier.Location);
             }
 
-            if (globalStatements.Any())
-            {
-                if (mainFunction != null)
-                {
-                    binder.Diagnostics.ReportCannotMixMainAndGlobalStatements(mainFunction.Declaration!.Identifier.Location);
-
-                    foreach (var globalStatement in firstGlobalStatementPerSyntaxTree)
-                    {
-                        binder.Diagnostics.ReportCannotMixMainAndGlobalStatements(globalStatement.Location);
-                    }
-                }
-                else
-                {
-                    mainFunction = new FunctionSymbol("main", ImmutableArray<ParameterSymbol>.Empty, TypeSymbol.Void, null);
-                }
-            }
-
             var diagnostics = binder.Diagnostics.ToImmutableArray();
-            var variables = binder._scope.GetDeclaredVariables();
             var types = binder._scope.GetDeclaredTypes();
 
             if (previous != null)
@@ -136,7 +90,7 @@ namespace Compiler.CodeAnalysis.Binding
                 diagnostics = diagnostics.InsertRange(0, previous.Diagnostics);
             }
 
-            return new BoundGlobalScope(previous, diagnostics, mainFunction, functions,  types, variables, statements.ToImmutable());
+            return new BoundGlobalScope(previous, diagnostics, mainFunction, functions,  types);
         }
 
         private void BindTypeDeclaration(TypeDeclarationSyntax typeDeclarationSyntax)
@@ -169,10 +123,8 @@ namespace Compiler.CodeAnalysis.Binding
             foreach (var typeSymbol in globalScope.Types)
             {
                 var binder = new Binder(parentScope, null);
-                var body = binder.BindMemberBlockStatement(typeSymbol, typeSymbol.Declaration!.Body);
-                var loweredBody = Lowerer.Lower(typeSymbol, body, binder.Diagnostics);
-
-                typeBodies.Add(typeSymbol, loweredBody);
+                var body = (BoundBlockStatement) binder.BindMemberBlockStatement(typeSymbol, typeSymbol.Declaration!.Body);
+                typeBodies.Add(typeSymbol, body);
                 diagnostics.AddRange(binder.Diagnostics);
             }
 
@@ -199,18 +151,6 @@ namespace Compiler.CodeAnalysis.Binding
                 functionBodies.Add(function, loweredBody);
 
                 diagnostics.AddRange(binder.Diagnostics);
-            }
-
-            var compilationUnit = globalScope.Statements.Any()
-                                    ? globalScope.Statements.First().Syntax.AncestorsAndSelf().LastOrDefault()
-                                    : null;
-
-            if (globalScope.MainFunction != null && globalScope.Statements.Any())
-            {
-                var diagnosticBag = new DiagnosticBag();
-                var body = Lowerer.Lower(globalScope.MainFunction, new BoundBlockStatement(compilationUnit!, globalScope.Statements), diagnosticBag);
-                functionBodies.Add(globalScope.MainFunction, body);
-                diagnostics.AddRange(diagnosticBag);
             }
 
             return new BoundProgram(previous,
@@ -336,11 +276,6 @@ namespace Compiler.CodeAnalysis.Binding
 
             foreach (var statementSyntax in syntax.Statement)
             {
-                if (statementSyntax.Kind != SyntaxKind.VariableDeclarationStatement)
-                {
-                    Diagnostics.ReportInvalidExpressionStatement(statementSyntax.Location);
-                }
-
                 switch (statementSyntax.Kind)
                 {
                     case SyntaxKind.VariableDeclarationStatement:
@@ -358,18 +293,13 @@ namespace Compiler.CodeAnalysis.Binding
                 }
             }
 
-            return new BoundMemberBlockStatement(syntax, statements.ToImmutable());
+            return new BoundBlockStatement(syntax, statements.ToImmutable());
         }
 
-        private BoundStatement BindGlobalStatement(StatementSyntax syntax)
-        {
-            return BindStatement(syntax, isGlobal: true);
-        }
-
-        private BoundStatement BindStatement(StatementSyntax syntax, bool isGlobal = false)
+        private BoundStatement BindStatement(StatementSyntax syntax)
         {
             var result = BindStatementInternal(syntax);
-            if (!isGlobal && result is BoundExpressionStatement es)
+            if (result is BoundExpressionStatement es)
             {
                 var expression = es.Expression;
                 if (expression is BoundMemberAccessExpression memberAccessExpression)
@@ -591,6 +521,10 @@ namespace Compiler.CodeAnalysis.Binding
                 case FunctionSymbol function:
                     return function;
 
+                case null:
+                    Diagnostics.ReportUndefinedName(location, identifier.Text);
+                    return null;
+
                 default:
                 /*
                     if (_function?.Receiver != null)
@@ -749,10 +683,6 @@ namespace Compiler.CodeAnalysis.Binding
                     scope.TryDeclareFunction(f);
                 }
 
-                foreach (var variable in previous.Variables)
-                {
-                    scope.TryDeclareVariable(variable);
-                }
                 parent = scope;
             }
             return parent;
@@ -1059,7 +989,6 @@ namespace Compiler.CodeAnalysis.Binding
                         return new BoundMemberAccessExpression(syntax, nameExpression, boundCall);
 
                     default:
-                        /*
                         var member = BindMemberReference(nameExpression.Type, syntax);
                         if (member == null)
                         {
@@ -1067,9 +996,7 @@ namespace Compiler.CodeAnalysis.Binding
                             return new BoundErrorExpression(syntax);
                         }
 
-                        return new BoundMemberAccessExpression(syntax, nameExpression, member);
-                        */
-                        throw new NotImplementedException();    
+                        return new BoundMemberAccessExpression(syntax, nameExpression, member);   
                 }
             }
             else
@@ -1079,17 +1006,17 @@ namespace Compiler.CodeAnalysis.Binding
             return new BoundErrorExpression(syntax);
         }
 
-        /*
         private BoundMemberExpression? BindMemberReference(TypeSymbol typeSymbol, MemberAccessExpressionSyntax syntax)
         {
-            var memberSymbol = GetMemberSymbol(typeSymbol, syntax.IdentifierToken);
-
+            var memberSymbol = BindSymbolReference(syntax.IdentifierToken, syntax.IdentifierToken.Location);
             if (memberSymbol != null)
             {
                 return new BoundFieldExpression(syntax, (FieldSymbol)memberSymbol);
             }
             return null;
         }
+
+        /*
         private static MemberSymbol? GetMemberSymbol(TypeSymbol typeSymbol, SyntaxToken identifier)
         {
             var memberName = identifier.Text;
@@ -1102,7 +1029,7 @@ namespace Compiler.CodeAnalysis.Binding
             }
             return null;
         }
-*/
+        */
         private FunctionSymbol? BindFunctionReference(SyntaxToken identifierToken)
         {
             var name = identifierToken.Text;
@@ -1134,7 +1061,7 @@ namespace Compiler.CodeAnalysis.Binding
                 {
                     Diagnostics.ReportCannotConvert(diagnosticLocation, expression.Type, type);
                 }
-                return new BoundErrorExpression(expression.Syntax);
+                return new BoundErrorExpression(expression.Syntax, type);
             }
 
             if (!allowExplicit && conversion.IsExplicit)

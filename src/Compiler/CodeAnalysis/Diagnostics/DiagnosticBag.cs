@@ -203,9 +203,9 @@ namespace Compiler.CodeAnalysis.Diagnostics
             ReportError(location, DiagnosticCode.InvalidExpressionStatement.GetDiagnostic());
         }
 
-        public void ReportOnlyOneFileCanHaveGlobalStatements(in TextLocation location)
+        public void ReportInvalidGlobalStatement(in TextLocation location)
         {
-            ReportError(location, DiagnosticCode.OnlyOneFileCanHaveGlobalStatements.GetDiagnostic());
+            ReportError(location, DiagnosticCode.InvalidGlobalStatement.GetDiagnostic());
         }
 
         public void ReportMainMustHaveCorrectSignature(in TextLocation location)

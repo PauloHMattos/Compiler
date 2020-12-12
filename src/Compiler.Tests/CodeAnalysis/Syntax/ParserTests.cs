@@ -120,14 +120,16 @@ namespace Compiler.Tests.CodeAnalysis.Syntax
                 }
             }
         }
-
+        
         private static ExpressionSyntax ParseExpression(string text)
         {
-            var syntaxTree = SyntaxTree.Parse(text);
+            var fullText = "function main() { " + text + " }";
+            var syntaxTree = SyntaxTree.Parse(fullText);
             var root = syntaxTree.Root;
             var member = Assert.Single(root.Members);
-            var globalStatement = Assert.IsType<GlobalStatementSyntax>(member);
-            return Assert.IsType<ExpressionStatementSyntax>(globalStatement.Statement).Expression;
+            var function = Assert.IsType<FunctionDeclarationSyntax>(member);
+            var statement = Assert.Single(function.Body.Statements);
+            return Assert.IsType<ExpressionStatementSyntax>(statement).Expression;
         }
 
         public static IEnumerable<object[]> GetBinaryOperatorsPairsData()

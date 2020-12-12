@@ -21,7 +21,6 @@ namespace Compiler.CodeAnalysis
         public FunctionSymbol? MainFunction => GlobalScope.MainFunction;
         public ImmutableArray<FunctionSymbol> Functions => GlobalScope.Functions;
         public ImmutableArray<TypeSymbol> Types => GlobalScope.Types;
-        public ImmutableArray<VariableSymbol> Variables => GlobalScope.Variables;
 
         internal BoundGlobalScope GlobalScope
         {
@@ -106,15 +105,7 @@ namespace Compiler.CodeAnalysis
                         yield return typeSymbol;
                     }
                 }
-
-                foreach (var variable in submission.Variables)
-                {
-                    if (seenSymbolNames.Add(variable.Name))
-                    {
-                        yield return variable;
-                    }
-                }
-
+                
                 submission = submission._previous;
             }
         }

@@ -81,7 +81,6 @@
         TypeDeclaration,
         EnumValue,
         MemberBlockStatement,
-        GlobalStatement,
         Parameter,
         TypeClause,
         ElseClause,
