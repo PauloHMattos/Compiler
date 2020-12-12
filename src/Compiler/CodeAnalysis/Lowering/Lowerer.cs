@@ -208,11 +208,9 @@ namespace Compiler.CodeAnalysis.Lowering
             //      <body>
             //      continue:
             //      <var> = <var> + <step>
-
-            
-            var lowerBound = VariableDeclaration(node.Syntax, node.Variable, node.LowerBound);
+            var lowerBound = VariableDeclaration(node.LowerBound.Syntax, node.Variable, node.LowerBound);
             // Use node.UpperBound.Syntax?
-            var upperBound = ConstantDeclaration(node.Syntax, "upperBound", node.UpperBound);
+            var upperBound = ConstantDeclaration(node.UpperBound.Syntax, "upperBound", node.UpperBound);
 
             var result = Block(node.Syntax, 
                                 lowerBound,
