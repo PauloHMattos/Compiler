@@ -134,8 +134,7 @@ namespace Compiler.CodeAnalysis
             var appPath = Environment.CurrentDirectory;
             var appDirectory = Path.GetDirectoryName(appPath);
             var cfgPath = Path.Combine(appDirectory!, "cfg.dot");
-            var diagnostics = new DiagnosticBag();
-            var cfg = ControlFlowGraph.Create(function.Value, diagnostics);
+            var cfg = ControlFlowGraph.Create(function.Value);
 
             using var streamWriter = new StreamWriter(cfgPath);
             cfg.WriteTo(streamWriter);

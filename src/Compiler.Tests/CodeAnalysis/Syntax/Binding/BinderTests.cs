@@ -33,7 +33,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         }
 
         [Fact]
-        public void Evaluator_IfStatement_ExpressionInCondition()
+        public void Binder_IfStatement_ExpressionInCondition()
         {
             var text = @"
                 function main()
@@ -53,7 +53,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         }
 
         [Fact]
-        public void Evaluator_WhileStatement_ExpressionInCondition()
+        public void Binder_WhileStatement_ExpressionInCondition()
         {
             var text = @"
                 function main()
@@ -73,7 +73,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         }
 
         [Fact]
-        public void Evaluator_IfStatement_Reports_CannotConvert()
+        public void Binder_IfStatement_Reports_CannotConvert()
         {
             var text = @"
                 function main()

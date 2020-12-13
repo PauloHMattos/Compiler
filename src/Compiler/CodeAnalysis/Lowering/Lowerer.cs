@@ -4,7 +4,6 @@ using System.Collections.Immutable;
 using System.Linq;
 using Compiler.CodeAnalysis.Binding;
 using Compiler.CodeAnalysis.Binding.FlowControl;
-using Compiler.CodeAnalysis.Diagnostics;
 using Compiler.CodeAnalysis.Symbols;
 using static Compiler.CodeAnalysis.Binding.BoundNodeFactory;
 
@@ -24,21 +23,21 @@ namespace Compiler.CodeAnalysis.Lowering
             return new BoundLabel(name);
         }
 
-        public static BoundBlockStatement Lower(Symbol symbol, BoundStatement statement, DiagnosticBag diagnostics)
+        public static BoundBlockStatement Lower(Symbol symbol, BoundStatement statement)
         {
-            if (symbol is not (FunctionSymbol or StructSymbol or EnumSymbol))
+            if (symbol is not FunctionSymbol)
             {
                 throw new InvalidOperationException($"Symbol of type {symbol.Kind} not expected in Lowerer.");
             }
 
             var lowerer = new Lowerer();
             var result = lowerer.RewriteStatement(statement);
-            return RemoveDeadCode(Flatten(symbol, result), diagnostics);
+            return RemoveDeadCode(Flatten(symbol, result));
         }
 
-        private static BoundBlockStatement RemoveDeadCode(BoundBlockStatement statement, DiagnosticBag diagnostics)
+        private static BoundBlockStatement RemoveDeadCode(BoundBlockStatement statement)
         {
-            var controlFlow = ControlFlowGraph.Create(statement, diagnostics);
+            var controlFlow = ControlFlowGraph.Create(statement);
             var reachableStatements = new HashSet<BoundStatement>(controlFlow.Blocks.SelectMany(b => b.Statements));
 
             var builder = statement.Statements.ToBuilder();

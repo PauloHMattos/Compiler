@@ -10,13 +10,13 @@ namespace Compiler.CodeAnalysis.Binding
         public ImmutableArray<Diagnostic> Diagnostics { get; }
         public FunctionSymbol? MainFunction { get; }
         public ImmutableDictionary<FunctionSymbol, BoundBlockStatement> Functions { get; }
-        public ImmutableDictionary<TypeSymbol, BoundBlockStatement> Types { get; }
+        public ImmutableArray<TypeSymbol> Types { get; }
 
         public BoundProgram(BoundProgram? previous,
                             ImmutableArray<Diagnostic> diagnostics,
                             FunctionSymbol? mainFunction,
                             ImmutableDictionary<FunctionSymbol, BoundBlockStatement> functions,
-                            ImmutableDictionary<TypeSymbol, BoundBlockStatement> types)
+                            ImmutableArray<TypeSymbol> types)
         {
             Previous = previous;
             Diagnostics = diagnostics;

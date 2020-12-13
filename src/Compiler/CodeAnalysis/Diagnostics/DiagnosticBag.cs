@@ -213,11 +213,6 @@ namespace Compiler.CodeAnalysis.Diagnostics
             ReportError(location, DiagnosticCode.MainMustHaveCorrectSignature.GetDiagnostic());
         }
 
-        public void ReportCannotMixMainAndGlobalStatements(in TextLocation location)
-        {
-            ReportError(location, DiagnosticCode.CannotMixMainAndGlobalStatements.GetDiagnostic());
-        }
-
         internal void ReportInvalidReturnWithValueInGlobalStatements(TextLocation location)
         {
             ReportError(location, DiagnosticCode.InvalidReturnWithValueInGlobalStatements.GetDiagnostic());

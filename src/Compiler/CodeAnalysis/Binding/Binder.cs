@@ -117,7 +117,6 @@ namespace Compiler.CodeAnalysis.Binding
             }
 
             var functionBodies = ImmutableDictionary.CreateBuilder<FunctionSymbol, BoundBlockStatement>();
-            var typeBodies = ImmutableDictionary.CreateBuilder<TypeSymbol, BoundBlockStatement>();
             var diagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
 
             var functionsToLower = new List<FunctionSymbol>(globalScope.Functions);
@@ -125,8 +124,7 @@ namespace Compiler.CodeAnalysis.Binding
             foreach (var typeSymbol in globalScope.Types)
             {
                 var binder = new Binder(parentScope, null);
-                var body = (BoundBlockStatement) binder.BindMemberBlockStatement(typeSymbol, typeSymbol.Declaration!.Body, functionsToLower);
-                typeBodies.Add(typeSymbol, body);
+                binder.BindMemberBlockStatement(typeSymbol, typeSymbol.Declaration!.Body, functionsToLower);
                 diagnostics.AddRange(binder.Diagnostics);
             }
 
@@ -143,9 +141,9 @@ namespace Compiler.CodeAnalysis.Binding
 
                 var binder = new Binder(parentScope, function);
                 var body = binder.BindStatement(function.Declaration!.Body);
-                var loweredBody = Lowerer.Lower(function, body, binder.Diagnostics);
+                var loweredBody = Lowerer.Lower(function, body);
 
-                if (function.ReturnType != TypeSymbol.Void && !ControlFlowGraph.AllPathsReturn(loweredBody, binder.Diagnostics))
+                if (function.ReturnType != TypeSymbol.Void && !ControlFlowGraph.AllPathsReturn(loweredBody))
                 {
                     binder.Diagnostics.ReportAllPathsMustReturn(function.Declaration!.Identifier.Location);
                 }
@@ -158,7 +156,7 @@ namespace Compiler.CodeAnalysis.Binding
                                     diagnostics.ToImmutable(),
                                     globalScope.MainFunction,
                                     functionBodies.ToImmutable(),
-                                    typeBodies.ToImmutable());
+                                    globalScope.Types);
         }
 
         private static BoundProgram EmptyProgram(BoundProgram? previous, BoundGlobalScope globalScope)
@@ -167,7 +165,7 @@ namespace Compiler.CodeAnalysis.Binding
                                 globalScope.Diagnostics,
                                 null,
                                 ImmutableDictionary<FunctionSymbol, BoundBlockStatement>.Empty,
-                                ImmutableDictionary<TypeSymbol, BoundBlockStatement>.Empty);
+                                ImmutableArray<TypeSymbol>.Empty);
         }
 
         private FunctionSymbol BindFunctionDeclaration(FunctionDeclarationSyntax syntax, bool addToScope = true)
@@ -232,9 +230,8 @@ namespace Compiler.CodeAnalysis.Binding
                                                                structSymbol));
         }
 
-        private BoundStatement BindMemberBlockStatement(TypeSymbol type, MemberBlockStatementSyntax syntax, List<FunctionSymbol> functionsToLower)
+        private void BindMemberBlockStatement(TypeSymbol type, MemberBlockStatementSyntax syntax, List<FunctionSymbol> functionsToLower)
         {
-            var statements = ImmutableArray.CreateBuilder<BoundStatement>();
             _scope = new BoundScope(_scope);
             Debug.Assert(type.MembersBuilder != null);
 
@@ -244,7 +241,6 @@ namespace Compiler.CodeAnalysis.Binding
                 {
                     case SyntaxKind.VariableDeclarationStatement:
                         var variableStatement = BindVariableDeclarationStatement((VariableDeclarationStatementSyntax)statementSyntax);
-                        statements.Add(variableStatement);
                         var field = new FieldSymbol((BoundVariableDeclarationStatement)variableStatement);
                         type.MembersBuilder.Add(field);
                         break;
@@ -257,7 +253,6 @@ namespace Compiler.CodeAnalysis.Binding
                             var enumValue = (BoundVariableDeclarationStatement)BindEnumElementStatement((EnumSymbol)type, enumValueSyntax, ref lastValue);
                             var enumElement = new FieldSymbol(enumValue.Variable);
                             type.MembersBuilder.Add(enumElement);
-                            statements.Add(enumValue);
                         }
                         break;
 
@@ -267,10 +262,11 @@ namespace Compiler.CodeAnalysis.Binding
                         type.MembersBuilder.Add(functionSymbol);
                         functionsToLower.Add(functionSymbol);
                         break;
+                    
+                    default:
+                        throw new InvalidOperationException($"Unexpected statement of kind {statementSyntax.Kind}");
                 }
             }
-
-            return new BoundBlockStatement(syntax, statements.ToImmutable());
         }
 
         private BoundStatement BindStatement(StatementSyntax syntax)
@@ -283,10 +279,10 @@ namespace Compiler.CodeAnalysis.Binding
                 {
                     expression = memberAccessExpression.Member;
                 }
-                var isAllowedExpression = expression.Kind == BoundNodeKind.ErrorExpression ||
-                                          expression.Kind == BoundNodeKind.CallExpression ||
-                                          expression.Kind == BoundNodeKind.AssignmentExpression ||
-                                          expression.Kind == BoundNodeKind.CompoundAssignmentExpression;
+                var isAllowedExpression = expression.Kind == BoundNodeKind.ErrorExpression
+                                          || expression.Kind == BoundNodeKind.CallExpression
+                                          || expression.Kind == BoundNodeKind.AssignmentExpression
+                                          || expression.Kind == BoundNodeKind.CompoundAssignmentExpression;
 
                 if (!isAllowedExpression)
                 {
@@ -623,7 +619,7 @@ namespace Compiler.CodeAnalysis.Binding
             return new BoundReturnStatement(syntax, expression);
         }
 
-        private BoundStatement BindErrorStatement(SyntaxNode syntax)
+        private static BoundStatement BindErrorStatement(SyntaxNode syntax)
         {
             return new BoundExpressionStatement(syntax, new BoundErrorExpression(syntax));
         }
@@ -711,7 +707,7 @@ namespace Compiler.CodeAnalysis.Binding
             return BindConversion(expression, targetType, false);
         }
 
-        private BoundExpression BindLiteralExpression(LiteralExpressionSyntax syntax)
+        private static BoundExpression BindLiteralExpression(LiteralExpressionSyntax syntax)
         {
             var value = syntax.Value ?? 0;
             return new BoundLiteralExpression(syntax, value);
