@@ -771,14 +771,14 @@ namespace Compiler.Tests.CodeAnalysis.Binding
                 function main()
                 {
                     var p: int = 0
-                    p.[length]
-                    p.[length]()
+                    p.[length] = 10
+                    p.[length()]
                 }
             ";
             var diagnostics = new List<string>()
             {
                 DiagnosticCode.CannotAccessMember.GetDiagnostic("length", "int"),
-                DiagnosticCode.UndefinedFunction.GetDiagnostic("length", "int"),
+                DiagnosticCode.CannotAccessMember.GetDiagnostic("length", "int"),
             };
             AssertDiagnostics(text, diagnostics);
         }
@@ -929,22 +929,23 @@ namespace Compiler.Tests.CodeAnalysis.Binding
                 {
                     var x = 0
                     var y: int
-                }
-                
-                function Point.B()
-                {
+
                     
+                    function B()
+                    {
+                        
+                    }
                 }
 
                 struct Line
                 {
                     var start: Point
                     var end: Point
-                }
-
-                function Line.A()
-                {
-                    start.B()
+                    
+                    function A()
+                    {
+                        start.B()
+                    }
                 }
 
                 function main()
@@ -994,12 +995,13 @@ namespace Compiler.Tests.CodeAnalysis.Binding
                     var a : int
                     var b : bool = default
                     var c = ""abc""
+
+                    function f(i : int)
+                    {
+                        print(""i"")
+                    }
                 }
 
-                function TestStruct.f(i : int)
-                {
-                    print(""i"")
-                }
 
                 function main()
                 {
@@ -1025,16 +1027,16 @@ namespace Compiler.Tests.CodeAnalysis.Binding
                     var a : int
                     var b : bool = default
                     var c = ""abc""
-                }
 
-                function TestStruct.f(i : int)
-                {
-                    self.printI()
-                }
-                
-                function TestStruct.printI()
-                {
-                    print(""i"")
+                    function f(i : int)
+                    {
+                        self.printI()
+                    }
+                    
+                    function printI()
+                    {
+                        print(""i"")
+                    }
                 }
 
                 function main()
@@ -1060,13 +1062,13 @@ namespace Compiler.Tests.CodeAnalysis.Binding
                     var a : int
                     var b : bool = default
                     var c = ""abc""
-                }
 
-                function TestStruct.f(i : int)
-                {
-                    print(b)
-                    print(self.a + 1)
-                    print(i)
+                    function f(i : int)
+                    {
+                        print(b)
+                        print(self.a + 1)
+                        print(i)
+                    }
                 }
             ";
 
@@ -1087,13 +1089,13 @@ namespace Compiler.Tests.CodeAnalysis.Binding
                     var a : int
                     var b : bool = default
                     var c = ""abc""
-                }
 
-                function TestStruct.f()
-                {
-                    print(self.a)
-                    print(self.b)
-                    printTest(self)
+                    function f()
+                    {
+                        print(self.a)
+                        print(self.b)
+                        printTest(self)
+                    }
                 }
                 
                 function printTest(t : TestStruct)
@@ -1120,22 +1122,22 @@ namespace Compiler.Tests.CodeAnalysis.Binding
                     var a : int
                     var b : bool = default
                     var c = ""abc""
+
+                    function f() : int
+                    {
+                        return 1
+                    }
                 }
 
-                function TestStruct.f() : int
-                {
-                    return 1
-                }
-                
                 function printTest(t : TestStruct)
                 {
-                    t.[f] = 10
+                    t.f [=] 10
                 }
             ";
 
             var diagnostics = new List<string>()
             {
-                DiagnosticCode.CannotAccessMember.GetDiagnostic("f", "TestStruct")
+                DiagnosticCode.CannotAssignMethod.GetDiagnostic("f", "TestStruct")
             };
 
             AssertDiagnostics(text, diagnostics);

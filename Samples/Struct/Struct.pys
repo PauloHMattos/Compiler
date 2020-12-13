@@ -2,24 +2,24 @@ struct Vector2Int
 {
     var x : int
     var y : int
-}
 
-function Vector2Int.scale(factor: int)
-{
-    var x = self.x
-    // TODO - I want this to work?
-    // Currently it does, but in other languages like C#, don't.
-    var y = y
-    self.x = x * factor
-    self.y = y * factor
-    print("Scale")
-}
+    function scale(factor: int)
+    {
+        var x = self.x
+        // TODO - I want this to work?
+        // Currently it does, but in other languages like C#, don't.
+        var y = y
+        self.x = x * factor
+        self.y = y * factor
+        print("Scale")
+    }
 
-function Vector2Int.double()
-{
-    print("Double")
-    printStruct(self)
-    self.scale(2)
+    function double()
+    {
+        print("Double")
+        printStruct(self)
+        self.scale(2)
+    }
 }
 
 function changeStruct(s : Vector2Int, x : int, y : int) : Vector2Int

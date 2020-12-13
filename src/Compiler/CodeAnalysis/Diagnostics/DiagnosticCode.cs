@@ -43,6 +43,7 @@ namespace Compiler.CodeAnalysis.Diagnostics
         CannotUseSelfOutsideOfAFunction,
         CannotUseSelfOutsideOfReceiverFunctions,
         UnreachableCode,
+        CannotAssignMethod,
     }
 
 
@@ -89,6 +90,7 @@ namespace Compiler.CodeAnalysis.Diagnostics
             {DiagnosticCode.CannotUseSelfOutsideOfAFunction, "This can only by used in functions with a struct receiver."},
             {DiagnosticCode.CannotUseSelfOutsideOfReceiverFunctions, "This can only be used in functions with a struct receiver.  Function '{0}' has no receiver defined."},
             {DiagnosticCode.UnreachableCode, "Unreachable code detected."},
+            {DiagnosticCode.CannotAssignMethod, "Cannot assign method member {0} of type {1}."},
         };
 
         public static string GetDiagnostic(this DiagnosticCode code, params object[] arguments)

@@ -3,8 +3,6 @@
     public sealed partial class FunctionDeclarationSyntax : MemberSyntax
     {
         public SyntaxToken FunctionKeyword { get; }
-        public SyntaxToken? Receiver { get; }
-        public SyntaxToken? DotToken { get; }
         public SyntaxToken Identifier { get; }
         public SyntaxToken OpenParenthesisToken { get; }
         public SeparatedSyntaxList<ParameterSyntax> Parameters { get; }
@@ -15,8 +13,6 @@
 
         internal FunctionDeclarationSyntax(SyntaxTree syntaxTree,
                                            SyntaxToken functionKeyword,
-                                           SyntaxToken? receiver,
-                                           SyntaxToken? dotToken,
                                            SyntaxToken identifier,
                                            SyntaxToken openParenthesisToken,
                                            SeparatedSyntaxList<ParameterSyntax> parameters,
@@ -26,8 +22,6 @@
             : base(syntaxTree)
         {
             FunctionKeyword = functionKeyword;
-            Receiver = receiver;
-            DotToken = dotToken;
             Identifier = identifier;
             OpenParenthesisToken = openParenthesisToken;
             Parameters = parameters;

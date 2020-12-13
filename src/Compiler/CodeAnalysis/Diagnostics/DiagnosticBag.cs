@@ -233,9 +233,9 @@ namespace Compiler.CodeAnalysis.Diagnostics
             ReportError(location, DiagnosticCode.UndefinedOverloadForArguments.GetDiagnostic(methodName, signature));
         }
         
-        internal void ReportCannotAssignMethodMember(TextLocation location, string name)
+        internal void ReportCannotAssignMethodMember(TextLocation location, string methodName, string typeName)
         {
-            throw new NotImplementedException();
+            ReportError(location, DiagnosticCode.CannotAssignMethod.GetDiagnostic(methodName, typeName));
         }
 
         internal void ReportCannotUseSelfOutsideOfAFunction(TextLocation location)

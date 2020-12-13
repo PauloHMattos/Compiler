@@ -30,6 +30,6 @@
         TypeReferenceExpression,
         MemberAccessExpression,
         SelfExpression,
-        FieldExpression,
+        MemberExpression,
     }
 }

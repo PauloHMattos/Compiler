@@ -215,8 +215,8 @@ namespace Compiler.CodeAnalysis.Binding
                     return RewriteSelfExpression((BoundSelfExpression)expression);
                 case BoundNodeKind.TypeReferenceExpression:
                     return RewriteTypeReferenceExpression((BoundTypeReferenceExpression)expression);
-                case BoundNodeKind.FieldExpression:
-                    return RewriteFieldExpression((BoundFieldExpression)expression);
+                case BoundNodeKind.MemberExpression:
+                    return RewriteMemberExpression((BoundMemberExpression)expression);
                 default:
                     throw new InvalidOperationException($"Unexpected expression {expression.Kind}.");
             }
@@ -320,7 +320,7 @@ namespace Compiler.CodeAnalysis.Binding
             return node;
         }
 
-        protected virtual BoundExpression RewriteFieldExpression(BoundFieldExpression node)
+        protected virtual BoundExpression RewriteMemberExpression(BoundMemberExpression node)
         {
             return node;
         }

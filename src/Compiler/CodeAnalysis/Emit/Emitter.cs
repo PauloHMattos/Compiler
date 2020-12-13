@@ -1025,7 +1025,7 @@ namespace Compiler.CodeAnalysis.Emit
             switch (node.Member.MemberKind)
             {
                 case MemberKind.Field:
-                    EmitFieldAccessExpression(ilProcessor, (BoundFieldExpression)node.Member, typeDefinition);
+                    EmitFieldAccessExpression(ilProcessor, (FieldSymbol)node.Member.Symbol, typeDefinition);
                     break;
                     
                 case MemberKind.Method:
@@ -1037,9 +1037,8 @@ namespace Compiler.CodeAnalysis.Emit
             }
         }
 
-        private static void EmitFieldAccessExpression(ILProcessor ilProcessor, BoundFieldExpression node, TypeDefinition typeDefinition)
+        private static void EmitFieldAccessExpression(ILProcessor ilProcessor, FieldSymbol field, TypeDefinition typeDefinition)
         {
-            var field = (FieldSymbol)node.Symbol;
             var fieldDefinition = GetField(field, typeDefinition);
             Debug.Assert(fieldDefinition != null);
 

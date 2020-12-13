@@ -1,6 +1,6 @@
 ﻿namespace Compiler.CodeAnalysis.Syntax
 {
-    public sealed partial class VariableDeclarationStatementSyntax : StatementSyntax
+    public sealed partial class VariableDeclarationStatementSyntax : MemberSyntax
     {
         public SyntaxToken Keyword { get; }
         public SyntaxToken Identifier { get; }
