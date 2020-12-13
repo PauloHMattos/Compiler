@@ -38,7 +38,10 @@ function printStruct(s : Vector2Int)
 
 function main()
 {
-    var test0 : Vector2Int= Vector2Int(10, 10)
+    var test0 : Vector2Int = Vector2Int()
+    test0.x = 10
+    test0.y = 10
+
     test0.double()
     test0.scale(2)
 
@@ -47,7 +50,9 @@ function main()
     var test1 : Vector2Int = Vector2Int()
     printStruct(test1)
     
-    var test2 = Vector2Int(10, 10)
+    var test2 = Vector2Int()
+    test2.x = 10
+    test2.y = 10
     printStruct(test2)
 
     var test3 = changeStruct(test2, 100, 100)

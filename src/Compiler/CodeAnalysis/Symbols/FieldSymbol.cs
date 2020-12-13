@@ -7,14 +7,14 @@ namespace Compiler.CodeAnalysis.Symbols
         public bool IsReadOnly { get; }
         public override MemberKind MemberKind => MemberKind.Field;
 
-        private protected FieldSymbol(string name, bool isReadOnly, TypeSymbol type, BoundConstant? constant)
+        private FieldSymbol(string name, bool isReadOnly, TypeSymbol type, BoundConstant? constant)
             : base(name, type, isReadOnly ? constant : null)
         {
             IsReadOnly = isReadOnly;
         }
 
 
-        private protected FieldSymbol(VariableSymbol variable) 
+        internal FieldSymbol(VariableSymbol variable) 
             : this(variable.Name, variable.IsReadOnly, variable.Type, variable.Constant)
         {
         }

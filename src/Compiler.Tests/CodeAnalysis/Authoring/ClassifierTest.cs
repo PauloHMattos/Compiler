@@ -10,17 +10,9 @@ namespace Compiler.Tests.CodeAnalysis.Authoring
     public class ClassifierTests
     {
         [Theory]
-        [InlineData("1", Classification.Number)]
-        [InlineData("123", Classification.Number)]
-        [InlineData("\"123\"", Classification.String)]
-        [InlineData("a", Classification.Identifier)]
-        [InlineData("abc", Classification.Identifier)]
         [InlineData("//abc", Classification.Comment)]
         [InlineData("/* abc */", Classification.Comment)]
-        [InlineData("true", Classification.Keyword)]
-        [InlineData("var", Classification.Keyword)]
         [InlineData("function", Classification.Keyword)]
-        [InlineData("+", Classification.Text)]
         [InlineData("\r\n", Classification.Whitespace)]
         [InlineData("\n", Classification.Whitespace)]
         [InlineData("\t", Classification.Whitespace)]
@@ -39,10 +31,13 @@ namespace Compiler.Tests.CodeAnalysis.Authoring
         {
             var text = @"
                 [// single line comment]
-                [/*
-                multi line comment
-                */]
-                [var] [a] [=] [10] [// trailing comment]
+                function main()
+                {
+                    [/*
+                    multi line comment
+                    */]
+                    [var] [a] [=] [10] [// trailing comment]
+                }
             ";
 
             var classifications = new List<Classification>()
@@ -63,6 +58,7 @@ namespace Compiler.Tests.CodeAnalysis.Authoring
         public void Classifier_Classify_OptionalElseStatement()
         {
             var text = @"
+                function main()
                 {
                     [if] a call1()
                     [else] [call2][(][)]
@@ -85,6 +81,7 @@ namespace Compiler.Tests.CodeAnalysis.Authoring
         public void Classifier_Classify_OptionalStepStatement()
         {
             var text = @"
+                function main()
                 {
                     [for] i = 0 [to] 100 [step] [2]
                     [{]

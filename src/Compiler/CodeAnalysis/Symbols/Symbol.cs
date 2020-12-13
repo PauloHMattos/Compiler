@@ -1,9 +1,7 @@
 ﻿using System.IO;
-using Compiler.CodeAnalysis.Binding;
 
 namespace Compiler.CodeAnalysis.Symbols
 {
-
     public abstract class Symbol
     {
         public string Name { get; }

@@ -459,8 +459,8 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             var text = @"
                 function main()
                 {
-                    1 + []
-                }";
+                    1 + 
+                [}]";
 
             var diagnostics = new List<string>()
             {
@@ -859,10 +859,10 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             var compilation = AssertDiagnostics(text, diagnostics);
             var structSymbol = Assert.Single(compilation.Types.OfType<StructSymbol>());
             Assert.Equal("Test", structSymbol.Name);
-            Assert.Equal(3, structSymbol.CtorParameters.Length);
-            Assert.Equal(TypeSymbol.Int, structSymbol.CtorParameters[0].Type);
-            Assert.Equal(TypeSymbol.Bool, structSymbol.CtorParameters[1].Type);
-            Assert.Equal(TypeSymbol.String, structSymbol.CtorParameters[2].Type);
+            // Assert.Equal(3, structSymbol.CtorParameters.Length);
+            // Assert.Equal(TypeSymbol.Int, structSymbol.CtorParameters[0].Type);
+            // Assert.Equal(TypeSymbol.Bool, structSymbol.CtorParameters[1].Type);
+            // Assert.Equal(TypeSymbol.String, structSymbol.CtorParameters[2].Type);
             Assert.True(structSymbol.IsValueType());
         }
         
@@ -909,9 +909,48 @@ namespace Compiler.Tests.CodeAnalysis.Binding
 
                 function main()
                 {
-                    var nested = Line(Point(10, 10), Point(5, 5))
+                    var nested = Line()
                     var x = nested.start.x
                     var y = nested.end.x
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+            };
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Binder_MemberAccess_NestedCall()
+        {
+            var text = @"
+                struct Point
+                {
+                    var x = 0
+                    var y: int
+                }
+                
+                function Point.B()
+                {
+                    
+                }
+
+                struct Line
+                {
+                    var start: Point
+                    var end: Point
+                }
+
+                function Line.A()
+                {
+                    start.B()
+                }
+
+                function main()
+                {
+                    var nested = Line()
+                    nested.A()
                 }
             ";
 
@@ -1025,9 +1064,9 @@ namespace Compiler.Tests.CodeAnalysis.Binding
 
                 function TestStruct.f(i : int)
                 {
+                    print(b)
                     print(self.a + 1)
                     print(i)
-                    print(b)
                 }
             ";
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Collections.Concurrent;
 using Compiler.CodeAnalysis.Syntax;
 
 namespace Compiler.CodeAnalysis.Symbols
@@ -23,22 +24,44 @@ namespace Compiler.CodeAnalysis.Symbols
         public object? DefaultValue { get; }
         public override SymbolKind Kind => SymbolKind.Type;
         public TypeDeclarationSyntax? Declaration { get; }
+        public ConcurrentBag<MemberSymbol>? MembersBuilder { get; }
+        public ImmutableArray<MemberSymbol> Members
+        {
+            get
+            {
+                if (_members == null)
+                {
+                    if (MembersBuilder == null)
+                    {
+                        _members = ImmutableArray<MemberSymbol>.Empty;
+                    }
+                    else
+                    {
+                        _members = MembersBuilder.ToImmutableArray();
+                    }
+                }
+                return _members;
+            }
+        }
+        private ImmutableArray<MemberSymbol> _members;
 
         protected TypeSymbol(string name,
                              object? defaultValue,
                              Type? netType,
-                             TypeDeclarationSyntax? declaration) : base(name)
+                             TypeDeclarationSyntax? declaration,
+                             ConcurrentBag<MemberSymbol>? membersBuilder) : base(name)
         {
             NetType = netType;
             DefaultValue = defaultValue;
             Declaration = declaration;
+            MembersBuilder = membersBuilder;
         }
-        
+
         private TypeSymbol(string name, object? defaultValue, Type? netType)
-            : this(name, defaultValue, netType, null)
+            : this(name, defaultValue, netType, null, null)
         {
         }
-        
+
         public static TypeSymbol GetSymbolFrom(object value)
         {
             switch (value)
@@ -79,7 +102,7 @@ namespace Compiler.CodeAnalysis.Symbols
             }
             return NetType == typeof(Enum);
         }
-        
+
         public bool IsValueType()
         {
             if (NetType == null)
@@ -97,7 +120,7 @@ namespace Compiler.CodeAnalysis.Symbols
             yield return String;
             yield return Void;
         }
-        
+
         public static IEnumerable<TypeSymbol> GetBaseTypes()
         {
             yield return Enum;

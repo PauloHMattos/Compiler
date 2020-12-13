@@ -426,7 +426,7 @@ namespace Compiler.CodeAnalysis.Emit
                 Import(TypeSymbol.Void)
             );
             structType.Methods.Add(emptyCtorDefinition);
-
+            /*
             // Forward-declare initializer constructor
             var defaultCtorDefintion = new MethodDefinition(
                 ".ctor",
@@ -439,13 +439,14 @@ namespace Compiler.CodeAnalysis.Emit
 
             // This constructor will be the second one on the class
             structType.Methods.Add(defaultCtorDefintion);
+            */
         }
 
         private void EmitStructBody(StructSymbol key, BoundBlockStatement value)
         {
             var structType = _declaredTypes[key];
             EmitEmptyConstructorForStruct(value, structType);
-            EmitDefaultConstructorForStruct(key, structType);
+            // EmitDefaultConstructorForStruct(key, structType);
         }
 
         private void EmitEmptyConstructorForStruct(BoundBlockStatement value, TypeDefinition structType)
@@ -484,6 +485,7 @@ namespace Compiler.CodeAnalysis.Emit
             constructor.Body.Optimize();
         }
 
+        /*
         private void EmitDefaultConstructorForStruct(StructSymbol structSymbol, TypeDefinition structType)
         {
             // Get default constructor declaration
@@ -513,6 +515,7 @@ namespace Compiler.CodeAnalysis.Emit
             ilProcessor.Emit(OpCodes.Ret);
             constructor.Body.Optimize();
         }
+        */
 
         private TypeReference Import(TypeSymbol type)
         {
@@ -971,23 +974,22 @@ namespace Compiler.CodeAnalysis.Emit
             var function = (FunctionSymbol)node.Symbol;
             EmitExpressions(ilProcessor, node.Arguments);
 
-            if (node.Symbol == BuiltinFunctions.Input)
+            if (function == BuiltinFunctions.Input)
             {
                 ilProcessor.Emit(OpCodes.Call, _consoleReadLineReference);
             }
-            else if (node.Symbol == BuiltinFunctions.Print)
+            else if (function == BuiltinFunctions.Print)
             {
                 ilProcessor.Emit(OpCodes.Call, _consoleWriteLineReference);
             }
-            else if (node.Symbol.Name.EndsWith(".ctor"))
+            else if (node.Symbol.Name.Equals(".ctor"))
             {
-                var className = function.Name[..^5];
+                var className = function.ReturnType.Name;
+                Console.WriteLine(className);
                 var structSymbol = _declaredTypes.First(s => s.Key.Name == className).Value;
 
                 // TODO: We should use a general overload resolution algorithm instead
-                ilProcessor.Emit(OpCodes.Newobj, node.Arguments.Length == 0 ?
-                                                    structSymbol.Methods[0] :
-                                                    structSymbol.Methods[1]);
+                ilProcessor.Emit(OpCodes.Newobj, structSymbol.Methods[0]);
             }
             else
             {

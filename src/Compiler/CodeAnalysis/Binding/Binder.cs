@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Data;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
@@ -65,7 +66,6 @@ namespace Compiler.CodeAnalysis.Binding
 
             var functionDeclarations = syntaxTrees.SelectMany(st => st.Root.Members)
                                                   .OfType<FunctionDeclarationSyntax>();
-
             foreach (var function in functionDeclarations)
             {
                 binder.BindFunctionDeclaration(function);
@@ -90,7 +90,7 @@ namespace Compiler.CodeAnalysis.Binding
                 diagnostics = diagnostics.InsertRange(0, previous.Diagnostics);
             }
 
-            return new BoundGlobalScope(previous, diagnostics, mainFunction, functions,  types);
+            return new BoundGlobalScope(previous, diagnostics, mainFunction, functions, types);
         }
 
         private void BindTypeDeclaration(TypeDeclarationSyntax typeDeclarationSyntax)
@@ -120,15 +120,17 @@ namespace Compiler.CodeAnalysis.Binding
             var typeBodies = ImmutableDictionary.CreateBuilder<TypeSymbol, BoundBlockStatement>();
             var diagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
 
+            var functionsToLower = new List<FunctionSymbol>(globalScope.Functions);
+
             foreach (var typeSymbol in globalScope.Types)
             {
                 var binder = new Binder(parentScope, null);
-                var body = (BoundBlockStatement) binder.BindMemberBlockStatement(typeSymbol, typeSymbol.Declaration!.Body);
+                var body = (BoundBlockStatement) binder.BindMemberBlockStatement(typeSymbol, typeSymbol.Declaration!.Body, functionsToLower);
                 typeBodies.Add(typeSymbol, body);
                 diagnostics.AddRange(binder.Diagnostics);
             }
 
-            foreach (var function in globalScope.Functions)
+            foreach (var function in functionsToLower)
             {
                 // Structs generate declartions for their constructors.  However, these have no function bodies.
                 // We will skip attempting to lower the bodies for these and allow the Emitter to automatically
@@ -149,7 +151,6 @@ namespace Compiler.CodeAnalysis.Binding
                 }
 
                 functionBodies.Add(function, loweredBody);
-
                 diagnostics.AddRange(binder.Diagnostics);
             }
 
@@ -169,7 +170,7 @@ namespace Compiler.CodeAnalysis.Binding
                                 ImmutableDictionary<TypeSymbol, BoundBlockStatement>.Empty);
         }
 
-        private void BindFunctionDeclaration(FunctionDeclarationSyntax syntax)
+        private FunctionSymbol BindFunctionDeclaration(FunctionDeclarationSyntax syntax, bool addToScope = true)
         {
             var parameters = ImmutableArray.CreateBuilder<ParameterSymbol>();
 
@@ -194,10 +195,13 @@ namespace Compiler.CodeAnalysis.Binding
             var receiver = BindTypeClause(syntax.Receiver);
 
             var function = new FunctionSymbol(syntax.Identifier.Text, parameters.ToImmutable(), type, ImmutableArray<FunctionSymbol>.Empty, syntax, receiver);
-            if (function.Name != null && !_scope.TryDeclareFunction(function))
+            
+            if (addToScope && function.Name != null && !_scope.TryDeclareFunction(function))
             {
                 Diagnostics.ReportSymbolAlreadyDeclared(syntax.Identifier.Location, function.Name);
             }
+
+            return function;
         }
 
         private void BindEnumDeclaration(EnumDeclarationSyntax syntax)
@@ -212,83 +216,56 @@ namespace Compiler.CodeAnalysis.Binding
 
         private void BindStructDeclaration(StructDeclarationSyntax syntax)
         {
-            // Peek into the struct body and generate a constructor based on all writeable members
-            var members = syntax.Body.Statement.OfType<VariableDeclarationStatementSyntax>()
-                                               .Where(m => m.Keyword.Kind == SyntaxKind.VarKeyword);
-
-            var ctorParameters = ImmutableArray.CreateBuilder<ParameterSymbol>();
-
-            foreach (var varDeclarationSyntax in members)
-            {
-                var decl = BindVariableDeclarationStatement(varDeclarationSyntax, false);
-
-                if (decl is not BoundVariableDeclarationStatement d)
-                {
-                    continue;
-                }
-
-                var parameterName = varDeclarationSyntax.Identifier.Text;
-                var parameterType = BindTypeClause(varDeclarationSyntax.TypeClause);
-
-                if (parameterType == null && varDeclarationSyntax.Initializer != null)
-                {
-                    parameterType = BindExpression(varDeclarationSyntax.Initializer).Type;
-                }
-                else if (parameterType == null && varDeclarationSyntax.Initializer == null)
-                {
-                    // We don't need to do error reporting here (e.g. report on duplicate members) because that will be
-                    // done later in the BindMemberBlockStatement
-                    continue;
-                }
-
-                var parameter = new ParameterSymbol(parameterName, parameterType!, ctorParameters.Count);
-
-                ctorParameters.Add(parameter);
-            }
-
             string structIdentifier = syntax.Identifier.Text;
-            var structSymbol = new StructSymbol(structIdentifier, ctorParameters.ToImmutable(), syntax);
+            var structSymbol = new StructSymbol(structIdentifier, syntax);
             if (structIdentifier != null && !_scope.TryDeclareStruct(structSymbol))
             {
                 Diagnostics.ReportSymbolAlreadyDeclared(syntax.Identifier.Location, structSymbol.Name);
             }
 
-            // Declare Built-in Constructor
-            var ctor = new FunctionSymbol(structIdentifier + ".ctor", ImmutableArray<ParameterSymbol>.Empty, structSymbol);
-            var ctorWithParams = new FunctionSymbol(structIdentifier + ".ctor", ctorParameters.ToImmutable(), structSymbol);
-            if (structIdentifier != null)
-            {
-                if (!_scope.TryDeclareFunction(ctor))
-                {
-                    Diagnostics.ReportSymbolAlreadyDeclared(syntax.Identifier.Location, ctor.Name);
-                }
-                if (!_scope.TryDeclareFunction(ctorWithParams))
-                {
-                    Diagnostics.ReportSymbolAlreadyDeclared(syntax.Identifier.Location, ctorWithParams.Name);
-                }
-            }
+            Debug.Assert(structSymbol.MembersBuilder != null);
+            structSymbol.MembersBuilder.Add(new FunctionSymbol(".ctor",
+                                                               ImmutableArray<ParameterSymbol>.Empty,
+                                                               structSymbol,
+                                                               ImmutableArray<FunctionSymbol>.Empty,
+                                                               null,
+                                                               structSymbol));
         }
 
-        private BoundStatement BindMemberBlockStatement(TypeSymbol type, MemberBlockStatementSyntax syntax)
+        private BoundStatement BindMemberBlockStatement(TypeSymbol type, MemberBlockStatementSyntax syntax, List<FunctionSymbol> functionsToLower)
         {
             var statements = ImmutableArray.CreateBuilder<BoundStatement>();
             _scope = new BoundScope(_scope);
+            Debug.Assert(type.MembersBuilder != null);
 
             foreach (var statementSyntax in syntax.Statement)
             {
                 switch (statementSyntax.Kind)
                 {
                     case SyntaxKind.VariableDeclarationStatement:
-                        statements.Add(BindVariableDeclarationStatement((VariableDeclarationStatementSyntax)statementSyntax));
+                        var variableStatement = BindVariableDeclarationStatement((VariableDeclarationStatementSyntax)statementSyntax);
+                        statements.Add(variableStatement);
+                        var field = new FieldSymbol((BoundVariableDeclarationStatement)variableStatement);
+                        type.MembersBuilder.Add(field);
                         break;
 
                     case SyntaxKind.EnumElementDeclarationStatement:
-                        var enumSyntax = (EnumValuesStatementSyntax)statementSyntax;
                         int lastValue = 0;
+                        var enumSyntax = (EnumValuesStatementSyntax)statementSyntax;
                         foreach (var enumValueSyntax in enumSyntax.Values)
                         {
-                            statements.Add(BindEnumElementStatement((EnumSymbol)type, enumValueSyntax, ref lastValue));
+                            var enumValue = (BoundVariableDeclarationStatement)BindEnumElementStatement((EnumSymbol)type, enumValueSyntax, ref lastValue);
+                            var enumElement = new FieldSymbol(enumValue.Variable);
+                            type.MembersBuilder.Add(enumElement);
+                            statements.Add(enumValue);
                         }
+                        break;
+
+                    case SyntaxKind.FunctionDeclaration:
+                        var functionDeclarationSyntax = (FunctionDeclarationSyntax)statementSyntax;
+                        var functionSymbol = BindFunctionDeclaration(functionDeclarationSyntax, false);
+                        type.MembersBuilder.Add(functionSymbol);
+                        functionsToLower.Add(functionSymbol);
                         break;
                 }
             }
@@ -521,17 +498,11 @@ namespace Compiler.CodeAnalysis.Binding
                 case FunctionSymbol function:
                     return function;
 
-                case null:
-                    Diagnostics.ReportUndefinedName(location, identifier.Text);
-                    return null;
-
                 default:
-                /*
                     if (_function?.Receiver != null)
                     {
-                        return GetMemberSymbol(_function.Receiver, identifier);
+                        return GetMemberSymbol(_function.Receiver, identifier.Text);
                     }
-                */
                     Diagnostics.ReportUndefinedName(location, identifier.Text);
                     return null;
             }
@@ -891,9 +862,9 @@ namespace Compiler.CodeAnalysis.Binding
                 return new BoundErrorExpression(syntax);
             }
 
-            if (symbol is StructSymbol)
+            if (symbol is TypeSymbol ts)
             {
-                symbol = _scope.TryLookupSymbol(syntax.IdentifierToken.Text + ".ctor");
+                symbol = GetMemberSymbol(ts, ".ctor");
             }
 
             if (symbol is not FunctionSymbol function)
@@ -936,7 +907,7 @@ namespace Compiler.CodeAnalysis.Binding
                 }
                 var location = new TextLocation(syntax.SyntaxTree.Text, span);
                 Diagnostics.ReportWrongArgumentCount(location, function.Name, function.Parameters.Length, syntax.Arguments.Count);
-                return new BoundErrorExpression(syntax);
+                return new BoundErrorExpression(syntax, function.ReturnType);
             }
             else if (matchFunction == null)
             {
@@ -1006,9 +977,9 @@ namespace Compiler.CodeAnalysis.Binding
             return new BoundErrorExpression(syntax);
         }
 
-        private BoundMemberExpression? BindMemberReference(TypeSymbol typeSymbol, MemberAccessExpressionSyntax syntax)
+        private static BoundMemberExpression? BindMemberReference(TypeSymbol typeSymbol, MemberAccessExpressionSyntax syntax)
         {
-            var memberSymbol = BindSymbolReference(syntax.IdentifierToken, syntax.IdentifierToken.Location);
+            var memberSymbol = GetMemberSymbol(typeSymbol, syntax.IdentifierToken.Text);
             if (memberSymbol != null)
             {
                 return new BoundFieldExpression(syntax, (FieldSymbol)memberSymbol);
@@ -1016,10 +987,8 @@ namespace Compiler.CodeAnalysis.Binding
             return null;
         }
 
-        /*
-        private static MemberSymbol? GetMemberSymbol(TypeSymbol typeSymbol, SyntaxToken identifier)
+        private static MemberSymbol? GetMemberSymbol(TypeSymbol typeSymbol, string memberName)
         {
-            var memberName = identifier.Text;
             foreach (var member in typeSymbol.Members)
             {
                 if (member.Name == memberName)
@@ -1029,7 +998,7 @@ namespace Compiler.CodeAnalysis.Binding
             }
             return null;
         }
-        */
+        
         private FunctionSymbol? BindFunctionReference(SyntaxToken identifierToken)
         {
             var name = identifierToken.Text;

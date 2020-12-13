@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using Compiler.CodeAnalysis.Syntax;
 
 namespace Compiler.CodeAnalysis.Symbols
@@ -9,7 +10,7 @@ namespace Compiler.CodeAnalysis.Symbols
 
         internal EnumSymbol(string name,
                             EnumDeclarationSyntax declaration) 
-            : base(name, 0, typeof(Enum), declaration)
+            : base(name, 0, typeof(Enum), declaration, new ConcurrentBag<MemberSymbol>())
         {
         }
     }
