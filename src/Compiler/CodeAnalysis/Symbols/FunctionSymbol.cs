@@ -5,7 +5,7 @@ namespace Compiler.CodeAnalysis.Symbols
 {
     public sealed class FunctionSymbol : MemberSymbol
     {
-        public ImmutableArray<ParameterSymbol> Parameters { get; }
+        public ImmutableArray<VariableSymbol> Parameters { get; }
         public TypeSymbol ReturnType { get; }
         public FunctionDeclarationSyntax? Declaration { get; }
         public TypeSymbol? Receiver { get; }
@@ -14,12 +14,12 @@ namespace Compiler.CodeAnalysis.Symbols
         public override MemberKind MemberKind => MemberKind.Method;
 
         internal FunctionSymbol(string name,
-                                ImmutableArray<ParameterSymbol> parameters,
+                                ImmutableArray<VariableSymbol> parameters,
                                 TypeSymbol type,
                                 ImmutableArray<FunctionSymbol> overloads,
                                 FunctionDeclarationSyntax? declaration = null,
                                 TypeSymbol? receiver = null)
-            : base(name, type, null)
+            : base(name, true, false, type, null)
         {
             Parameters = parameters;
             ReturnType = type;
@@ -30,7 +30,7 @@ namespace Compiler.CodeAnalysis.Symbols
 
         
         internal FunctionSymbol(string name,
-                                ImmutableArray<ParameterSymbol> parameters,
+                                ImmutableArray<VariableSymbol> parameters,
                                 TypeSymbol type,
                                 FunctionDeclarationSyntax? declaration = null)
             : this(name, parameters, type, ImmutableArray<FunctionSymbol>.Empty, declaration)

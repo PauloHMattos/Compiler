@@ -2,10 +2,9 @@
 {
     public enum SymbolKind
     {
-        LocalVariable,
+        Variable,
         Type,
         Function,
-        Parameter,
         Enum,
         Struct,
         Member,

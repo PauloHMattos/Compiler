@@ -7,7 +7,6 @@ namespace Compiler.CodeAnalysis.Binding
     {
         public object Value => ConstantValue.Value;
         public override BoundConstant ConstantValue { get; }
-        public override BoundNodeKind Kind => BoundNodeKind.LiteralExpression;
         public override TypeSymbol Type { get; }
 
         private protected BoundConstantExpression(SyntaxNode syntax, TypeSymbol type, object? value)

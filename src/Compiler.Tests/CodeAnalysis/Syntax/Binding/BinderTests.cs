@@ -859,10 +859,6 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             var compilation = AssertDiagnostics(text, diagnostics);
             var structSymbol = Assert.Single(compilation.Types.OfType<StructSymbol>());
             Assert.Equal("Test", structSymbol.Name);
-            // Assert.Equal(3, structSymbol.CtorParameters.Length);
-            // Assert.Equal(TypeSymbol.Int, structSymbol.CtorParameters[0].Type);
-            // Assert.Equal(TypeSymbol.Bool, structSymbol.CtorParameters[1].Type);
-            // Assert.Equal(TypeSymbol.String, structSymbol.CtorParameters[2].Type);
             Assert.True(structSymbol.IsValueType());
         }
         
@@ -1017,7 +1013,6 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             AssertDiagnostics(text, diagnostics);
         }
         
-        
         [Fact]
         public void Binder_MemberAccess_CallExpressionWithReceiver()
         {
@@ -1079,7 +1074,6 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             AssertDiagnostics(text, diagnostics);
         }
         
-        
         [Fact]
         public void Binder_MemberAccess_Self()
         {
@@ -1112,7 +1106,6 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             AssertDiagnostics(text, diagnostics);
         }
         
-        
         [Fact]
         public void Binder_MemberAssignment_CannontAssignFunction()
         {
@@ -1138,6 +1131,46 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             var diagnostics = new List<string>()
             {
                 DiagnosticCode.CannotAssignMethod.GetDiagnostic("f", "TestStruct")
+            };
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Binder_TypeDeclaration_MemberAlreadyDeclared()
+        {
+            var text = @"
+                struct TestStruct
+                {
+                    var a : int
+                    var [a] : bool = default
+
+                    function [a]()
+                    {
+                    }
+
+                    function b()
+                    {
+                    }
+                    function [b]()
+                    {
+                    }
+                }
+
+                enum TestEnum
+                {
+                    A,
+                    B,
+                    [A]
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.AlreadyDeclaredMember.GetDiagnostic("TestStruct", "a"),
+                DiagnosticCode.AlreadyDeclaredMember.GetDiagnostic("TestStruct", "a"),
+                DiagnosticCode.AlreadyDeclaredMember.GetDiagnostic("TestStruct", "b"),
+                DiagnosticCode.AlreadyDeclaredMember.GetDiagnostic("TestEnum", "A")
             };
 
             AssertDiagnostics(text, diagnostics);

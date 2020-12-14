@@ -170,9 +170,9 @@ namespace Compiler.CodeAnalysis.Binding
                                 ImmutableArray<TypeSymbol>.Empty);
         }
 
-        private FunctionSymbol BindFunctionDeclaration(FunctionDeclarationSyntax syntax, bool addToScope = true)
+        private FunctionSymbol BindFunctionDeclaration(FunctionDeclarationSyntax syntax)
         {
-            var parameters = ImmutableArray.CreateBuilder<ParameterSymbol>();
+            var parameters = ImmutableArray.CreateBuilder<VariableSymbol>();
 
             var seenParameterNames = new HashSet<string>();
 
@@ -186,7 +186,7 @@ namespace Compiler.CodeAnalysis.Binding
                 }
                 else
                 {
-                    var parameter = new ParameterSymbol(parameterName, parameterType, parameters.Count);
+                    var parameter = VariableSymbol.Parameter(parameterName, false,  parameterType);
                     parameters.Add(parameter);
                 }
             }
@@ -196,9 +196,16 @@ namespace Compiler.CodeAnalysis.Binding
 
             var function = new FunctionSymbol(syntax.Identifier.Text, parameters.ToImmutable(), returnType, ImmutableArray<FunctionSymbol>.Empty, syntax, receiver);
             
-            if (addToScope && function.Name != null && !_scope.TryDeclareFunction(function))
+            if (function.Name != null && !_scope.TryDeclareFunction(function))
             {
-                Diagnostics.ReportSymbolAlreadyDeclared(syntax.Identifier.Location, function.Name);
+                if (_type != null)
+                {
+                    Diagnostics.ReportMemberAlreadyDeclared(syntax.Identifier.Location, _type.Name, function.Name);
+                }
+                else
+                {
+                    Diagnostics.ReportSymbolAlreadyDeclared(syntax.Identifier.Location, function.Name);
+                }
             }
 
             return function;
@@ -225,7 +232,7 @@ namespace Compiler.CodeAnalysis.Binding
 
             Debug.Assert(structSymbol.MembersBuilder != null);
             structSymbol.MembersBuilder.Add(new FunctionSymbol(".ctor",
-                                                               ImmutableArray<ParameterSymbol>.Empty,
+                                                               ImmutableArray<VariableSymbol>.Empty,
                                                                structSymbol,
                                                                ImmutableArray<FunctionSymbol>.Empty,
                                                                null,
@@ -253,15 +260,14 @@ namespace Compiler.CodeAnalysis.Binding
                         var enumSyntax = (EnumValuesStatementSyntax)statementSyntax;
                         foreach (var enumValueSyntax in enumSyntax.Values)
                         {
-                            var enumValue = (BoundVariableDeclarationStatement)BindEnumElementStatement((EnumSymbol)type, enumValueSyntax, ref lastValue);
-                            var enumElement = new FieldSymbol(enumValue.Variable);
+                            var enumElement = BindEnumElementStatement((EnumSymbol)type, enumValueSyntax, ref lastValue);
                             type.MembersBuilder.Add(enumElement);
                         }
                         break;
 
                     case SyntaxKind.FunctionDeclaration:
                         var functionDeclarationSyntax = (FunctionDeclarationSyntax)statementSyntax;
-                        var functionSymbol = BindFunctionDeclaration(functionDeclarationSyntax, false);
+                        var functionSymbol = BindFunctionDeclaration(functionDeclarationSyntax);
                         type.MembersBuilder.Add(functionSymbol);
                         functionsToLower.Add(functionSymbol);
                         break;
@@ -354,7 +360,7 @@ namespace Compiler.CodeAnalysis.Binding
             {
                 var initializer = BindExpression(syntax.Initializer);
                 var variableType = type ?? initializer.Type;
-                var variable = BindVariableDeclaration(syntax.Identifier, isReadOnly, variableType, initializer.ConstantValue, addToScope);
+                var variable = BindVariableDeclaration(syntax.Identifier, isReadOnly, false, VariableKind.Local, variableType, initializer.ConstantValue, addToScope);
                 var convertedInitializer = BindConversion(syntax.Initializer.Location, initializer, variableType);
 
                 return new BoundVariableDeclarationStatement(syntax, variable, convertedInitializer);
@@ -365,7 +371,7 @@ namespace Compiler.CodeAnalysis.Binding
                     ? BindDefaultExpression((DefaultKeywordSyntax)syntax.Initializer, syntax.TypeClause)
                     : BindSyntheticDefaultExpression(syntax, syntax.TypeClause);
                 var variableType = type;
-                var variable = BindVariableDeclaration(syntax.Identifier, isReadOnly, variableType, null, addToScope);
+                var variable = BindVariableDeclaration(syntax.Identifier, isReadOnly, false, VariableKind.Local, variableType, null, addToScope);
                 var convertedInitializer = BindConversion(syntax.TypeClause!.Location, initializer!, variableType);
 
                 return new BoundVariableDeclarationStatement(syntax, variable, convertedInitializer);
@@ -377,7 +383,7 @@ namespace Compiler.CodeAnalysis.Binding
             }
         }
 
-        private BoundStatement BindEnumElementStatement(EnumSymbol enumSymbol, EnumSyntax syntax, ref int lastValue)
+        private FieldSymbol BindEnumElementStatement(EnumSymbol enumSymbol, EnumSyntax syntax, ref int lastValue)
         {
             var variableType = enumSymbol;
             if (syntax.ValueClause != null)
@@ -390,9 +396,8 @@ namespace Compiler.CodeAnalysis.Binding
                 lastValue += 1;
             }
 
-            var variable = BindVariableDeclaration(syntax.Identifier, true, variableType, new BoundConstant(lastValue), true);
-            var initializer = new BoundLiteralExpression(syntax, lastValue);
-            return new BoundVariableDeclarationStatement(syntax, variable, initializer);
+            var variable = BindVariableDeclaration(syntax.Identifier, true, true, VariableKind.Local, variableType, new BoundConstant(lastValue), true);
+            return new FieldSymbol(variable);
         }
 
         [return: NotNullIfNotNull("typeSyntax")]
@@ -455,20 +460,26 @@ namespace Compiler.CodeAnalysis.Binding
             return type!;
         }
 
-        private VariableSymbol BindVariableDeclaration(SyntaxToken identifier, bool isReadOnly, TypeSymbol type, BoundConstant? constant = null, bool addToScope = true)
+        private VariableSymbol BindVariableDeclaration(SyntaxToken identifier, bool isReadOnly, bool isStatic, VariableKind kind, TypeSymbol type, BoundConstant? constant = null, bool addToScope = true)
         {
             var declare = !identifier.IsMissing;
             var name = declare ? identifier.Text : "?";
-            var variable = new LocalVariableSymbol(name, isReadOnly, type, constant);
-
+            var variable = VariableSymbol.New(name, isReadOnly, isStatic, kind, type, constant);
+            
             if (declare && addToScope && !_scope.TryDeclareVariable(variable))
             {
-                Diagnostics.ReportSymbolAlreadyDeclared(identifier.Location, name);
+                if (_type != null && _function == null)
+                {
+                    Diagnostics.ReportMemberAlreadyDeclared(identifier.Location, _type.Name, variable.Name);
+                }
+                else
+                {
+                    Diagnostics.ReportSymbolAlreadyDeclared(identifier.Location, variable.Name);
+                }
             }
-
             return variable;
         }
-
+        
         private Symbol? BindSymbolReference(SyntaxToken identifier, TextLocation location)
         {
             switch (_scope.TryLookupSymbol(identifier.Text))
@@ -518,7 +529,7 @@ namespace Compiler.CodeAnalysis.Binding
         {
             _scope = new BoundScope(_scope);
 
-            var variable = BindVariableDeclaration(syntax.Identifier, false, TypeSymbol.Int, null, true);
+            var variable = BindVariableDeclaration(syntax.Identifier, false, false, VariableKind.Local, TypeSymbol.Int, null, true);
 
             var lowerBound = BindExpression(syntax.LowerBound, TypeSymbol.Int);
             var upperBound = BindExpression(syntax.UpperBound, TypeSymbol.Int);
@@ -1057,8 +1068,7 @@ namespace Compiler.CodeAnalysis.Binding
 
             switch (symbol.Kind)
             {
-                case SymbolKind.LocalVariable:
-                case SymbolKind.Parameter:
+                case SymbolKind.Variable:
                     return new BoundVariableExpression(syntax, (VariableSymbol)symbol, byReference);
 
 

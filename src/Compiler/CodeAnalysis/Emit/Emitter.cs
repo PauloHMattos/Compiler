@@ -260,14 +260,16 @@ namespace Compiler.CodeAnalysis.Emit
 
         private void EmitTypeBody(TypeSymbol typeSymbol)
         {
+            var typeDefinition = _declaredTypes[typeSymbol];
+            EmitFields(typeSymbol, typeDefinition);
+
             switch (typeSymbol.Declaration!.TypeKind)
             {
                 case TypeDeclarationKind.Enum:
-                    EmitEnumBody((EnumSymbol)typeSymbol);
                     break;
 
                 case TypeDeclarationKind.Struct:
-                    EmitStructBody((StructSymbol)typeSymbol);
+                    EmitStructBody((StructSymbol)typeSymbol, typeDefinition);
                     break;
 
                 default:
@@ -275,24 +277,32 @@ namespace Compiler.CodeAnalysis.Emit
             }
         }
 
-        private void EmitEnumBody(EnumSymbol enumSymbol)
+        private void EmitFields(TypeSymbol typeSymbol, TypeDefinition typeDefinition)
         {
-            const FieldAttributes _enumFieldAttributes = FieldAttributes.Public
-                                                         | FieldAttributes.Static
-                                                         | FieldAttributes.Literal
-                                                         | FieldAttributes.HasDefault;
-            
-            var enumType = _declaredTypes[enumSymbol];
-
-            
-            foreach (var field in enumSymbol.Members.OfType<FieldSymbol>())
+            foreach (var field in typeSymbol.Members.OfType<FieldSymbol>())
             {
-                Debug.Assert(field.Constant != null);
-                var valueField = new FieldDefinition(field.Name, _enumFieldAttributes, enumType)
+                var fieldAttributes = FieldAttributes.Public;
+
+                if (field.IsStatic)
                 {
-                    Constant = field.Constant.Value
-                };
-                enumType.Fields.Add(valueField);
+                    fieldAttributes |= FieldAttributes.Static;
+                    if (field.IsReadOnly)
+                    {
+                        fieldAttributes |= FieldAttributes.Literal;
+                    }
+                }
+                else if (field.IsReadOnly)
+                {
+                    fieldAttributes |= FieldAttributes.InitOnly;
+                }
+
+                var fieldDefinition = new FieldDefinition(field.Name, fieldAttributes, Import(field.Type));
+                if (field.Constant != null)
+                {
+                    fieldDefinition.Constant = field.Constant.Value;
+                    fieldDefinition.Attributes |= FieldAttributes.HasDefault;
+                }
+                typeDefinition.Fields.Add(fieldDefinition);
             }
         }
 
@@ -428,16 +438,6 @@ namespace Compiler.CodeAnalysis.Emit
             _declaredTypes.Add(structSymbol, structType);
             _resolvedTypes.Add(structSymbol, structType);
 
-            
-            foreach (var field in structSymbol.Members.OfType<FieldSymbol>())
-            {
-                var fieldAttributes = field.IsReadOnly ? FieldAttributes.Public
-                                                         | FieldAttributes.InitOnly
-                                                       : FieldAttributes.Public;
-                var fieldDefinition = new FieldDefinition(field.Name, fieldAttributes, Import(field.Type));
-                structType.Fields.Add(fieldDefinition);
-            }
-
             // Forward-declare empty constructor
             var emptyCtorDefinition = new MethodDefinition(
                 ".ctor",
@@ -450,22 +450,21 @@ namespace Compiler.CodeAnalysis.Emit
             structType.Methods.Add(emptyCtorDefinition);
         }
 
-        private void EmitStructBody(StructSymbol structSymbol)
+        private void EmitStructBody(StructSymbol structSymbol, TypeDefinition typeDefinition)
         {
-            var structType = _declaredTypes[structSymbol];
-            EmitEmptyConstructorForStruct(structSymbol, structType);
+            EmitEmptyConstructorForStruct(structSymbol, typeDefinition);
         }
 
-        private void EmitEmptyConstructorForStruct(StructSymbol structSymbol, TypeDefinition structType)
+        private void EmitEmptyConstructorForStruct(StructSymbol structSymbol, TypeDefinition typeDefinition)
         {
             // Get empty constructor declaration
-            var constructor = structType.Methods[0];
+            var constructor = typeDefinition.Methods[0];
 
             var ilProcessor = constructor.Body.GetILProcessor();
 
             foreach (var field in structSymbol.Members.OfType<FieldSymbol>())
             {
-                var fieldDefinition = structType.Fields.Single(f => f.Name == field.Name);
+                var fieldDefinition = typeDefinition.Fields.Single(f => f.Name == field.Name);
                 var defaultValue = new BoundLiteralExpression(null!, field.Type, field.Type.DefaultValue!);            
                 EmitFieldAssignment(ilProcessor, defaultValue, fieldDefinition);
             }
@@ -702,14 +701,14 @@ namespace Compiler.CodeAnalysis.Emit
         private void EmitVariableExpression(ILProcessor ilProcessor, BoundVariableExpression node)
         {
             var byReference = node.ByReference;
-            switch (node.Variable.Kind)
+            switch (node.Variable.VariableKind)
             {
-                case SymbolKind.Parameter:
-                    EmitParameterSymbol(ilProcessor, (ParameterSymbol)node.Variable, byReference);
+                case VariableKind.Parameter:
+                    EmitParameterSymbol(ilProcessor, node.Variable, byReference);
                     break;
 
-                case SymbolKind.LocalVariable:
-                    EmitLocalSymbol(ilProcessor, (LocalVariableSymbol)node.Variable, byReference);
+                case VariableKind.Local:
+                    EmitLocalSymbol(ilProcessor, node.Variable, byReference);
                     break;
 
                 default:
@@ -717,7 +716,7 @@ namespace Compiler.CodeAnalysis.Emit
             }
         }
 
-        private void EmitLocalSymbol(ILProcessor ilProcessor, LocalVariableSymbol local, bool byReference)
+        private void EmitLocalSymbol(ILProcessor ilProcessor, VariableSymbol local, bool byReference)
         {
             var variableDefinition = _locals[local];
             if (byReference)
@@ -730,18 +729,26 @@ namespace Compiler.CodeAnalysis.Emit
             }
         }
 
-        private static void EmitParameterSymbol(ILProcessor ilProcessor, ParameterSymbol parameter, bool byReference)
+        private static void EmitParameterSymbol(ILProcessor ilProcessor, VariableSymbol parameter, bool byReference)
         {
-            var ordinal = ilProcessor.Body.Method.HasThis ? parameter.Ordinal + 1 : parameter.Ordinal;
+            Debug.Assert(parameter.VariableKind == VariableKind.Parameter);
+
+            var ordinal = GetParameterOrdinal(ilProcessor.Body.Method, parameter);
+            if (!ordinal.HasValue)
+            {
+                throw new InvalidOperationException($"Parameter with name {parameter.Name} not found");
+            }
+
             if (byReference)
             {
-                ilProcessor.Emit(OpCodes.Ldarga, ordinal);
+                ilProcessor.Emit(OpCodes.Ldarga, ordinal.Value);
             }
             else
             {
-                ilProcessor.Emit(OpCodes.Ldarg, ordinal);
+                ilProcessor.Emit(OpCodes.Ldarg, ordinal.Value);
             }
         }
+       
 
         private void EmitAssignmentExpression(ILProcessor ilProcessor, BoundAssignmentExpression node)
         {
@@ -1064,6 +1071,20 @@ namespace Compiler.CodeAnalysis.Emit
                 if (field.Name == fieldName)
                 {
                     return field;
+                }
+            }
+            return null;
+        }
+
+        private static int? GetParameterOrdinal(MethodDefinition method, VariableSymbol parameter)
+        {
+            for (var i = 0; i < method.Parameters.Count; i++)
+            {
+                var other = method.Parameters[i];
+                Console.WriteLine(other.Name);
+                if (other.Name == parameter.Name)
+                {
+                    return i + (method.HasThis ? 1 : 0);
                 }
             }
             return null;

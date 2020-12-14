@@ -4,18 +4,16 @@ namespace Compiler.CodeAnalysis.Symbols
 {
     public sealed class FieldSymbol : MemberSymbol
     {
-        public bool IsReadOnly { get; }
         public override MemberKind MemberKind => MemberKind.Field;
 
-        private FieldSymbol(string name, bool isReadOnly, TypeSymbol type, BoundConstant? constant)
-            : base(name, type, isReadOnly ? constant : null)
+        private FieldSymbol(string name, bool isReadOnly, bool isStatic, TypeSymbol type, BoundConstant? constant)
+            : base(name, isReadOnly, isStatic, type, constant)
         {
-            IsReadOnly = isReadOnly;
         }
 
 
         internal FieldSymbol(VariableSymbol variable) 
-            : this(variable.Name, variable.IsReadOnly, variable.Type, variable.Constant)
+            : this(variable.Name, variable.IsReadOnly, variable.IsStatic, variable.Type, variable.Constant)
         {
         }
 
