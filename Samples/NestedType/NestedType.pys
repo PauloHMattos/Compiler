@@ -1,0 +1,27 @@
+struct Rect
+{
+    var p1: Vector2Int = Vector2Int()
+    var p2: Vector2Int = Vector2Int()
+
+    struct Vector2Int
+    {
+        var x : int
+        var y : int
+    }
+}
+
+
+function main()
+{
+    var rect = Rect()
+    rect.p1 = Rect.Point()
+/*
+    rect.p1.y = 10
+    rect.p2.x = 100
+    rect.p2.y = 100
+*/
+    print(rect.p1.x)
+    print(rect.p1.y)
+    print(rect.p2.x)
+    print(rect.p2.y)
+}

@@ -99,6 +99,16 @@ namespace Compiler.CodeAnalysis.Binding
             }
 
             _scope.TryDeclareType(type);
+
+            _scope = type.BoundScope!;
+
+            // Declare all nested types
+            foreach (var statementSyntax in typeDeclarationSyntax.Body.Statement.OfType<TypeDeclarationSyntax>())
+            {
+                BindTypeDeclaration(statementSyntax);
+            }
+
+            _scope = type.BoundScope!.Parent!;
         }
 
         public static BoundProgram BindProgram(BoundGlobalScope globalScope)
@@ -213,11 +223,15 @@ namespace Compiler.CodeAnalysis.Binding
             }
 
             var type = typeScope.OwnerType;
-
-            // Declare all nested types
             foreach (var statementSyntax in syntax.Statement.OfType<TypeDeclarationSyntax>())
             {
-                BindTypeDeclaration(statementSyntax);
+                var nestedType = typeScope.TryLookupSymbol<TypeSymbol>(statementSyntax.Identifier.Text);
+                Debug.Assert(nestedType != null);
+                Debug.Assert(nestedType.BoundScope != null);
+
+                var binder = new Binder(nestedType.BoundScope, null, nestedType);
+                binder.BindMemberBlockStatement(nestedType.Declaration!.Body, functionsToLower);
+                Diagnostics.AddRange(binder.Diagnostics);
             }
 
             foreach (var statementSyntax in syntax.Statement)
@@ -380,7 +394,8 @@ namespace Compiler.CodeAnalysis.Binding
                 nextValue = (int)boundValueExpression.ConstantValue!.Value;
             }
             var variable = BindVariableDeclaration(syntax.Identifier, true, true, VariableKind.Local, variableType, new BoundConstant(nextValue), false);
-            return new FieldSymbol(variable);
+            var initializer = new BoundLiteralExpression(syntax, enumSymbol, nextValue);
+            return new FieldSymbol(variable, initializer);
         }
 
         private BoundExpression BindSyntheticDefaultExpression(VariableDeclarationStatementSyntax syntax, TypeSymbol type)

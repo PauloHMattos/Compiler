@@ -27,6 +27,7 @@ namespace Compiler.Tests.Samples
         [InlineData("IsEven", "2", "10", "5")]
         [InlineData("Enum")]
         [InlineData("Struct")]
+        // [InlineData("NestedType")]
         public async Task SamplesTests(string filenamePrefix, params string[] inputs)
         {
             var psi = new ProcessStartInfo

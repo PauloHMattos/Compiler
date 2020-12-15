@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Compiler.CodeAnalysis.Binding;
+using Compiler.CodeAnalysis.Binding.Scopes;
 using Compiler.CodeAnalysis.Diagnostics;
 using Compiler.CodeAnalysis.Symbols;
 using Compiler.CodeAnalysis.Syntax;
@@ -12,11 +13,23 @@ using Compiler.CodeAnalysis.Text;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Cecil.Rocks;
+using Mono.Collections.Generic;
 
 namespace Compiler.CodeAnalysis.Emit
 {
     internal class Emitter
     {
+        const TypeAttributes _enumAttributes = TypeAttributes.Class
+                                               | TypeAttributes.NotPublic
+                                               | TypeAttributes.AnsiClass
+                                               | TypeAttributes.Sealed;
+
+        const TypeAttributes _structAttributes = TypeAttributes.Class
+                                                 //| TypeAttributes.Public
+                                                 | TypeAttributes.SequentialLayout
+                                                 | TypeAttributes.AnsiClass
+                                                 | TypeAttributes.Sealed
+                                                 | TypeAttributes.BeforeFieldInit;
         private readonly DiagnosticBag _diagnostics;
         private readonly AssemblyDefinition _assemblyDefinition;
         private readonly TypeDefinition _typeDefinition;
@@ -260,6 +273,8 @@ namespace Compiler.CodeAnalysis.Emit
 
         private void EmitTypeBody(TypeSymbol typeSymbol)
         {
+            Debug.Assert(typeSymbol.BoundScope != null);
+
             var typeDefinition = _declaredTypes[typeSymbol];
             EmitFields(typeSymbol, typeDefinition);
 
@@ -274,6 +289,13 @@ namespace Compiler.CodeAnalysis.Emit
 
                 default:
                     throw new InvalidOperationException($"Unexpected declaration kind {typeSymbol.Declaration.TypeKind}");
+            }
+
+            
+            var nestedTypes = typeSymbol.BoundScope.GetDeclaredSymbols<TypeSymbol>();
+            foreach (var nestedType in nestedTypes)
+            {
+                EmitTypeBody(nestedType);
             }
         }
 
@@ -308,18 +330,32 @@ namespace Compiler.CodeAnalysis.Emit
 
         private void EmitTypeDeclaration(TypeSymbol typeSymbol)
         {
+            Debug.Assert(typeSymbol.BoundScope != null);
+
+            TypeAttributes? modifiers = null;
+            if (typeSymbol.BoundScope.Parent is TypeBoundScope)
+            {
+                modifiers = TypeAttributes.NestedPublic;
+            }
+
             switch (typeSymbol.Declaration!.TypeKind)
             {
                 case TypeDeclarationKind.Enum:
-                    EmitEnumDeclaration((EnumSymbol)typeSymbol);
+                    EmitEnumDeclaration((EnumSymbol)typeSymbol, modifiers);
                     break;
 
                 case TypeDeclarationKind.Struct:
-                    EmitStructDeclaration((StructSymbol)typeSymbol);
+                    EmitStructDeclaration((StructSymbol)typeSymbol, modifiers);
                     break;
 
                 default:
                     throw new InvalidOperationException($"Unexpected declaration kind {typeSymbol.Declaration.TypeKind}");
+            }
+
+            var nestedTypes = typeSymbol.BoundScope.GetDeclaredSymbols<TypeSymbol>();
+            foreach (var nestedType in nestedTypes)
+            {
+                EmitTypeDeclaration(nestedType);
             }
         }
 
@@ -405,39 +441,55 @@ namespace Compiler.CodeAnalysis.Emit
             }
         }
 
-        private void EmitEnumDeclaration(EnumSymbol enumSymbol)
+        private void EmitEnumDeclaration(EnumSymbol enumSymbol, TypeAttributes? modifiers)
         {
-            const TypeAttributes _enumAttributes = TypeAttributes.Class
-                                                   | TypeAttributes.NotPublic
-                                                   | TypeAttributes.AnsiClass
-                                                   | TypeAttributes.Sealed;
             const FieldAttributes _enumSpecialAttributes = FieldAttributes.Public
                                                            | FieldAttributes.SpecialName
                                                            | FieldAttributes.RTSpecialName;
 
-            var enumType = new TypeDefinition("", enumSymbol.Name, _enumAttributes, Import(TypeSymbol.Enum));
-            _assemblyDefinition.MainModule.Types.Add(enumType);
+            var attributes = _enumAttributes;
+            if (modifiers.HasValue)
+            {
+                attributes |= modifiers.Value;
+            }
+
+            var enumType = new TypeDefinition("", enumSymbol.Name, attributes, Import(TypeSymbol.Enum));
+            GetCollectionFor(enumSymbol).Add(enumType);
             _declaredTypes.Add(enumSymbol, enumType);
             _resolvedTypes.Add(enumSymbol, enumType);
 
             var specialField = new FieldDefinition("value__", _enumSpecialAttributes, Import(TypeSymbol.Int));
             enumType.Fields.Add(specialField);
         }
-
-        private void EmitStructDeclaration(StructSymbol structSymbol)
+        
+        private Collection<TypeDefinition> GetCollectionFor(TypeSymbol type)
         {
-            const TypeAttributes _structAttributes = TypeAttributes.Class
-                                                     | TypeAttributes.Public
-                                                     | TypeAttributes.SequentialLayout
-                                                     | TypeAttributes.AnsiClass
-                                                     | TypeAttributes.Sealed
-                                                     | TypeAttributes.BeforeFieldInit;
+            Debug.Assert(type.BoundScope != null);
+            if (type.BoundScope.Parent is not TypeBoundScope parentScope)
+            {
+                return _assemblyDefinition.MainModule.Types;
+            }
+            if (type.BoundScope.Parent == null)
+            {
+                return _assemblyDefinition.MainModule.Types;
+            }
+            var parentType = parentScope.OwnerType;
+            var parentTypeDefinition = _declaredTypes[parentType];
+            return parentTypeDefinition.NestedTypes;
+        }
 
-            var structType = new TypeDefinition("", structSymbol.Name, _structAttributes, Import(TypeSymbol.Struct));
-            _assemblyDefinition.MainModule.Types.Add(structType);
+        private void EmitStructDeclaration(StructSymbol structSymbol, TypeAttributes? modifiers)
+        {
+            var attributes = _structAttributes;
+            if (modifiers.HasValue)
+            {
+                attributes |= modifiers.Value;
+            }
+            var structType = new TypeDefinition("", structSymbol.Name, attributes, Import(TypeSymbol.Struct));
+            GetCollectionFor(structSymbol).Add(structType);
             _declaredTypes.Add(structSymbol, structType);
             _resolvedTypes.Add(structSymbol, structType);
-
+            
             // Forward-declare empty constructor
             var emptyCtorDefinition = new MethodDefinition(
                 ".ctor",
@@ -459,14 +511,12 @@ namespace Compiler.CodeAnalysis.Emit
         {
             // Get empty constructor declaration
             var constructor = typeDefinition.Methods[0];
-
             var ilProcessor = constructor.Body.GetILProcessor();
 
             foreach (var field in structSymbol.Members.OfType<FieldSymbol>())
             {
                 var fieldDefinition = typeDefinition.Fields.Single(f => f.Name == field.Name);
-                var defaultValue = new BoundLiteralExpression(null!, field.Type, field.Type.DefaultValue!);            
-                EmitFieldAssignment(ilProcessor, defaultValue, fieldDefinition);
+                EmitFieldAssignment(ilProcessor, field.Initializer, fieldDefinition);
             }
 
             ilProcessor.Emit(OpCodes.Ret);
@@ -675,7 +725,6 @@ namespace Compiler.CodeAnalysis.Emit
         private static void EmitConstantExpression(ILProcessor ilProcessor, BoundExpression node)
         {
             Debug.Assert(node.ConstantValue != null);
-
             if (node.Type == TypeSymbol.Bool)
             {
                 var value = (bool)node.ConstantValue.Value;
@@ -949,7 +998,6 @@ namespace Compiler.CodeAnalysis.Emit
             else if (node.Symbol.Name.Equals(".ctor"))
             {
                 var className = function.ReturnType.Name;
-                Console.WriteLine(className);
                 var structSymbol = _declaredTypes.First(s => s.Key.Name == className).Value;
 
                 // TODO: We should use a general overload resolution algorithm instead
@@ -1081,7 +1129,6 @@ namespace Compiler.CodeAnalysis.Emit
             for (var i = 0; i < method.Parameters.Count; i++)
             {
                 var other = method.Parameters[i];
-                Console.WriteLine(other.Name);
                 if (other.Name == parameter.Name)
                 {
                     return i + (method.HasThis ? 1 : 0);
