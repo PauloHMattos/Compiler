@@ -1175,7 +1175,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
 
             AssertDiagnostics(text, diagnostics);
         }
-        
+
         /*
         [Fact]
         public void Binder_IfStatement_Reports_UnreachableCode_Warning()
@@ -1268,6 +1268,39 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             AssertDiagnostics(text, diagnostics, true);
         }
         //*/
+
+        
+        [Fact]
+        public void Binder_TypeDeclaration_SupportsOverloading()
+        {
+            var text = @"
+                struct TestStruct
+                {
+                    function a(x : int)
+                    {
+                        a(string(x))
+                    }
+
+                    function a(x : string)
+                    {
+
+                    }
+                }
+
+                function main()
+                {
+                    var test : TestStruct
+                    test.a(42)
+                    test.a(""42"")
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+            };
+
+            AssertDiagnostics(text, diagnostics);
+        }
 
         private Compilation AssertDiagnostics(string text, List<string> expectedDiagnostics, bool generateGraph = false)
         {

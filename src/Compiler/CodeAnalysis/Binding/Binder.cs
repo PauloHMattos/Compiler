@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using Compiler.CodeAnalysis.Binding.FlowControl;
+using Compiler.CodeAnalysis.Binding.Scopes;
 using Compiler.CodeAnalysis.Diagnostics;
 using Compiler.CodeAnalysis.Lowering;
 using Compiler.CodeAnalysis.Symbols;
@@ -18,39 +19,31 @@ namespace Compiler.CodeAnalysis.Binding
     internal sealed class Binder
     {
         private int _labelCounter;
-        private BoundScope _scope;
-        private readonly TypeSymbol? _type;
+        private IBoundScope _scope;
         private readonly FunctionSymbol? _function;
+        private readonly TypeSymbol? _type;
         private readonly Stack<(BoundLabel BreakLabel, BoundLabel ContinueLabel)> _loopStack;
 
         public DiagnosticBag Diagnostics { get; }
 
-        private Binder(BoundScope? parent, TypeSymbol? type, FunctionSymbol? function)
+        private Binder(IBoundScope scope, FunctionSymbol? function, TypeSymbol? type)
         {
-            _scope = new BoundScope(parent);
-            Diagnostics = new DiagnosticBag();
-            _type = type;
+            _scope = scope;
             _function = function;
+            _type = type;
+            Diagnostics = scope.Diagnostics;
             _loopStack = new Stack<(BoundLabel BreakLabel, BoundLabel ContinueLabel)>();
-
-            if (function != null)
-            {
-                foreach (var p in function.Parameters)
-                {
-                    _ = _scope.TryDeclareVariable(p);
-                }
-            }
         }
 
-        public static BoundGlobalScope BindGlobalScope(BoundGlobalScope? previous, ImmutableArray<SyntaxTree> syntaxTrees)
+        public static BoundGlobalScope BindGlobalScope(ImmutableArray<SyntaxTree> syntaxTrees)
         {
-            var parentScope = CreateParentScope(previous);
+            var parentScope = CreateRootScope();
             var binder = new Binder(parentScope, null, null);
 
             binder.Diagnostics.AddRange(syntaxTrees.SelectMany(st => st.Diagnostics));
             if (binder.Diagnostics.HasErrors())
             {
-                return new BoundGlobalScope(previous,
+                return new BoundGlobalScope(
                     binder.Diagnostics.ToImmutableArray(),
                     null,
                     ImmutableArray<FunctionSymbol>.Empty,
@@ -68,13 +61,14 @@ namespace Compiler.CodeAnalysis.Binding
 
             var functionDeclarations = syntaxTrees.SelectMany(st => st.Root.Members)
                                                   .OfType<FunctionDeclarationSyntax>();
-            foreach (var function in functionDeclarations)
+            foreach (var functionSyntax in functionDeclarations)
             {
-                binder.BindFunctionDeclaration(function);
+                var function = binder.BindFunctionDeclaration(functionSyntax);
+                binder.Diagnostics.AddRange(function.BoundScope!.Diagnostics);
             }
 
             // Check for main/script with global statements
-            var functions = binder._scope.GetDeclaredFunctions();
+            var functions = binder._scope.GetDeclaredSymbols<FunctionSymbol>();
 
             FunctionSymbol? mainFunction;
 
@@ -85,48 +79,45 @@ namespace Compiler.CodeAnalysis.Binding
             }
 
             var diagnostics = binder.Diagnostics.ToImmutableArray();
-            var types = binder._scope.GetDeclaredTypes();
-
-            if (previous != null)
-            {
-                diagnostics = diagnostics.InsertRange(0, previous.Diagnostics);
-            }
-
-            return new BoundGlobalScope(previous, diagnostics, mainFunction, functions, types);
+            var types = binder._scope.GetDeclaredSymbols<TypeSymbol>();
+            return new BoundGlobalScope(diagnostics, mainFunction, functions, types);
         }
 
         private void BindTypeDeclaration(TypeDeclarationSyntax typeDeclarationSyntax)
         {
+            TypeSymbol type;
             switch (typeDeclarationSyntax.TypeKind)
             {
                 case TypeDeclarationKind.Enum:
-                    BindEnumDeclaration((EnumDeclarationSyntax)typeDeclarationSyntax);
+                    type = BindEnumDeclaration((EnumDeclarationSyntax)typeDeclarationSyntax);
                     break;
                 case TypeDeclarationKind.Struct:
-                    BindStructDeclaration((StructDeclarationSyntax)typeDeclarationSyntax);
+                    type = BindStructDeclaration((StructDeclarationSyntax)typeDeclarationSyntax);
                     break;
                 default:
                     throw new InvalidOperationException($"Unexpected declaration kind {typeDeclarationSyntax.Kind}");
             }
+
+            _scope.TryDeclareType(type);
         }
 
-        public static BoundProgram BindProgram(BoundProgram? previous, BoundGlobalScope globalScope)
+        public static BoundProgram BindProgram(BoundGlobalScope globalScope)
         {
-            var parentScope = CreateParentScope(globalScope);
             if (globalScope.Diagnostics.HasErrors())
             {
-                return EmptyProgram(previous, globalScope);
+                return EmptyProgram(globalScope);
             }
 
             var functionBodies = ImmutableDictionary.CreateBuilder<FunctionSymbol, BoundBlockStatement>();
             var diagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
 
-            var functionsToLower = new List<FunctionSymbol>(globalScope.Functions);
+            var functionsToLower = new List<FunctionSymbol>(globalScope.Functions.Where(f => f.Declaration != null));
 
             foreach (var typeSymbol in globalScope.Types)
             {
-                var binder = new Binder(parentScope, typeSymbol, null);
-                binder.BindMemberBlockStatement(typeSymbol, typeSymbol.Declaration!.Body, functionsToLower);
+                Debug.Assert(typeSymbol.BoundScope != null);
+                var binder = new Binder(typeSymbol.BoundScope, null, typeSymbol);
+                binder.BindMemberBlockStatement(typeSymbol.Declaration!.Body, functionsToLower);
                 diagnostics.AddRange(binder.Diagnostics);
             }
 
@@ -141,7 +132,8 @@ namespace Compiler.CodeAnalysis.Binding
                     continue;
                 }
 
-                var binder = new Binder(parentScope, function.Receiver, function);
+                Debug.Assert(function.BoundScope != null);
+                var binder = new Binder(function.BoundScope, function, function.Receiver);
                 var body = binder.BindStatement(function.Declaration!.Body);
                 var loweredBody = Lowerer.Lower(function, body);
 
@@ -154,17 +146,15 @@ namespace Compiler.CodeAnalysis.Binding
                 diagnostics.AddRange(binder.Diagnostics);
             }
 
-            return new BoundProgram(previous,
-                                    diagnostics.ToImmutable(),
+            return new BoundProgram(diagnostics.ToImmutable(),
                                     globalScope.MainFunction,
                                     functionBodies.ToImmutable(),
                                     globalScope.Types);
         }
 
-        private static BoundProgram EmptyProgram(BoundProgram? previous, BoundGlobalScope globalScope)
+        private static BoundProgram EmptyProgram(BoundGlobalScope globalScope)
         {
-            return new BoundProgram(previous,
-                                globalScope.Diagnostics,
+            return new BoundProgram(globalScope.Diagnostics,
                                 null,
                                 ImmutableDictionary<FunctionSymbol, BoundBlockStatement>.Empty,
                                 ImmutableArray<TypeSymbol>.Empty);
@@ -173,7 +163,6 @@ namespace Compiler.CodeAnalysis.Binding
         private FunctionSymbol BindFunctionDeclaration(FunctionDeclarationSyntax syntax)
         {
             var parameters = ImmutableArray.CreateBuilder<VariableSymbol>();
-
             var seenParameterNames = new HashSet<string>();
 
             foreach (var parameterSyntax in syntax.Parameters)
@@ -186,73 +175,52 @@ namespace Compiler.CodeAnalysis.Binding
                 }
                 else
                 {
-                    var parameter = VariableSymbol.Parameter(parameterName, false,  parameterType);
+                    var parameter = VariableSymbol.Parameter(parameterSyntax, parameterName, false,  parameterType);
                     parameters.Add(parameter);
                 }
             }
 
             var returnType = BindTypeClause(syntax.Type) ?? TypeSymbol.Void;
             var receiver = _type;
-
-            var function = new FunctionSymbol(syntax.Identifier.Text, parameters.ToImmutable(), returnType, ImmutableArray<FunctionSymbol>.Empty, syntax, receiver);
+            var function = new FunctionSymbol(syntax.Identifier.Text,
+                                              parameters.ToImmutable(),
+                                              returnType,
+                                              syntax,
+                                              _scope,
+                                              receiver);
             
-            if (function.Name != null && !_scope.TryDeclareFunction(function))
-            {
-                if (_type != null)
-                {
-                    Diagnostics.ReportMemberAlreadyDeclared(syntax.Identifier.Location, _type.Name, function.Name);
-                }
-                else
-                {
-                    Diagnostics.ReportSymbolAlreadyDeclared(syntax.Identifier.Location, function.Name);
-                }
-            }
-
+            _scope.TryDeclareFunction(function);
             return function;
         }
 
-        private void BindEnumDeclaration(EnumDeclarationSyntax syntax)
+        private EnumSymbol BindEnumDeclaration(EnumDeclarationSyntax syntax)
         {
             string enumIdentifier = syntax.Identifier.Text;
-            var enumSymbol = new EnumSymbol(enumIdentifier, syntax);
-            if (enumIdentifier != null && !_scope.TryDeclareEnum(enumSymbol))
-            {
-                Diagnostics.ReportSymbolAlreadyDeclared(syntax.Identifier.Location, enumSymbol.Name);
-            }
+            return new EnumSymbol(enumIdentifier, syntax, _scope);
         }
 
-        private void BindStructDeclaration(StructDeclarationSyntax syntax)
+        private StructSymbol BindStructDeclaration(StructDeclarationSyntax syntax)
         {
             string structIdentifier = syntax.Identifier.Text;
-            var structSymbol = new StructSymbol(structIdentifier, syntax);
-            if (structIdentifier != null && !_scope.TryDeclareStruct(structSymbol))
-            {
-                Diagnostics.ReportSymbolAlreadyDeclared(syntax.Identifier.Location, structSymbol.Name);
-            }
-
-            Debug.Assert(structSymbol.MembersBuilder != null);
-            structSymbol.MembersBuilder.Add(new FunctionSymbol(".ctor",
-                                                               ImmutableArray<VariableSymbol>.Empty,
-                                                               structSymbol,
-                                                               ImmutableArray<FunctionSymbol>.Empty,
-                                                               null,
-                                                               structSymbol));
-            
+            return new StructSymbol(structIdentifier, syntax, _scope);
         }
 
-        private void BindMemberBlockStatement(TypeSymbol type, MemberBlockStatementSyntax syntax, List<FunctionSymbol> functionsToLower)
+        private void BindMemberBlockStatement(MemberBlockStatementSyntax syntax, List<FunctionSymbol> functionsToLower)
         {
-            _scope = new BoundScope(_scope);
-            Debug.Assert(type.MembersBuilder != null);
+            if (_scope is not TypeBoundScope typeScope)
+            {
+                throw new InvalidOperationException();
+            }
 
+            var type = typeScope.OwnerType;
             foreach (var statementSyntax in syntax.Statement)
             {
                 switch (statementSyntax.Kind)
                 {
                     case SyntaxKind.VariableDeclarationStatement:
-                        var variableStatement = BindVariableDeclarationStatement((VariableDeclarationStatementSyntax)statementSyntax);
+                        var variableStatement = BindVariableDeclarationStatement((VariableDeclarationStatementSyntax)statementSyntax, false);
                         var field = new FieldSymbol((BoundVariableDeclarationStatement)variableStatement);
-                        type.MembersBuilder.Add(field);
+                        typeScope.TryDeclareField(field);
                         break;
 
                     case SyntaxKind.EnumElementDeclarationStatement:
@@ -261,14 +229,13 @@ namespace Compiler.CodeAnalysis.Binding
                         foreach (var enumValueSyntax in enumSyntax.Values)
                         {
                             var enumElement = BindEnumElementStatement((EnumSymbol)type, enumValueSyntax, ref lastValue);
-                            type.MembersBuilder.Add(enumElement);
+                            typeScope.TryDeclareField(enumElement);
                         }
                         break;
 
                     case SyntaxKind.FunctionDeclaration:
                         var functionDeclarationSyntax = (FunctionDeclarationSyntax)statementSyntax;
                         var functionSymbol = BindFunctionDeclaration(functionDeclarationSyntax);
-                        type.MembersBuilder.Add(functionSymbol);
                         functionsToLower.Add(functionSymbol);
                         break;
                     
@@ -333,14 +300,13 @@ namespace Compiler.CodeAnalysis.Binding
         private BoundStatement BindBlockStatement(BlockStatementSyntax syntax)
         {
             var statements = ImmutableArray.CreateBuilder<BoundStatement>();
-            _scope = new BoundScope(_scope);
+            _scope = new BlockBoundScope(_scope);
 
             foreach (var statementSyntax in syntax.Statements)
             {
                 var statement = BindStatement(statementSyntax);
                 statements.Add(statement);
             }
-
             _scope = _scope.Parent!;
             return new BoundBlockStatement(syntax, statements.ToImmutable());
         }
@@ -396,7 +362,7 @@ namespace Compiler.CodeAnalysis.Binding
                 lastValue += 1;
             }
 
-            var variable = BindVariableDeclaration(syntax.Identifier, true, true, VariableKind.Local, variableType, new BoundConstant(lastValue), true);
+            var variable = BindVariableDeclaration(syntax.Identifier, true, true, VariableKind.Local, variableType, new BoundConstant(lastValue), false);
             return new FieldSymbol(variable);
         }
 
@@ -464,18 +430,11 @@ namespace Compiler.CodeAnalysis.Binding
         {
             var declare = !identifier.IsMissing;
             var name = declare ? identifier.Text : "?";
-            var variable = VariableSymbol.New(name, isReadOnly, isStatic, kind, type, constant);
+            var variable = VariableSymbol.New(identifier, name, isReadOnly, isStatic, kind, type, constant);
             
-            if (declare && addToScope && !_scope.TryDeclareVariable(variable))
+            if (declare && addToScope)
             {
-                if (_type != null && _function == null)
-                {
-                    Diagnostics.ReportMemberAlreadyDeclared(identifier.Location, _type.Name, variable.Name);
-                }
-                else
-                {
-                    Diagnostics.ReportSymbolAlreadyDeclared(identifier.Location, variable.Name);
-                }
+                _scope.TryDeclareVariable(variable);
             }
             return variable;
         }
@@ -493,11 +452,10 @@ namespace Compiler.CodeAnalysis.Binding
                 case FunctionSymbol function:
                     return function;
 
+                case FieldSymbol field:
+                    return field;
+
                 default:
-                    if (_function?.Receiver != null)
-                    {
-                        return GetMemberSymbol(_function.Receiver, identifier.Text);
-                    }
                     Diagnostics.ReportUndefinedName(location, identifier.Text);
                     return null;
             }
@@ -527,7 +485,7 @@ namespace Compiler.CodeAnalysis.Binding
 
         private BoundStatement BindForStatement(ForStatementSyntax syntax)
         {
-            _scope = new BoundScope(_scope);
+            _scope = new BlockBoundScope(_scope);
 
             var variable = BindVariableDeclaration(syntax.Identifier, false, false, VariableKind.Local, TypeSymbol.Int, null, true);
 
@@ -564,7 +522,6 @@ namespace Compiler.CodeAnalysis.Binding
                 Diagnostics.ReportInvalidBreakOrContinue(syntax.Keyword.Location, syntax.Keyword.Text);
                 return BindErrorStatement(syntax);
             }
-
             var breakLabel = _loopStack.Peek().BreakLabel;
             return new BoundGotoStatement(syntax, breakLabel);
         }
@@ -584,7 +541,6 @@ namespace Compiler.CodeAnalysis.Binding
         private BoundStatement BindReturnStatement(ReturnStatementSyntax syntax)
         {
             var expression = syntax.Expression == null ? null : BindExpression(syntax.Expression);
-
             if (_function == null)
             {
                 if (expression != null)
@@ -623,40 +579,9 @@ namespace Compiler.CodeAnalysis.Binding
             return new BoundExpressionStatement(syntax, new BoundErrorExpression(syntax));
         }
 
-        private static BoundScope CreateParentScope(BoundGlobalScope? previous)
-        {
-            var stack = new Stack<BoundGlobalScope>();
-
-            while (previous != null)
-            {
-                stack.Push(previous);
-                previous = previous.Previous;
-            }
-
-            var parent = CreateRootScope();
-            while (stack.Count > 0)
-            {
-                previous = stack.Pop();
-                var scope = new BoundScope(parent);
-
-                foreach (var s in previous.Types)
-                {
-                    scope.TryDeclareType(s);
-                }
-
-                foreach (var f in previous.Functions)
-                {
-                    scope.TryDeclareFunction(f);
-                }
-
-                parent = scope;
-            }
-            return parent;
-        }
-
         private static BoundScope CreateRootScope()
         {
-            var result = new BoundScope(null);
+            var result = new RootBoundScope();
             foreach (var f in BuiltinFunctions.GetAll())
             {
                 result.TryDeclareFunction(f);

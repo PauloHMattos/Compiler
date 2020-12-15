@@ -15,7 +15,6 @@ namespace Compiler.CodeAnalysis
 {
     public sealed class Compilation
     {
-        private readonly Compilation? _previous;
         private BoundGlobalScope? _globalScope;
         public ImmutableArray<SyntaxTree> SyntaxTrees { get; }
         public FunctionSymbol? MainFunction => GlobalScope.MainFunction;
@@ -28,22 +27,21 @@ namespace Compiler.CodeAnalysis
             {
                 if (_globalScope == null)
                 {
-                    var globalScope = Binder.BindGlobalScope(_previous?.GlobalScope, SyntaxTrees);
+                    var globalScope = Binder.BindGlobalScope(SyntaxTrees);
                     Interlocked.CompareExchange(ref _globalScope, globalScope, null);
                 }
                 return _globalScope;
             }
         }
 
-        private Compilation(Compilation? previous, params SyntaxTree[] syntaxTrees)
+        private Compilation(params SyntaxTree[] syntaxTrees)
         {
-            _previous = previous;
             SyntaxTrees = syntaxTrees.ToImmutableArray();
         }
 
         public static Compilation Create(params SyntaxTree[] syntaxTrees)
         {
-            return new Compilation(null, syntaxTrees);
+            return new Compilation(syntaxTrees);
         }
 
 
@@ -59,8 +57,7 @@ namespace Compiler.CodeAnalysis
 
         private BoundProgram GetProgram()
         {
-            var previous = _previous?.GetProgram();
-            return Binder.BindProgram(previous, GlobalScope);
+            return Binder.BindProgram(GlobalScope);
         }
 
         public void EmitTree(TextWriter writer)
@@ -88,25 +85,20 @@ namespace Compiler.CodeAnalysis
             var submission = this;
             var seenSymbolNames = new HashSet<string>();
 
-            while (submission != null)
+            foreach (var function in submission.Functions)
             {
-                foreach (var function in submission.Functions)
+                if (seenSymbolNames.Add(function.Name))
                 {
-                    if (seenSymbolNames.Add(function.Name))
-                    {
-                        yield return function;
-                    }
+                    yield return function;
                 }
+            }
 
-                foreach (var typeSymbol in submission.Types)
+            foreach (var typeSymbol in submission.Types)
+            {
+                if (seenSymbolNames.Add(typeSymbol.Name))
                 {
-                    if (seenSymbolNames.Add(typeSymbol.Name))
-                    {
-                        yield return typeSymbol;
-                    }
+                    yield return typeSymbol;
                 }
-                
-                submission = submission._previous;
             }
         }
 

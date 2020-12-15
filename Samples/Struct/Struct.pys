@@ -29,7 +29,6 @@ function changeStruct(s : Vector2Int, x : int, y : int) : Vector2Int
     return s
 }
 
-
 function printStruct(s : Vector2Int)
 {
     print(s.x)
@@ -43,7 +42,6 @@ function main()
     test0.y = 10
 
     test0.double()
-    test0.scale(2)
 
     printStruct(test0)
 

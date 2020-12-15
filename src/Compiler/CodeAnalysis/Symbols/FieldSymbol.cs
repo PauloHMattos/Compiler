@@ -1,4 +1,5 @@
 using Compiler.CodeAnalysis.Binding;
+using Compiler.CodeAnalysis.Syntax;
 
 namespace Compiler.CodeAnalysis.Symbols
 {
@@ -6,14 +7,24 @@ namespace Compiler.CodeAnalysis.Symbols
     {
         public override MemberKind MemberKind => MemberKind.Field;
 
-        private FieldSymbol(string name, bool isReadOnly, bool isStatic, TypeSymbol type, BoundConstant? constant)
-            : base(name, isReadOnly, isStatic, type, constant)
+        private FieldSymbol(SyntaxNode? syntax,
+                            string name,
+                            bool isReadOnly,
+                            bool isStatic,
+                            TypeSymbol type,
+                            BoundConstant? constant)
+            : base(syntax, name, isReadOnly, isStatic, type, constant)
         {
         }
 
 
         internal FieldSymbol(VariableSymbol variable) 
-            : this(variable.Name, variable.IsReadOnly, variable.IsStatic, variable.Type, variable.Constant)
+            : this(variable.Syntax,
+                   variable.Name,
+                   variable.IsReadOnly,
+                   variable.IsStatic,
+                   variable.Type,
+                   variable.Constant)
         {
         }
 

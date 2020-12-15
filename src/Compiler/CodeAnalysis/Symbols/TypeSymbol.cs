@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Collections.Concurrent;
 using Compiler.CodeAnalysis.Syntax;
+using Compiler.CodeAnalysis.Binding.Scopes;
 
 namespace Compiler.CodeAnalysis.Symbols
 {
@@ -24,20 +24,20 @@ namespace Compiler.CodeAnalysis.Symbols
         public object? DefaultValue { get; }
         public override SymbolKind Kind => SymbolKind.Type;
         public TypeDeclarationSyntax? Declaration { get; }
-        public ConcurrentBag<MemberSymbol>? MembersBuilder { get; }
+        internal TypeBoundScope? BoundScope { get; }
         public ImmutableArray<MemberSymbol> Members
         {
             get
             {
                 if (_members == null)
                 {
-                    if (MembersBuilder == null)
+                    if (BoundScope == null)
                     {
                         _members = ImmutableArray<MemberSymbol>.Empty;
                     }
                     else
                     {
-                        _members = MembersBuilder.ToImmutableArray();
+                        _members = BoundScope.GetMembers();
                     }
                 }
                 return _members;
@@ -45,16 +45,18 @@ namespace Compiler.CodeAnalysis.Symbols
         }
         private ImmutableArray<MemberSymbol> _members;
 
-        protected TypeSymbol(string name,
-                             object? defaultValue,
-                             Type? netType,
-                             TypeDeclarationSyntax? declaration,
-                             ConcurrentBag<MemberSymbol>? membersBuilder) : base(name)
+
+        private protected TypeSymbol(string name,
+                                     object? defaultValue,
+                                     Type? netType,
+                                     TypeDeclarationSyntax? declaration,
+                                     IBoundScope? parentScope)
+            : base(declaration?.Identifier, name)
         {
             NetType = netType;
             DefaultValue = defaultValue;
             Declaration = declaration;
-            MembersBuilder = membersBuilder;
+            BoundScope = new TypeBoundScope(this, parentScope);
         }
 
         private TypeSymbol(string name, object? defaultValue, Type? netType)

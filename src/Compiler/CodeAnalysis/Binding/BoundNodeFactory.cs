@@ -69,7 +69,7 @@ namespace Compiler.CodeAnalysis.Binding
 
         private static BoundVariableDeclarationStatement VariableDeclarationInternal(SyntaxNode syntax, string name, BoundExpression initializer, bool isReadOnly)
         {
-            var local = VariableSymbol.Local(name, isReadOnly, initializer.Type, initializer.ConstantValue);
+            var local = VariableSymbol.Local(syntax, name, isReadOnly, initializer.Type, initializer.ConstantValue);
             return new BoundVariableDeclarationStatement(syntax, local, initializer);
         }
 

@@ -1,4 +1,5 @@
 using Compiler.CodeAnalysis.Binding;
+using Compiler.CodeAnalysis.Syntax;
 
 namespace Compiler.CodeAnalysis.Symbols
 {
@@ -9,12 +10,13 @@ namespace Compiler.CodeAnalysis.Symbols
         public abstract MemberKind MemberKind { get; }
         public override SymbolKind Kind => SymbolKind.Member;
 
-        private protected MemberSymbol(string name,
+        private protected MemberSymbol(SyntaxNode? syntax,
+                                       string name,
                                        bool isReadOnly,
                                        bool isStatic,
                                        TypeSymbol type,
                                        BoundConstant? constant)
-            : base(name, type, isReadOnly ? constant : null)
+            : base(syntax, name, type, isReadOnly ? constant : null)
         {
             IsReadOnly = isReadOnly;
             IsStatic = isStatic;
