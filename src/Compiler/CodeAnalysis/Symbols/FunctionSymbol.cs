@@ -1,40 +1,53 @@
-﻿using System.Collections.Immutable;
+﻿using System.Collections.Generic;
+using System.Collections.Immutable;
+using Compiler.CodeAnalysis.Binding.Scopes;
 using Compiler.CodeAnalysis.Syntax;
 
 namespace Compiler.CodeAnalysis.Symbols
 {
     public sealed class FunctionSymbol : MemberSymbol
     {
-        public ImmutableArray<ParameterSymbol> Parameters { get; }
+        public ImmutableArray<VariableSymbol> Parameters { get; }
         public TypeSymbol ReturnType { get; }
         public FunctionDeclarationSyntax? Declaration { get; }
         public TypeSymbol? Receiver { get; }
-        public ImmutableArray<FunctionSymbol> Overloads { get; }
         public override SymbolKind Kind => SymbolKind.Function;
         public override MemberKind MemberKind => MemberKind.Method;
 
+        internal List<FunctionSymbol> OverloadsBuilder { get; }
+        private ImmutableArray<FunctionSymbol> _overloads;
+        public ImmutableArray<FunctionSymbol> Overloads
+        {
+            get
+            {
+                if (_overloads == null)
+                {
+                    _overloads = OverloadsBuilder.ToImmutableArray();
+                }
+                return _overloads;
+            }
+        }
+
+        internal FunctionBoundScope? BoundScope { get; }
+
         internal FunctionSymbol(string name,
-                                ImmutableArray<ParameterSymbol> parameters,
+                                ImmutableArray<VariableSymbol> parameters,
                                 TypeSymbol type,
-                                ImmutableArray<FunctionSymbol> overloads,
                                 FunctionDeclarationSyntax? declaration = null,
+                                IBoundScope? parentScope = null,
                                 TypeSymbol? receiver = null)
-            : base(name, type, null)
+            : base(declaration?.Identifier, name, true, false, type, null)
         {
             Parameters = parameters;
             ReturnType = type;
-            Overloads = overloads;
             Declaration = declaration;
             Receiver = receiver;
-        }
-
-        
-        internal FunctionSymbol(string name,
-                                ImmutableArray<ParameterSymbol> parameters,
-                                TypeSymbol type,
-                                FunctionDeclarationSyntax? declaration = null)
-            : this(name, parameters, type, ImmutableArray<FunctionSymbol>.Empty, declaration)
-        {
+            OverloadsBuilder = new List<FunctionSymbol>();
+            
+            if (parentScope!= null)
+            {
+                BoundScope = new FunctionBoundScope(receiver, this, parentScope);
+            }
         }
     }
 }

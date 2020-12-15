@@ -1,23 +1,28 @@
 using System.Collections.Immutable;
+using Compiler.CodeAnalysis.Binding.Scopes;
 using Compiler.CodeAnalysis.Syntax;
 
 namespace Compiler.CodeAnalysis.Symbols
 {
     public sealed class StructSymbol : TypeSymbol
     {
-        public StructDeclarationSyntax? Declaration { get; }
-        public ImmutableArray<ParameterSymbol> CtorParameters { get; }
-
         public override SymbolKind Kind => SymbolKind.Struct;
         
         internal StructSymbol(string name,
-                              ImmutableArray<ParameterSymbol> ctorParameters,
-                              ImmutableArray<MemberSymbol> members,
-                              StructDeclarationSyntax? declaration = null) 
-            : base(name, null, typeof(System.ValueType), members)
+                              StructDeclarationSyntax declaration,
+                              IBoundScope parentScope) 
+            : base(name,
+                   null,
+                   typeof(System.ValueType),
+                   declaration,
+                   parentScope)
         {
-            Declaration = declaration;
-            CtorParameters = ctorParameters;
+            BoundScope!.TryDeclareFunction(new FunctionSymbol(".ctor",
+                                                               ImmutableArray<VariableSymbol>.Empty,
+                                                               this,
+                                                               null,
+                                                               BoundScope,
+                                                               this));
         }
     }
 }

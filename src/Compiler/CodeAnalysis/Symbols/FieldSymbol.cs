@@ -1,21 +1,30 @@
 using Compiler.CodeAnalysis.Binding;
+using Compiler.CodeAnalysis.Syntax;
 
 namespace Compiler.CodeAnalysis.Symbols
 {
-    public class FieldSymbol : MemberSymbol
+    public sealed class FieldSymbol : MemberSymbol
     {
-        public bool IsReadOnly { get; }
         public override MemberKind MemberKind => MemberKind.Field;
 
-        private protected FieldSymbol(string name, bool isReadOnly, TypeSymbol type, BoundConstant? constant)
-            : base(name, type, isReadOnly ? constant : null)
+        private FieldSymbol(SyntaxNode? syntax,
+                            string name,
+                            bool isReadOnly,
+                            bool isStatic,
+                            TypeSymbol type,
+                            BoundConstant? constant)
+            : base(syntax, name, isReadOnly, isStatic, type, constant)
         {
-            IsReadOnly = isReadOnly;
         }
 
 
-        private protected FieldSymbol(VariableSymbol variable) 
-            : this(variable.Name, variable.IsReadOnly, variable.Type, variable.Constant)
+        internal FieldSymbol(VariableSymbol variable) 
+            : this(variable.Syntax,
+                   variable.Name,
+                   variable.IsReadOnly,
+                   variable.IsStatic,
+                   variable.Type,
+                   variable.Constant)
         {
         }
 

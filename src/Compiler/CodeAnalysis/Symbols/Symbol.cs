@@ -1,16 +1,17 @@
 ﻿using System.IO;
-using Compiler.CodeAnalysis.Binding;
+using Compiler.CodeAnalysis.Syntax;
 
 namespace Compiler.CodeAnalysis.Symbols
 {
-
     public abstract class Symbol
     {
+        public SyntaxNode? Syntax { get; }
         public string Name { get; }
         public abstract SymbolKind Kind { get; }
 
-        private protected Symbol(string name)
+        private protected Symbol(SyntaxNode? syntax, string name)
         {
+            Syntax = syntax;
             Name = name;
         }
 

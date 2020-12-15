@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Compiler.CodeAnalysis.Diagnostics;
 
 namespace Compiler.CodeAnalysis.Binding.FlowControl
 {
@@ -56,18 +55,18 @@ namespace Compiler.CodeAnalysis.Binding.FlowControl
             writer.WriteLine("}");
         }
 
-        public static ControlFlowGraph Create(BoundBlockStatement body, DiagnosticBag diagnostics)
+        public static ControlFlowGraph Create(BoundBlockStatement body)
         {
             var basicBlockBuilder = new BasicBlockBuilder();
             var blocks = basicBlockBuilder.Build(body);
 
-            var graphBuilder = new GraphBuilder(diagnostics);
+            var graphBuilder = new GraphBuilder();
             return graphBuilder.Build(blocks);
         }
 
-        public static bool AllPathsReturn(BoundBlockStatement body, DiagnosticBag diagnostics)
+        public static bool AllPathsReturn(BoundBlockStatement body)
         {
-            var graph = Create(body, diagnostics);
+            var graph = Create(body);
 
             foreach (var branch in graph.End.Incoming)
             {

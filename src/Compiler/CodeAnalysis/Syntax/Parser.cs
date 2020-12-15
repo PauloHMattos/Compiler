@@ -131,8 +131,11 @@ namespace Compiler.CodeAnalysis.Syntax
             {
                 var startToken = Current;
 
-                var member = ParseMember();
-                members.Add(member);
+                var member = ParseGlobalStatement();
+                if (member != null)
+                {
+                    members.Add(member);
+                }
 
                 // If ParseMember() did not consume any tokens,
                 // we need to skip the current token and continue
@@ -150,7 +153,7 @@ namespace Compiler.CodeAnalysis.Syntax
             return members.ToImmutable();
         }
 
-        private MemberSyntax ParseMember()
+        private MemberSyntax? ParseGlobalStatement()
         {
             switch (Current.Kind)
             {
@@ -161,36 +164,45 @@ namespace Compiler.CodeAnalysis.Syntax
                 case SyntaxKind.StructKeyword:
                     return ParseStructDeclaration();
                 default:
-                    return ParseGlobalStatement();
+                    // Discard statement and report error on it's location
+                    var statement = ParseStatement();
+                    Diagnostics.ReportInvalidGlobalStatement(statement.Location);
+                    return null;
+            }
+        }
+
+        
+        private MemberSyntax? ParseMember()
+        {
+            switch (Current.Kind)
+            {
+                case SyntaxKind.FunctionKeyword:
+                    return ParseFunctionDeclaration();
+                case SyntaxKind.EnumKeyword:
+                    return ParseEnumDeclaration();
+                case SyntaxKind.StructKeyword:
+                    return ParseStructDeclaration();
+                case SyntaxKind.ConstKeyword:
+                case SyntaxKind.VarKeyword:
+                    return ParseVariableDeclarationStatement();
+                default:
+                    // Discard statement and report error on it's location
+                    var statement = ParseStatement();
+                    Diagnostics.ReportInvalidGlobalStatement(statement.Location);
+                    return null;
             }
         }
 
         private MemberSyntax ParseFunctionDeclaration()
         {
-            SyntaxToken identifier;
-            SyntaxToken? dotToken, receiver;
-
             var functionKeyword = MatchToken(SyntaxKind.FunctionKeyword);
-
-            if (Current.Kind == SyntaxKind.IdentifierToken && Peek(1).Kind == SyntaxKind.DotToken)
-            {
-                receiver = MatchToken(SyntaxKind.IdentifierToken);
-                dotToken = MatchToken(SyntaxKind.DotToken);
-                identifier = MatchToken(SyntaxKind.IdentifierToken);
-            }
-            else
-            {
-                receiver = null;
-                dotToken = null;
-                identifier = MatchToken(SyntaxKind.IdentifierToken);
-            }
-
+            var identifier = MatchToken(SyntaxKind.IdentifierToken);
             var openParenthesisToken = MatchToken(SyntaxKind.OpenParenthesisToken);
             var parameters = ParseParameterList();
             var closeParenthesisToken = MatchToken(SyntaxKind.CloseParenthesisToken);
             var type = ParseOptionalTypeClause();
             var body = ParseBlockStatement();
-            return new FunctionDeclarationSyntax(_syntaxTree, functionKeyword, receiver, dotToken, identifier, openParenthesisToken, parameters, closeParenthesisToken, type, body);
+            return new FunctionDeclarationSyntax(_syntaxTree, functionKeyword, identifier, openParenthesisToken, parameters, closeParenthesisToken, type, body);
         }
 
         private SeparatedSyntaxList<ParameterSyntax> ParseParameterList()
@@ -209,10 +221,20 @@ namespace Compiler.CodeAnalysis.Syntax
         {
             var enumKeyword = MatchToken(SyntaxKind.EnumKeyword);
             var identifier = MatchToken(SyntaxKind.IdentifierToken);
+            var body = ParseEnumBlockStatement();
+            return new EnumDeclarationSyntax(_syntaxTree, enumKeyword, identifier, body);
+        }
+
+
+        private MemberBlockStatementSyntax ParseEnumBlockStatement()
+        {
             var openBraceToken = MatchToken(SyntaxKind.OpenBraceToken);
-            var values = ParseEnumValueList();
+
+            var valuesStatementSyntax = new EnumValuesStatementSyntax(_syntaxTree, ParseEnumValueList());
+            var statements = ImmutableArray.Create<StatementSyntax>(valuesStatementSyntax);
+
             var closeBraceToken = MatchToken(SyntaxKind.CloseBraceToken);
-            return new EnumDeclarationSyntax(_syntaxTree, enumKeyword, identifier, openBraceToken, values, closeBraceToken);
+            return new MemberBlockStatementSyntax(_syntaxTree, openBraceToken, statements, closeBraceToken);
         }
 
         private SeparatedSyntaxList<EnumSyntax> ParseEnumValueList()
@@ -258,8 +280,11 @@ namespace Compiler.CodeAnalysis.Syntax
             {
                 var startToken = Current;
 
-                var statement = ParseVariableDeclarationStatement();
-                statements.Add(statement);
+                var statement = ParseMember();
+                if (statement != null)
+                {
+                    statements.Add(statement);
+                }
 
                 // If ParseStatement() did not consume any tokens,
                 // we need to skip the current token and continue
@@ -303,12 +328,6 @@ namespace Compiler.CodeAnalysis.Syntax
             return new SeparatedSyntaxList<T>(nodesAndSeparators.ToImmutable());
         }
 
-        private MemberSyntax ParseGlobalStatement()
-        {
-            var statement = ParseStatement();
-            return new GlobalStatementSyntax(_syntaxTree, statement);
-        }
-
         public StatementSyntax ParseStatement()
         {
             switch (Current.Kind)
@@ -337,7 +356,7 @@ namespace Compiler.CodeAnalysis.Syntax
             }
         }
 
-        private StatementSyntax ParseVariableDeclarationStatement()
+        private MemberSyntax ParseVariableDeclarationStatement()
         {
             var expectedToken = Current.Kind == SyntaxKind.VarKeyword ?
                                             SyntaxKind.VarKeyword :

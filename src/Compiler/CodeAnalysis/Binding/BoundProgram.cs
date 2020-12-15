@@ -6,26 +6,20 @@ namespace Compiler.CodeAnalysis.Binding
 {
     internal sealed class BoundProgram
     {
-        public BoundProgram? Previous { get; }
         public ImmutableArray<Diagnostic> Diagnostics { get; }
         public FunctionSymbol? MainFunction { get; }
         public ImmutableDictionary<FunctionSymbol, BoundBlockStatement> Functions { get; }
-        public ImmutableArray<EnumSymbol> Enums { get; }
-        public ImmutableDictionary<StructSymbol, BoundBlockStatement> Structs { get; }
+        public ImmutableArray<TypeSymbol> Types { get; }
 
-        public BoundProgram(BoundProgram? previous,
-                            ImmutableArray<Diagnostic> diagnostics,
+        public BoundProgram(ImmutableArray<Diagnostic> diagnostics,
                             FunctionSymbol? mainFunction,
                             ImmutableDictionary<FunctionSymbol, BoundBlockStatement> functions,
-                            ImmutableArray<EnumSymbol> enums,
-                            ImmutableDictionary<StructSymbol, BoundBlockStatement> structs)
+                            ImmutableArray<TypeSymbol> types)
         {
-            Previous = previous;
             Diagnostics = diagnostics;
             MainFunction = mainFunction;
             Functions = functions;
-            Enums = enums;
-            Structs = structs;
+            Types = types;
         }
     }
 }

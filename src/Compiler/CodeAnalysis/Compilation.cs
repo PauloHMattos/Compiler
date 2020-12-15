@@ -15,14 +15,11 @@ namespace Compiler.CodeAnalysis
 {
     public sealed class Compilation
     {
-        private readonly Compilation? _previous;
         private BoundGlobalScope? _globalScope;
         public ImmutableArray<SyntaxTree> SyntaxTrees { get; }
         public FunctionSymbol? MainFunction => GlobalScope.MainFunction;
         public ImmutableArray<FunctionSymbol> Functions => GlobalScope.Functions;
-        public ImmutableArray<EnumSymbol> Enums => GlobalScope.Enums;
-        public ImmutableArray<StructSymbol> Structs => GlobalScope.Structs;
-        public ImmutableArray<VariableSymbol> Variables => GlobalScope.Variables;
+        public ImmutableArray<TypeSymbol> Types => GlobalScope.Types;
 
         internal BoundGlobalScope GlobalScope
         {
@@ -30,22 +27,21 @@ namespace Compiler.CodeAnalysis
             {
                 if (_globalScope == null)
                 {
-                    var globalScope = Binder.BindGlobalScope(_previous?.GlobalScope, SyntaxTrees);
+                    var globalScope = Binder.BindGlobalScope(SyntaxTrees);
                     Interlocked.CompareExchange(ref _globalScope, globalScope, null);
                 }
                 return _globalScope;
             }
         }
 
-        private Compilation(Compilation? previous, params SyntaxTree[] syntaxTrees)
+        private Compilation(params SyntaxTree[] syntaxTrees)
         {
-            _previous = previous;
             SyntaxTrees = syntaxTrees.ToImmutableArray();
         }
 
         public static Compilation Create(params SyntaxTree[] syntaxTrees)
         {
-            return new Compilation(null, syntaxTrees);
+            return new Compilation(syntaxTrees);
         }
 
 
@@ -61,8 +57,7 @@ namespace Compiler.CodeAnalysis
 
         private BoundProgram GetProgram()
         {
-            var previous = _previous?.GetProgram();
-            return Binder.BindProgram(previous, GlobalScope);
+            return Binder.BindProgram(GlobalScope);
         }
 
         public void EmitTree(TextWriter writer)
@@ -90,33 +85,20 @@ namespace Compiler.CodeAnalysis
             var submission = this;
             var seenSymbolNames = new HashSet<string>();
 
-            while (submission != null)
+            foreach (var function in submission.Functions)
             {
-                foreach (var function in submission.Functions)
+                if (seenSymbolNames.Add(function.Name))
                 {
-                    if (seenSymbolNames.Add(function.Name))
-                    {
-                        yield return function;
-                    }
+                    yield return function;
                 }
+            }
 
-                foreach (var enumSymbol in submission.Enums)
+            foreach (var typeSymbol in submission.Types)
+            {
+                if (seenSymbolNames.Add(typeSymbol.Name))
                 {
-                    if (seenSymbolNames.Add(enumSymbol.Name))
-                    {
-                        yield return enumSymbol;
-                    }
+                    yield return typeSymbol;
                 }
-
-                foreach (var variable in submission.Variables)
-                {
-                    if (seenSymbolNames.Add(variable.Name))
-                    {
-                        yield return variable;
-                    }
-                }
-
-                submission = submission._previous;
             }
         }
 
@@ -144,8 +126,7 @@ namespace Compiler.CodeAnalysis
             var appPath = Environment.CurrentDirectory;
             var appDirectory = Path.GetDirectoryName(appPath);
             var cfgPath = Path.Combine(appDirectory!, "cfg.dot");
-            var diagnostics = new DiagnosticBag();
-            var cfg = ControlFlowGraph.Create(function.Value, diagnostics);
+            var cfg = ControlFlowGraph.Create(function.Value);
 
             using var streamWriter = new StreamWriter(cfgPath);
             cfg.WriteTo(streamWriter);

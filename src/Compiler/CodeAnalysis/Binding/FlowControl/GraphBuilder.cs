@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Compiler.CodeAnalysis.Diagnostics;
 
 namespace Compiler.CodeAnalysis.Binding.FlowControl
 {
@@ -14,16 +13,14 @@ namespace Compiler.CodeAnalysis.Binding.FlowControl
             private readonly List<BasicBlockBranch> _branches;
             private readonly BasicBlock _start;
             private readonly BasicBlock _end;
-            private readonly DiagnosticBag _diagnosticBag;
 
-            public GraphBuilder(DiagnosticBag diagnosticBag)
+            public GraphBuilder()
             {
                 _blockFromStatement = new Dictionary<BoundStatement, BasicBlock>();
                 _blockFromLabel = new Dictionary<BoundLabel, BasicBlock>();
                 _branches = new List<BasicBlockBranch>();
                 _start = new BasicBlock(true);
                 _end = new BasicBlock(false);
-                _diagnosticBag = diagnosticBag;
             }
 
             public ControlFlowGraph Build(List<BasicBlock> blocks)
@@ -161,7 +158,6 @@ namespace Compiler.CodeAnalysis.Binding.FlowControl
                 }
 
                 blocks.Remove(block);
-                _diagnosticBag.ReportUnreachableCode(block.Statements[0].Syntax.Location);
             }
 
             private static BoundExpression Negate(BoundExpression condition)

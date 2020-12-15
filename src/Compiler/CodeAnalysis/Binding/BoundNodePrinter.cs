@@ -98,8 +98,8 @@ namespace Compiler.CodeAnalysis.Binding
                 case BoundNodeKind.TypeReferenceExpression:
                     WriteTypeReferenceExpression((BoundTypeReferenceExpression)node, writer);
                     break;
-                case BoundNodeKind.FieldExpression:
-                    WriteFieldExpression((BoundFieldExpression)node, writer);
+                case BoundNodeKind.MemberExpression:
+                    WriteMemberExpression((BoundMemberExpression)node, writer);
                     break;
                 case BoundNodeKind.SelfExpression:
                     WriteSelfExpression(writer);
@@ -109,7 +109,7 @@ namespace Compiler.CodeAnalysis.Binding
             }
         }
 
-        private static void WriteFieldExpression(BoundFieldExpression node, IndentedTextWriter writer)
+        private static void WriteMemberExpression(BoundMemberExpression node, IndentedTextWriter writer)
         {
             node.Symbol.WriteTo(writer);
         }

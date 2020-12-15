@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using Compiler.CodeAnalysis.Syntax;
+using Compiler.CodeAnalysis.Binding.Scopes;
 
 namespace Compiler.CodeAnalysis.Symbols
 {
@@ -21,22 +23,47 @@ namespace Compiler.CodeAnalysis.Symbols
         public Type? NetType { get; }
         public object? DefaultValue { get; }
         public override SymbolKind Kind => SymbolKind.Type;
-        public virtual ImmutableArray<MemberSymbol> Members { get; }
+        public TypeDeclarationSyntax? Declaration { get; }
+        internal TypeBoundScope? BoundScope { get; }
+        public ImmutableArray<MemberSymbol> Members
+        {
+            get
+            {
+                if (_members == null)
+                {
+                    if (BoundScope == null)
+                    {
+                        _members = ImmutableArray<MemberSymbol>.Empty;
+                    }
+                    else
+                    {
+                        _members = BoundScope.GetMembers();
+                    }
+                }
+                return _members;
+            }
+        }
+        private ImmutableArray<MemberSymbol> _members;
 
-        protected TypeSymbol(string name, object? defaultValue, Type? netType, ImmutableArray<MemberSymbol> members) : base(name)
-        {
-            NetType = netType;
-            Members = members;
-            DefaultValue = defaultValue;
-        }
-        
-        protected TypeSymbol(string name, object? defaultValue, Type? netType)
-            : this(name, defaultValue, netType, ImmutableArray<MemberSymbol>.Empty)
+
+        private protected TypeSymbol(string name,
+                                     object? defaultValue,
+                                     Type? netType,
+                                     TypeDeclarationSyntax? declaration,
+                                     IBoundScope? parentScope)
+            : base(declaration?.Identifier, name)
         {
             NetType = netType;
             DefaultValue = defaultValue;
+            Declaration = declaration;
+            BoundScope = new TypeBoundScope(this, parentScope);
         }
-        
+
+        private TypeSymbol(string name, object? defaultValue, Type? netType)
+            : this(name, defaultValue, netType, null, null)
+        {
+        }
+
         public static TypeSymbol GetSymbolFrom(object value)
         {
             switch (value)
@@ -77,7 +104,7 @@ namespace Compiler.CodeAnalysis.Symbols
             }
             return NetType == typeof(Enum);
         }
-        
+
         public bool IsValueType()
         {
             if (NetType == null)
@@ -95,7 +122,7 @@ namespace Compiler.CodeAnalysis.Symbols
             yield return String;
             yield return Void;
         }
-        
+
         public static IEnumerable<TypeSymbol> GetBaseTypes()
         {
             yield return Enum;

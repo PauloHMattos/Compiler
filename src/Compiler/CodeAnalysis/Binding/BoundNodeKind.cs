@@ -16,7 +16,6 @@
         GotoStatement,
         ConditionalGotoStatement,
         ReturnStatement,
-        MemberBlockStatement,
 
         // Expressions
         ErrorExpression,
@@ -31,6 +30,6 @@
         TypeReferenceExpression,
         MemberAccessExpression,
         SelfExpression,
-        FieldExpression,
+        MemberExpression,
     }
 }

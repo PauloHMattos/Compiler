@@ -28,9 +28,8 @@ namespace Compiler.CodeAnalysis.Diagnostics
         MissingReturnExpression,
         AllPathsMustReturn,
         InvalidExpressionStatement,
-        OnlyOneFileCanHaveGlobalStatements,
+        InvalidGlobalStatement,
         MainMustHaveCorrectSignature,
-        CannotMixMainAndGlobalStatements,
         InvalidReturnWithValueInGlobalStatements,
         InvalidReference,
         RequiredTypeNotFound,
@@ -44,6 +43,7 @@ namespace Compiler.CodeAnalysis.Diagnostics
         CannotUseSelfOutsideOfAFunction,
         CannotUseSelfOutsideOfReceiverFunctions,
         UnreachableCode,
+        CannotAssignMethod,
     }
 
 
@@ -75,9 +75,8 @@ namespace Compiler.CodeAnalysis.Diagnostics
             {DiagnosticCode.MissingReturnExpression, "An expression of type '{0}' is expected."},
             {DiagnosticCode.AllPathsMustReturn, "Not all code paths return a value."},
             {DiagnosticCode.InvalidExpressionStatement, "Only assignment and call expressions can be used as a statement."},
-            {DiagnosticCode.OnlyOneFileCanHaveGlobalStatements, "At most one file can have global statements."},
+            {DiagnosticCode.InvalidGlobalStatement, "Invalid global statement."},
             {DiagnosticCode.MainMustHaveCorrectSignature, "main must not take arguments and not return anything."},
-            {DiagnosticCode.CannotMixMainAndGlobalStatements, "Cannot declare main function when global statements are used."},
             {DiagnosticCode.InvalidReturnWithValueInGlobalStatements, "The 'return' keyword cannot be followed by an expression in global statements."},
             {DiagnosticCode.InvalidReference, "The reference is not a valid .NET assembly {0}"},
             {DiagnosticCode.RequiredTypeNotFound, "The required type {0} cannot be resolved among the given references."},
@@ -91,6 +90,7 @@ namespace Compiler.CodeAnalysis.Diagnostics
             {DiagnosticCode.CannotUseSelfOutsideOfAFunction, "This can only by used in functions with a struct receiver."},
             {DiagnosticCode.CannotUseSelfOutsideOfReceiverFunctions, "This can only be used in functions with a struct receiver.  Function '{0}' has no receiver defined."},
             {DiagnosticCode.UnreachableCode, "Unreachable code detected."},
+            {DiagnosticCode.CannotAssignMethod, "Cannot assign method member {0} of type {1}."},
         };
 
         public static string GetDiagnostic(this DiagnosticCode code, params object[] arguments)

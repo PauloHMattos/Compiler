@@ -19,9 +19,24 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         }
 
         [Fact]
-        public void Evaluator_IfStatement_ExpressionInCondition()
+        public void Binder_GlobalStatement_NotAllowed()
         {
             var text = @"
+                [var x = 0]
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.InvalidGlobalStatement.GetDiagnostic()
+            };
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Binder_IfStatement_ExpressionInCondition()
+        {
+            var text = @"
+                function main()
                 {
                     var x = 0
                     if x + 10 > 5
@@ -38,9 +53,10 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         }
 
         [Fact]
-        public void Evaluator_WhileStatement_ExpressionInCondition()
+        public void Binder_WhileStatement_ExpressionInCondition()
         {
             var text = @"
+                function main()
                 {
                     var x = 10
                     while (x + 10 > 0)
@@ -57,9 +73,10 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         }
 
         [Fact]
-        public void Evaluator_IfStatement_Reports_CannotConvert()
+        public void Binder_IfStatement_Reports_CannotConvert()
         {
             var text = @"
+                function main()
                 {
                     var x = 0
                     if [10]
@@ -78,6 +95,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_DoWhileStatement_Reports_CannotConvert()
         {
             var text = @"
+                function main()
                 {
                     var x = 0
                     do
@@ -97,6 +115,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_WhileStatement_Reports_CannotConvert()
         {
             var text = @"
+                function main()
                 {
                     var x = 0
                     while [10]
@@ -115,6 +134,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_ForStatement_Reports_CannotConvert_LowerBound()
         {
             var text = @"
+                function main()
                 {
                     var result = 0
                     for i = [false] to 10
@@ -133,6 +153,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_ForStatement_Reports_CannotConvert_UpperBound()
         {
             var text = @"
+                function main()
                 {
                     var result = 0
                     for i = 0 to [false]
@@ -151,6 +172,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_ForStatement_Reports_CannotConvert_Step()
         {
             var text = @"
+                function main()
                 {
                     var result = 0
                     for i = 0 to 10 step [false]
@@ -169,6 +191,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_BreakOrContinueStatement_Reports_InvalidBreakOrContinue()
         {
             var text = @"
+                function main()
                 {
                     [break]
                     [continue]
@@ -186,7 +209,11 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         [Fact]
         public void Binder_AssignmentExpression_Reports_Undefined()
         {
-            var text = @"[x] = 1";
+            var text = @"
+                function main()
+                {
+                    [x] = 1
+                }";
 
             var diagnostics = new List<string>()
             {
@@ -199,6 +226,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_AssignmentExpression_Reports_CannotReassign()
         {
             var text = @"
+                function main()
                 {
                     const x = 10
                     {
@@ -219,6 +247,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_AssignmentExpression_Reports_CannotConvert_Implicitly()
         {
             var text = @"
+                function main()
                 {
                     var x = 10
                     x = [false]
@@ -236,6 +265,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_AssignmentExpression_Reports_CannotConvert_Explicit()
         {
             var text = @"
+                function main()
                 {
                     var x : int = 10
                     x = [false]
@@ -252,7 +282,11 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         [Fact]
         public void Binder_AssignmentExpression_Reports_NotAVariable()
         {
-            var text = @"[print] = 42";
+            var text = @"
+                function main()
+                {
+                    [print] = 42
+                }";
 
             var diagnostics = new List<string>()
             {
@@ -266,11 +300,12 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_AssignmentExpression_SupportsDefault()
         {
             var text = @"
-            {
-                var x : int
-                var y : int = default
-                x = y
-            }";
+                function main()
+                {
+                    var x : int
+                    var y : int = default
+                    x = y
+                }";
 
             var diagnostics = new List<string>()
             {
@@ -282,24 +317,32 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_MemberAccess()
         {
             var text = @"
-                enum A { A1, A2, A3 }	
-                print(A.A1)
-            ";
+                enum A { A1, A2, A3 }
+                
+                function main()
+                {
+                    print(A.A1)
+                }";
+
             var diagnostics = new List<string>()
             {
             };
 
             var compilation = AssertDiagnostics(text, diagnostics);
-            var enumSymbol = Assert.Single(compilation.Enums);
+            var enumSymbol = Assert.Single(compilation.Types.OfType<EnumSymbol>());
             Assert.Equal("A", enumSymbol.Name);
-            Assert.Equal(3, enumSymbol.Members.Length);
+            // Assert.Equal(3, enumSymbol.Members.Length);
             Assert.True(enumSymbol.IsEnum());
         }
 
         [Fact]
         public void Binder_NameExpression_Reports_Undefined()
         {
-            var text = "[x] * 1";
+            var text = @"
+                function main()
+                {
+                    [x] * 1
+                }";
             var diagnostics = new List<string>()
             {
                 DiagnosticCode.UndefinedName.GetDiagnostic("x")
@@ -310,7 +353,11 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         [Fact]
         public void Binder_UnaryExpression_Reports_UndefinedOperator()
         {
-            var text = "[+]false";
+            var text = @"
+                function main()
+                {
+                    [+]false
+                }";
             var diagnostics = new List<string>()
             {
                 DiagnosticCode.UndefinedUnaryOperator.GetDiagnostic("+", TypeSymbol.Bool)
@@ -321,7 +368,11 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         [Fact]
         public void Binder_BinaryExpression_Reports_UndefinedOperator()
         {
-            var text = "10 [+] false";
+            var text = @"
+                function main()
+                {
+                    10 [+] false
+                }";
             var diagnostics = new List<string>()
             {
                 DiagnosticCode.UndefinedBinaryOperator.GetDiagnostic("+", TypeSymbol.Int, TypeSymbol.Bool)
@@ -332,8 +383,12 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         [Fact]
         public void Binder_CompoundExpression_Reports_Undefined()
         {
-            var text = @"var x = 10
-                         x [+=] false";
+            var text = @"
+                function main()
+                {
+                    var x = 10
+                    x [+=] false
+                }";
 
             var diagnostics = new List<string>()
             {
@@ -345,7 +400,11 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         [Fact]
         public void Binder_CompoundExpression_Assignemnt_NonDefinedVariable_Reports_Undefined()
         {
-            var text = @"[x] += 10";
+            var text = @"
+                function main()
+                {
+                    [x] += 10
+                }";
 
             var diagnostics = new List<string>()
             {
@@ -358,6 +417,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_CompoundDeclarationExpression_Reports_CannotAssign()
         {
             var text = @"
+                function main()
                 {
                     const x = 10
                     x [+=] 1
@@ -375,6 +435,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_VariableDeclaration_Reports_Redeclaration()
         {
             var text = @"
+                function main()
                 {
                     var x = 10
                     var y = 100
@@ -395,11 +456,15 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         [Fact]
         public void Binder_NameExpression_Reports_NoErrorForInsertedToken()
         {
-            var text = @"1 + []";
+            var text = @"
+                function main()
+                {
+                    1 + 
+                [}]";
 
             var diagnostics = new List<string>()
             {
-                DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.EndOfFileToken, SyntaxKind.IdentifierToken)
+                DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.CloseBraceToken, SyntaxKind.IdentifierToken)
             };
 
             AssertDiagnostics(text, diagnostics);
@@ -409,8 +474,11 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_BlockStatement_NoInfiniteLoop()
         {
             var text = @"
+                function a()
                 {
-                [)][]
+                    {
+                    [)]
+                }[]
             ";
 
             var diagnostics = new List<string>()
@@ -532,11 +600,14 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_CallExpression_WrongArgumentType()
         {
             var text = @"
-                    function a(x : int)
-                    {
+                function a(x : int)
+                {
+                }
 
-                    }
+                function main()
+                {
                     [a]([""42""])
+                }
             ";
 
             var diagnostics = new List<string>()
@@ -552,7 +623,10 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_InvokeFunctionArguments_Missing()
         {
             var text = @"
-                print([)]
+                function main()
+                {
+                    print([)]
+                }
             ";
 
             var diagnostics = new List<string>()
@@ -567,6 +641,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_CallExpression_WrongArgumentCount()
         {
             var text = @"
+                function main()
                 {
                     print(0[, 100, 100])
                 }
@@ -583,7 +658,11 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         [Fact]
         public void Binder_CallExpression_Reports_Undefined()
         {
-            var text = @"[foo](42)";
+            var text = @"
+                function main()
+                {
+                    [foo](42)
+                }";
 
             var diagnostics = new List<string>()
             {
@@ -597,6 +676,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_CallExpression_Reports_NotAFunction()
         {
             var text = @"
+                function main()
                 {
                     var foo = 42
                     [foo](42)
@@ -615,6 +695,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_Variables_Can_Shadow_Functions()
         {
             var text = @"
+                function main()
                 {
                     const print = 42
                     [print](""test"")
@@ -633,7 +714,10 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_InvokeFunctionArguments_NoInfiniteLoop()
         {
             var text = @"
-                print(""Hi""=[)]
+                function main()
+                {
+                    print(""Hi""=[)]
+                }
             ";
 
             var diagnostics = new List<string>()
@@ -684,14 +768,17 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_Cannot_Access_Member()
         {
             const string? text = @"
-                var p: int = 0
-                p.[length]
-                p.[length]()
+                function main()
+                {
+                    var p: int = 0
+                    p.[length] = 10
+                    p.[length()]
+                }
             ";
             var diagnostics = new List<string>()
             {
                 DiagnosticCode.CannotAccessMember.GetDiagnostic("length", "int"),
-                DiagnosticCode.UndefinedFunction.GetDiagnostic("length", "int"),
+                DiagnosticCode.CannotAccessMember.GetDiagnostic("length", "int"),
             };
             AssertDiagnostics(text, diagnostics);
         }
@@ -700,18 +787,21 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_MethodDeclaration_SupportsOverloading()
         {
             var text = @"
-                    function a(x : int)
-                    {
+                function a(x : int)
+                {
 
-                    }
+                }
 
-                    function a(x : string)
-                    {
+                function a(x : string)
+                {
 
-                    }
+                }
 
+                function main()
+                {
                     a(42)
                     a(""42"")
+                }
             ";
 
             var diagnostics = new List<string>()
@@ -725,15 +815,15 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_MethodDeclaration_ReportAlreadyDeclared()
         {
             var text = @"
-                    function a(x : int)
-                    {
+                function a(x : int)
+                {
 
-                    }
+                }
 
-                    function [a](x : int)
-                    {
+                function [a](x : int)
+                {
 
-                    }
+                }
             ";
 
             var diagnostics = new List<string>()
@@ -749,14 +839,17 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_StructDeclaration()
         {
             var text = @"
-                    struct Test
-                    {
-                        var a : int
-                        var b : bool = default
-                        var c = ""abc""
-                    }
+                struct Test
+                {
+                    var a : int
+                    var b : bool = default
+                    var c = ""abc""
+                }
 
+                function main()
+                {
                     var test : Test
+                }
             ";
 
             var diagnostics = new List<string>()
@@ -764,12 +857,8 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             };
 
             var compilation = AssertDiagnostics(text, diagnostics);
-            var structSymbol = Assert.Single(compilation.Structs);
+            var structSymbol = Assert.Single(compilation.Types.OfType<StructSymbol>());
             Assert.Equal("Test", structSymbol.Name);
-            Assert.Equal(3, structSymbol.CtorParameters.Length);
-            Assert.Equal(TypeSymbol.Int, structSymbol.CtorParameters[0].Type);
-            Assert.Equal(TypeSymbol.Bool, structSymbol.CtorParameters[1].Type);
-            Assert.Equal(TypeSymbol.String, structSymbol.CtorParameters[2].Type);
             Assert.True(structSymbol.IsValueType());
         }
         
@@ -777,15 +866,18 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_MemberAssignment()
         {
             var text = @"
-                    struct Test
-                    {
-                        var a : int
-                        var b : bool = default
-                        var c = ""abc""
-                    }
+                struct Test
+                {
+                    var a : int
+                    var b : bool = default
+                    var c = ""abc""
+                }
 
+                function main()
+                {
                     var test : Test
                     test.a = 100
+                }
             ";
 
             var diagnostics = new List<string>()
@@ -799,21 +891,64 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_MemberAccess_Nested()
         {
             var text = @"
-                    struct Point
-                    {
-                        var x = 0
-                        var y: int
-                    }
-                    
-                    struct Line
-                    {
-                        var start: Point
-                        var end: Point
-                    }
+                struct Point
+                {
+                    var x = 0
+                    var y: int
+                }
+                
+                struct Line
+                {
+                    var start: Point
+                    var end: Point
+                }
 
-                    var nested = Line(Point(10, 10), Point(5, 5))
+                function main()
+                {
+                    var nested = Line()
                     var x = nested.start.x
                     var y = nested.end.x
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+            };
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Binder_MemberAccess_NestedCall()
+        {
+            var text = @"
+                struct Point
+                {
+                    var x = 0
+                    var y: int
+
+                    
+                    function B()
+                    {
+                        
+                    }
+                }
+
+                struct Line
+                {
+                    var start: Point
+                    var end: Point
+                    
+                    function A()
+                    {
+                        start.B()
+                    }
+                }
+
+                function main()
+                {
+                    var nested = Line()
+                    nested.A()
+                }
             ";
 
             var diagnostics = new List<string>()
@@ -826,15 +961,18 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_CompoundMemberAssignment()
         {
             var text = @"
-                    struct Test
-                    {
-                        var a : int
-                        var b : bool = default
-                        var c = ""abc""
-                    }
+                struct Test
+                {
+                    var a : int
+                    var b : bool = default
+                    var c = ""abc""
+                }
 
+                function main()
+                {
                     var test : Test
                     test.a += 100
+                }
             ";
 
             var diagnostics = new List<string>()
@@ -848,20 +986,24 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_MemberAccess_CallExpression()
         {
             var text = @"
-                    struct TestStruct
-                    {
-                        var a : int
-                        var b : bool = default
-                        var c = ""abc""
-                    }
+                struct TestStruct
+                {
+                    var a : int
+                    var b : bool = default
+                    var c = ""abc""
 
-                    function TestStruct.f(i : int)
+                    function f(i : int)
                     {
                         print(""i"")
                     }
+                }
 
+
+                function main()
+                {
                     var test : TestStruct
                     test.f(10)
+                }
             ";
 
             var diagnostics = new List<string>()
@@ -871,30 +1013,32 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             AssertDiagnostics(text, diagnostics);
         }
         
-        
         [Fact]
         public void Binder_MemberAccess_CallExpressionWithReceiver()
         {
             var text = @"
-                    struct TestStruct
-                    {
-                        var a : int
-                        var b : bool = default
-                        var c = ""abc""
-                    }
+                struct TestStruct
+                {
+                    var a : int
+                    var b : bool = default
+                    var c = ""abc""
 
-                    function TestStruct.f(i : int)
+                    function f(i : int)
                     {
                         self.printI()
                     }
                     
-                    function TestStruct.printI()
+                    function printI()
                     {
                         print(""i"")
                     }
+                }
 
+                function main()
+                {
                     var test : TestStruct
                     test.f(10)
+                }
             ";
 
             var diagnostics = new List<string>()
@@ -908,19 +1052,19 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         public void Binder_MemberAccess_AccessMemberWithoutSelf()
         {
             var text = @"
-                    struct TestStruct
-                    {
-                        var a : int
-                        var b : bool = default
-                        var c = ""abc""
-                    }
+                struct TestStruct
+                {
+                    var a : int
+                    var b : bool = default
+                    var c = ""abc""
 
-                    function TestStruct.f(i : int)
+                    function f(i : int)
                     {
+                        print(b)
                         print(self.a + 1)
                         print(i)
-                        print(b)
                     }
+                }
             ";
 
             var diagnostics = new List<string>()
@@ -929,31 +1073,30 @@ namespace Compiler.Tests.CodeAnalysis.Binding
 
             AssertDiagnostics(text, diagnostics);
         }
-        
         
         [Fact]
         public void Binder_MemberAccess_Self()
         {
             var text = @"
-                    struct TestStruct
-                    {
-                        var a : int
-                        var b : bool = default
-                        var c = ""abc""
-                    }
+                struct TestStruct
+                {
+                    var a : int
+                    var b : bool = default
+                    var c = ""abc""
 
-                    function TestStruct.f()
+                    function f()
                     {
                         print(self.a)
                         print(self.b)
                         printTest(self)
                     }
-                    
-                    function printTest(t : TestStruct)
-                    {
-                        print(t.a)
-                        print(t.b)
-                    }
+                }
+                
+                function printTest(t : TestStruct)
+                {
+                    print(t.a)
+                    print(t.b)
+                }
             ";
 
             var diagnostics = new List<string>()
@@ -962,38 +1105,77 @@ namespace Compiler.Tests.CodeAnalysis.Binding
 
             AssertDiagnostics(text, diagnostics);
         }
-        
         
         [Fact]
         public void Binder_MemberAssignment_CannontAssignFunction()
         {
             var text = @"
-                    struct TestStruct
-                    {
-                        var a : int
-                        var b : bool = default
-                        var c = ""abc""
-                    }
+                struct TestStruct
+                {
+                    var a : int
+                    var b : bool = default
+                    var c = ""abc""
 
-                    function TestStruct.f() : int
+                    function f() : int
                     {
                         return 1
                     }
-                    
-                    function printTest(t : TestStruct)
-                    {
-                        t.[f] = 10
-                    }
+                }
+
+                function printTest(t : TestStruct)
+                {
+                    t.f [=] 10
+                }
             ";
 
             var diagnostics = new List<string>()
             {
-                DiagnosticCode.CannotAccessMember.GetDiagnostic("f", "TestStruct")
+                DiagnosticCode.CannotAssignMethod.GetDiagnostic("f", "TestStruct")
             };
 
             AssertDiagnostics(text, diagnostics);
         }
-        
+
+        [Fact]
+        public void Binder_TypeDeclaration_MemberAlreadyDeclared()
+        {
+            var text = @"
+                struct TestStruct
+                {
+                    var a : int
+                    var [a] : bool = default
+
+                    function [a]()
+                    {
+                    }
+
+                    function b()
+                    {
+                    }
+                    function [b]()
+                    {
+                    }
+                }
+
+                enum TestEnum
+                {
+                    A,
+                    B,
+                    [A]
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.AlreadyDeclaredMember.GetDiagnostic("TestStruct", "a"),
+                DiagnosticCode.AlreadyDeclaredMember.GetDiagnostic("TestStruct", "a"),
+                DiagnosticCode.AlreadyDeclaredMember.GetDiagnostic("TestStruct", "b"),
+                DiagnosticCode.AlreadyDeclaredMember.GetDiagnostic("TestEnum", "A")
+            };
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
         /*
         [Fact]
         public void Binder_IfStatement_Reports_UnreachableCode_Warning()
@@ -1086,6 +1268,39 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             AssertDiagnostics(text, diagnostics, true);
         }
         //*/
+
+        
+        [Fact]
+        public void Binder_TypeDeclaration_SupportsOverloading()
+        {
+            var text = @"
+                struct TestStruct
+                {
+                    function a(x : int)
+                    {
+                        a(string(x))
+                    }
+
+                    function a(x : string)
+                    {
+
+                    }
+                }
+
+                function main()
+                {
+                    var test : TestStruct
+                    test.a(42)
+                    test.a(""42"")
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+            };
+
+            AssertDiagnostics(text, diagnostics);
+        }
 
         private Compilation AssertDiagnostics(string text, List<string> expectedDiagnostics, bool generateGraph = false)
         {

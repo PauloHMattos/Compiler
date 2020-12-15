@@ -4,7 +4,6 @@ using System.Collections.Immutable;
 using System.Linq;
 using Compiler.CodeAnalysis.Binding;
 using Compiler.CodeAnalysis.Binding.FlowControl;
-using Compiler.CodeAnalysis.Diagnostics;
 using Compiler.CodeAnalysis.Symbols;
 using static Compiler.CodeAnalysis.Binding.BoundNodeFactory;
 
@@ -24,21 +23,21 @@ namespace Compiler.CodeAnalysis.Lowering
             return new BoundLabel(name);
         }
 
-        public static BoundBlockStatement Lower(Symbol symbol, BoundStatement statement, DiagnosticBag diagnostics)
+        public static BoundBlockStatement Lower(Symbol symbol, BoundStatement statement)
         {
-            if (symbol is not (FunctionSymbol or StructSymbol))
+            if (symbol is not FunctionSymbol)
             {
                 throw new InvalidOperationException($"Symbol of type {symbol.Kind} not expected in Lowerer.");
             }
 
             var lowerer = new Lowerer();
             var result = lowerer.RewriteStatement(statement);
-            return RemoveDeadCode(Flatten(symbol, result), diagnostics);
+            return RemoveDeadCode(Flatten(symbol, result));
         }
 
-        private static BoundBlockStatement RemoveDeadCode(BoundBlockStatement statement, DiagnosticBag diagnostics)
+        private static BoundBlockStatement RemoveDeadCode(BoundBlockStatement statement)
         {
-            var controlFlow = ControlFlowGraph.Create(statement, diagnostics);
+            var controlFlow = ControlFlowGraph.Create(statement);
             var reachableStatements = new HashSet<BoundStatement>(controlFlow.Blocks.SelectMany(b => b.Statements));
 
             var builder = statement.Statements.ToBuilder();
@@ -208,11 +207,9 @@ namespace Compiler.CodeAnalysis.Lowering
             //      <body>
             //      continue:
             //      <var> = <var> + <step>
-
-            
-            var lowerBound = VariableDeclaration(node.Syntax, node.Variable, node.LowerBound);
+            var lowerBound = VariableDeclaration(node.LowerBound.Syntax, node.Variable, node.LowerBound);
             // Use node.UpperBound.Syntax?
-            var upperBound = ConstantDeclaration(node.Syntax, "upperBound", node.UpperBound);
+            var upperBound = ConstantDeclaration(node.UpperBound.Syntax, "upperBound", node.UpperBound);
 
             var result = Block(node.Syntax, 
                                 lowerBound,

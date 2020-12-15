@@ -7,8 +7,8 @@ namespace Compiler.CodeAnalysis.Symbols
 {
     internal static class BuiltinFunctions
     {
-        public static readonly FunctionSymbol Print = new FunctionSymbol("print", ImmutableArray.Create(new ParameterSymbol("value", TypeSymbol.Any, 0)), TypeSymbol.Void);
-        public static readonly FunctionSymbol Input = new FunctionSymbol("input", ImmutableArray<ParameterSymbol>.Empty, TypeSymbol.String);
+        public static readonly FunctionSymbol Print = new FunctionSymbol("print", ImmutableArray.Create(VariableSymbol.Parameter(null, "value", true, TypeSymbol.Any)), TypeSymbol.Void);
+        public static readonly FunctionSymbol Input = new FunctionSymbol("input", ImmutableArray<VariableSymbol>.Empty, TypeSymbol.String);
 
         internal static IEnumerable<FunctionSymbol> GetAll()
             => typeof(BuiltinFunctions).GetFields(BindingFlags.Public | BindingFlags.Static)

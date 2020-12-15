@@ -6,32 +6,20 @@ namespace Compiler.CodeAnalysis.Binding
 {
     internal sealed class BoundGlobalScope
     {
-        public BoundGlobalScope? Previous { get; }
         public ImmutableArray<Diagnostic> Diagnostics { get; }
         public FunctionSymbol? MainFunction { get; }
         public ImmutableArray<FunctionSymbol> Functions { get; }
-        public ImmutableArray<EnumSymbol> Enums { get; }
-        public ImmutableArray<StructSymbol> Structs { get; }
-        public ImmutableArray<VariableSymbol> Variables { get; }
-        public ImmutableArray<BoundStatement> Statements { get; }
+        public ImmutableArray<TypeSymbol> Types { get; }
 
-        public BoundGlobalScope(BoundGlobalScope? previous,
-                                ImmutableArray<Diagnostic> diagnostics,
+        public BoundGlobalScope(ImmutableArray<Diagnostic> diagnostics,
                                 FunctionSymbol? mainFunction,
                                 ImmutableArray<FunctionSymbol> functions,
-                                ImmutableArray<EnumSymbol> enums,
-                                ImmutableArray<StructSymbol> structs,
-                                ImmutableArray<VariableSymbol> variables,
-                                ImmutableArray<BoundStatement> statements)
+                                ImmutableArray<TypeSymbol> types)
         {
-            Previous = previous;
             Diagnostics = diagnostics;
             MainFunction = mainFunction;
             Functions = functions;
-            Enums = enums;
-            Structs = structs;
-            Variables = variables;
-            Statements = statements;
+            Types = types;
         }
     }
 }

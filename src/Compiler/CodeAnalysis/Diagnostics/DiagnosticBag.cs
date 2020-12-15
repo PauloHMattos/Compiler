@@ -203,19 +203,14 @@ namespace Compiler.CodeAnalysis.Diagnostics
             ReportError(location, DiagnosticCode.InvalidExpressionStatement.GetDiagnostic());
         }
 
-        public void ReportOnlyOneFileCanHaveGlobalStatements(in TextLocation location)
+        public void ReportInvalidGlobalStatement(in TextLocation location)
         {
-            ReportError(location, DiagnosticCode.OnlyOneFileCanHaveGlobalStatements.GetDiagnostic());
+            ReportError(location, DiagnosticCode.InvalidGlobalStatement.GetDiagnostic());
         }
 
         public void ReportMainMustHaveCorrectSignature(in TextLocation location)
         {
             ReportError(location, DiagnosticCode.MainMustHaveCorrectSignature.GetDiagnostic());
-        }
-
-        public void ReportCannotMixMainAndGlobalStatements(in TextLocation location)
-        {
-            ReportError(location, DiagnosticCode.CannotMixMainAndGlobalStatements.GetDiagnostic());
         }
 
         internal void ReportInvalidReturnWithValueInGlobalStatements(TextLocation location)
@@ -238,9 +233,9 @@ namespace Compiler.CodeAnalysis.Diagnostics
             ReportError(location, DiagnosticCode.UndefinedOverloadForArguments.GetDiagnostic(methodName, signature));
         }
         
-        internal void ReportCannotAssignMethodMember(TextLocation location, string name)
+        internal void ReportCannotAssignMethodMember(TextLocation location, string methodName, string typeName)
         {
-            throw new NotImplementedException();
+            ReportError(location, DiagnosticCode.CannotAssignMethod.GetDiagnostic(methodName, typeName));
         }
 
         internal void ReportCannotUseSelfOutsideOfAFunction(TextLocation location)
