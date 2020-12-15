@@ -213,6 +213,13 @@ namespace Compiler.CodeAnalysis.Binding
             }
 
             var type = typeScope.OwnerType;
+
+            // Declare all nested types
+            foreach (var statementSyntax in syntax.Statement.OfType<TypeDeclarationSyntax>())
+            {
+                BindTypeDeclaration(statementSyntax);
+            }
+
             foreach (var statementSyntax in syntax.Statement)
             {
                 switch (statementSyntax.Kind)
@@ -249,7 +256,11 @@ namespace Compiler.CodeAnalysis.Binding
                         var functionSymbol = BindFunctionDeclaration(functionDeclarationSyntax);
                         functionsToLower.Add(functionSymbol);
                         break;
-                    
+
+                    case SyntaxKind.TypeDeclaration:
+                        // Already declared
+                        break;
+
                     default:
                         throw new InvalidOperationException($"Unexpected statement of kind {statementSyntax.Kind}");
                 }

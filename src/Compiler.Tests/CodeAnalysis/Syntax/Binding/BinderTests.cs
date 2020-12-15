@@ -1365,6 +1365,29 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             AssertDiagnostics(text, diagnostics);
         }
 
+        [Fact]
+        public void Binder_TypeDeclaration_NestedType()
+        {
+            var text = @"
+                struct Line
+                {
+                    var p1 : Point
+                    var p2 : Point
+                    
+                    struct Point
+                    {
+                        var x : int
+                        var y : int
+                    }
+                }";
+
+            var diagnostics = new List<string>()
+            {
+            };
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
         /*
         [Fact]
         public void Binder_IfStatement_Reports_UnreachableCode_Warning()
