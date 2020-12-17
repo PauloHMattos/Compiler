@@ -185,7 +185,7 @@ namespace Compiler.CodeAnalysis.Binding
                 }
                 else
                 {
-                    var parameter = VariableSymbol.Parameter(parameterSyntax, parameterName, false,  parameterType);
+                    var parameter = VariableSymbol.Parameter(parameterSyntax, parameterName, false, parameterType);
                     parameters.Add(parameter);
                 }
             }
@@ -198,7 +198,7 @@ namespace Compiler.CodeAnalysis.Binding
                                               syntax,
                                               _scope,
                                               receiver);
-            
+
             _scope.TryDeclareFunction(function);
             return function;
         }
@@ -449,14 +449,14 @@ namespace Compiler.CodeAnalysis.Binding
             var declare = !identifier.IsMissing;
             var name = declare ? identifier.Text : "?";
             var variable = VariableSymbol.New(identifier, name, isReadOnly, isStatic, kind, type, constant);
-            
+
             if (declare && addToScope)
             {
                 _scope.TryDeclareVariable(variable);
             }
             return variable;
         }
-        
+
         private Symbol? BindSymbolReference(SyntaxToken identifier, TextLocation location)
         {
             switch (_scope.TryLookupSymbol(identifier.Text))
@@ -793,7 +793,8 @@ namespace Compiler.CodeAnalysis.Binding
 
             if (symbol is TypeSymbol ts)
             {
-                symbol = GetMemberSymbol(ts, ".ctor");
+                Debug.Assert(ts.BoundScope != null);
+                symbol = ts.BoundScope.TryLookupSymbol<FunctionSymbol>(".ctor");
             }
 
             if (symbol is not FunctionSymbol function)
@@ -874,73 +875,42 @@ namespace Compiler.CodeAnalysis.Binding
 
         private BoundExpression BindMemberAccessExpression(MemberAccessExpressionSyntax syntax)
         {
-            BoundExpression nameExpression;
-            if (syntax.ParentExpression.Kind == SyntaxKind.MemberAccessExpression)
-            {
-                return BindMemberAccessExpression((MemberAccessExpressionSyntax)syntax.ParentExpression);
-            }
-            else
-            {
-                nameExpression = BindNameExpression((NameExpressionSyntax)syntax.ParentExpression, true);
-                switch (syntax.MemberExpression.Kind)
-                {
-                    case SyntaxKind.CallExpression:
-                        var functionSymbol = GetMemberSymbol<FunctionSymbol>(nameExpression.Type, syntax.IdentifierToken.Text);
-                        if (functionSymbol != null)
-                        {
-                            var boundCall = (BoundCallExpression)BindCallExpression((CallExpressionSyntax)syntax.MemberExpression, functionSymbol);
-                            return new BoundMemberAccessExpression(syntax, nameExpression, boundCall);
-                        }
-                        break;
+            var originalScope = _scope;
+            BoundExpression receiverExpression;
+            var stack = new Stack<NameExpressionSyntax>();
+            ExpressionSyntax parent = syntax.ParentExpression;
 
-                    default:
-                        var member = BindMemberReference(nameExpression.Type, syntax);
-                        if (member != null)
-                        {
-                            return new BoundMemberAccessExpression(syntax, nameExpression, member);   
-                        }
-                        break;
+            if (parent.Kind == SyntaxKind.MemberAccessExpression)
+            {
+                while (parent is MemberAccessExpressionSyntax access)
+                {
+                    stack.Push(access.MemberExpression);
+                    parent = access.ParentExpression;
                 }
             }
 
-            Diagnostics.ReportCannotAccessMember(syntax.MemberExpression.Location, nameExpression.Type.Name, syntax.MemberExpression.IdentifierToken.Text);
-            return new BoundErrorExpression(syntax);
+            stack.Push((NameExpressionSyntax)parent);
+            do
+            {
+                // Advance the scope trough the nested access
+                var exp = stack.Pop();
+                receiverExpression = BindNameExpression(exp);
+                Debug.Assert(receiverExpression.Type.BoundScope != null);
+                _scope = receiverExpression.Type.BoundScope;
+            } while (stack.Count > 0);
+
+            var memberExpression = BindExpression(syntax.MemberExpression, true);
+
+            // Return to the original binder scope
+            _scope = originalScope;
+
+            if (memberExpression.Kind == BoundNodeKind.ErrorExpression)
+            {
+                return memberExpression;
+            }
+            return new BoundMemberAccessExpression(syntax, receiverExpression, (BoundMemberExpression)memberExpression);
         }
 
-        private static BoundMemberExpression? BindMemberReference(TypeSymbol typeSymbol, MemberAccessExpressionSyntax syntax)
-        {
-            var memberSymbol = GetMemberSymbol(typeSymbol, syntax.IdentifierToken.Text);
-            if (memberSymbol != null)
-            {
-                return new BoundMemberExpression(syntax, memberSymbol);
-            }
-            return null;
-        }
-
-        private static T? GetMemberSymbol<T>(TypeSymbol typeSymbol, string memberName) where T : MemberSymbol
-        {
-            foreach (var member in typeSymbol.Members.OfType<T>())
-            {
-                if (member.Name == memberName)
-                {
-                    return member;
-                }
-            }
-            return null;
-        }
-
-        private static MemberSymbol? GetMemberSymbol(TypeSymbol typeSymbol, string memberName)
-        {
-            foreach (var member in typeSymbol.Members)
-            {
-                if (member.Name == memberName)
-                {
-                    return member;
-                }
-            }
-            return null;
-        }
-        
         private BoundExpression BindConversion(ExpressionSyntax syntax, TypeSymbol type, bool allowExplicit = false)
         {
             var expression = BindExpression(syntax);
@@ -1002,11 +972,7 @@ namespace Compiler.CodeAnalysis.Binding
 
 
                 case SymbolKind.Member:
-                    var selfKeyword = new SyntaxToken(syntax.SyntaxTree, SyntaxKind.SelfKeyword, syntax.Span.End, "self", null, ImmutableArray<SyntaxTrivia>.Empty, ImmutableArray<SyntaxTrivia>.Empty);
-                    var injectedSelf = new SelfKeywordSyntax(syntax.SyntaxTree, selfKeyword);
-                    var dotToken = new SyntaxToken(syntax.SyntaxTree, SyntaxKind.DotToken, syntax.Span.End, ".", null, ImmutableArray<SyntaxTrivia>.Empty, ImmutableArray<SyntaxTrivia>.Empty);
-                    var memberAccess = new MemberAccessExpressionSyntax(syntax.SyntaxTree, injectedSelf, dotToken, syntax);
-                    return BindMemberAccessExpression(memberAccess);
+                    return new BoundMemberExpression(syntax, (MemberSymbol)symbol);
 
                 case SymbolKind.Type:
                 case SymbolKind.Enum:

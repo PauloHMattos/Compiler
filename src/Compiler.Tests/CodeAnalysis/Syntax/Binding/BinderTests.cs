@@ -926,13 +926,13 @@ namespace Compiler.Tests.CodeAnalysis.Binding
                 {
                     var p: int = 0
                     p.[length] = 10
-                    p.[length()]
+                    p.[length]()
                 }
             ";
             var diagnostics = new List<string>()
             {
-                DiagnosticCode.CannotAccessMember.GetDiagnostic("length", "int"),
-                DiagnosticCode.CannotAccessMember.GetDiagnostic("length", "int"),
+                DiagnosticCode.UndefinedName.GetDiagnostic("length"),
+                DiagnosticCode.UndefinedFunction.GetDiagnostic("length"),
             };
             AssertDiagnostics(text, diagnostics);
         }
@@ -1313,13 +1313,13 @@ namespace Compiler.Tests.CodeAnalysis.Binding
 
                 function printTest(t : TestStruct)
                 {
-                    t.f [=] 10
+                    t.[f] = 10
                 }
             ";
 
             var diagnostics = new List<string>()
             {
-                DiagnosticCode.CannotAssignMethod.GetDiagnostic("f", "TestStruct")
+                DiagnosticCode.NotAVariable.GetDiagnostic("f")
             };
 
             AssertDiagnostics(text, diagnostics);
@@ -1379,6 +1379,38 @@ namespace Compiler.Tests.CodeAnalysis.Binding
                         var x : int
                         var y : int
                     }
+                }";
+
+            var diagnostics = new List<string>()
+            {
+            };
+
+            AssertDiagnostics(text, diagnostics);
+        }
+        
+        [Fact]
+        public void Binder_VariableDeclaration_NestedType()
+        {
+            var text = @"
+                struct Line
+                {
+                    var p1 : Point
+                    var p2 : Point
+                    
+                    struct Point
+                    {
+                        var x : int
+                        var y : int
+
+                        struct Point1
+                        {
+                        }
+                    }
+                }
+                
+                function main()
+                {
+                    var p = Line.Point.Point1()
                 }";
 
             var diagnostics = new List<string>()
