@@ -869,46 +869,60 @@ namespace Compiler.CodeAnalysis.Binding
                 return new BoundErrorExpression(syntax);
             }
 
+            var receiverType = (_scope as TypeBoundScope)?.OwnerType;
             boundArguments = boundArgumentBuilder.ToImmutable();
-            return new BoundCallExpression(syntax, function, boundArguments);
+            return new BoundCallExpression(syntax, function, receiverType, boundArguments);
         }
 
         private BoundExpression BindMemberAccessExpression(MemberAccessExpressionSyntax syntax)
         {
             var originalScope = _scope;
-            BoundExpression receiverExpression;
-            var stack = new Stack<NameExpressionSyntax>();
-            ExpressionSyntax parent = syntax.ParentExpression;
-
-            if (parent.Kind == SyntaxKind.MemberAccessExpression)
+            try
             {
+                var members = new Stack<NameExpressionSyntax>();
+                var parent = syntax.ParentExpression;
+
+                members.Push(syntax.MemberExpression);
+
                 while (parent is MemberAccessExpressionSyntax access)
                 {
-                    stack.Push(access.MemberExpression);
+                    members.Push(access.MemberExpression);
                     parent = access.ParentExpression;
                 }
+
+                BoundExpression boundParent = BindNameExpression(parent, true);
+                BoundExpression receiverExpression;
+                _scope = boundParent.Type.BoundScope!;
+
+                do
+                {
+                    // Advance the scope trough the nested access
+                    var exp = members.Pop();
+                    var boundMember = BindNameExpression(exp);
+
+                    Debug.Assert(boundMember.Type.BoundScope != null);
+                    _scope = boundMember.Type.BoundScope;
+                    
+                    if (boundMember.Kind == BoundNodeKind.ErrorExpression)
+                    {
+                        return boundMember;
+                    }
+                    else if (boundMember.Kind == BoundNodeKind.TypeReferenceExpression)
+                    {
+                        receiverExpression = new BoundNestedTypeAccessExpression(syntax, boundParent, (BoundTypeReferenceExpression)boundMember);
+                    }
+                    else
+                    {
+                        receiverExpression = new BoundMemberAccessExpression(syntax, boundParent, (BoundMemberExpression)boundMember);
+                    }
+                    boundParent = receiverExpression;
+                } while (members.Count > 0);
+                return receiverExpression;
             }
-
-            stack.Push((NameExpressionSyntax)parent);
-            do
+            finally
             {
-                // Advance the scope trough the nested access
-                var exp = stack.Pop();
-                receiverExpression = BindNameExpression(exp);
-                Debug.Assert(receiverExpression.Type.BoundScope != null);
-                _scope = receiverExpression.Type.BoundScope;
-            } while (stack.Count > 0);
-
-            var memberExpression = BindExpression(syntax.MemberExpression, true);
-
-            // Return to the original binder scope
-            _scope = originalScope;
-
-            if (memberExpression.Kind == BoundNodeKind.ErrorExpression)
-            {
-                return memberExpression;
+                _scope = originalScope;
             }
-            return new BoundMemberAccessExpression(syntax, receiverExpression, (BoundMemberExpression)memberExpression);
         }
 
         private BoundExpression BindConversion(ExpressionSyntax syntax, TypeSymbol type, bool allowExplicit = false)
@@ -943,6 +957,18 @@ namespace Compiler.CodeAnalysis.Binding
             return new BoundConversionExpression(expression.Syntax, type, expression);
         }
 
+        private T? GetAncestorScope<T>() where T : class, IBoundScope
+        {
+            var result = _scope as T;
+            var parent = _scope.Parent;
+            while (result == null && parent != null)
+            {
+                result = parent as T;
+                parent = parent.Parent;
+            }
+            return result;
+        }
+
         private BoundExpression BindNameExpression(NameExpressionSyntax syntax, bool byReference = false)
         {
             if (syntax.IdentifierToken.IsMissing)
@@ -955,6 +981,11 @@ namespace Compiler.CodeAnalysis.Binding
             if (syntax.IdentifierToken.Kind == SyntaxKind.SelfKeyword)
             {
                 return BindSelfKeyword((SelfKeywordSyntax)syntax);
+            }
+
+            if (syntax.Kind == SyntaxKind.CallExpression)
+            {
+                return BindCallExpression((CallExpressionSyntax)syntax);
             }
 
             var symbol = BindSymbolReference(syntax.IdentifierToken, syntax.IdentifierToken.Location);
@@ -972,7 +1003,10 @@ namespace Compiler.CodeAnalysis.Binding
 
 
                 case SymbolKind.Member:
-                    return new BoundMemberExpression(syntax, (MemberSymbol)symbol);
+                    var receiverScope = GetAncestorScope<TypeBoundScope>();
+                    Debug.Assert(receiverScope != null);
+                    var receiverType = receiverScope.OwnerType;
+                    return new BoundMemberExpression(syntax, (MemberSymbol)symbol, receiverType);
 
                 case SymbolKind.Type:
                 case SymbolKind.Enum:

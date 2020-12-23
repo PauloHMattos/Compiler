@@ -104,11 +104,20 @@ namespace Compiler.CodeAnalysis.Binding
                 case BoundNodeKind.SelfExpression:
                     WriteSelfExpression(writer);
                     break;
+                case BoundNodeKind.NestedTypeAccessExpression:
+                    WriteNestedTypeAccessExpression((BoundNestedTypeAccessExpression)node, writer);
+                    break;
                 default:
                     throw new InvalidOperationException($"Unexpected node {node.Kind}");
             }
         }
 
+        private static void WriteNestedTypeAccessExpression(BoundNestedTypeAccessExpression node, IndentedTextWriter writer)
+        {
+            node.Instance.WriteTo(writer);
+            node.Type.WriteTo(writer);
+        }
+        
         private static void WriteMemberExpression(BoundMemberExpression node, IndentedTextWriter writer)
         {
             node.Symbol.WriteTo(writer);

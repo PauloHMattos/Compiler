@@ -1420,6 +1420,35 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             AssertDiagnostics(text, diagnostics);
         }
 
+        [Fact]
+        public void Binder_MemberAccess_NestedType()
+        {
+            var text = @"
+                struct Line
+                {
+                    var p1 : Point
+                    var p2 : Point
+                    
+                    struct Point
+                    {
+                        var x : int
+                        var y : int
+                    }
+                }
+                
+                function main()
+                {
+                    var line = Line()
+                    line.p1.x = 10
+                }";
+
+            var diagnostics = new List<string>()
+            {
+            };
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
         /*
         [Fact]
         public void Binder_IfStatement_Reports_UnreachableCode_Warning()
@@ -1516,6 +1545,32 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         
         [Fact]
         public void Binder_TypeDeclaration_SupportsOverloading()
+        {
+            var text = @"
+                struct TestStruct
+                {
+                    function a(x : int)
+                    {
+                        a(string(x))
+                    }
+
+                    function a(x : string)
+                    {
+
+                    }
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+            };
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        
+        [Fact]
+        public void Binder_MemberAccess_SupportsOverloading()
         {
             var text = @"
                 struct TestStruct

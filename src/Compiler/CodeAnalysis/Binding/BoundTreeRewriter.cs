@@ -217,6 +217,8 @@ namespace Compiler.CodeAnalysis.Binding
                     return RewriteTypeReferenceExpression((BoundTypeReferenceExpression)expression);
                 case BoundNodeKind.MemberExpression:
                     return RewriteMemberExpression((BoundMemberExpression)expression);
+                case BoundNodeKind.NestedTypeAccessExpression:
+                    return RewriteNestedTypeAccessExpression((BoundNestedTypeAccessExpression)expression);
                 default:
                     throw new InvalidOperationException($"Unexpected expression {expression.Kind}.");
             }
@@ -321,6 +323,11 @@ namespace Compiler.CodeAnalysis.Binding
         }
 
         protected virtual BoundExpression RewriteMemberExpression(BoundMemberExpression node)
+        {
+            return node;
+        }
+
+        protected virtual BoundExpression RewriteNestedTypeAccessExpression(BoundNestedTypeAccessExpression node)
         {
             return node;
         }
