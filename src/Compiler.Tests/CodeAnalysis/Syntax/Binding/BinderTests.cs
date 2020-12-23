@@ -1490,6 +1490,28 @@ namespace Compiler.Tests.CodeAnalysis.Binding
 
             AssertDiagnostics(text, diagnostics);
         }
+        
+        [Fact]
+        public void Binder_LocalFunction_Declaration()
+        {
+            var text = @"
+                function a(x : int)
+                {
+                    b(string(x))
+
+                    function b(x : string)
+                    {
+                        
+                    }
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+            };
+
+            AssertDiagnostics(text, diagnostics);
+        }
 
         private Compilation AssertDiagnostics(string text, List<string> expectedDiagnostics, bool generateGraph = false)
         {

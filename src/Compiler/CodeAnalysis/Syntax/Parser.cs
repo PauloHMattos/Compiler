@@ -359,6 +359,8 @@ namespace Compiler.CodeAnalysis.Syntax
                     return ParseContinueStatement();
                 case SyntaxKind.ReturnKeyword:
                     return ParseReturnStatement();
+                case SyntaxKind.FunctionKeyword:
+                    return ParseFunctionDeclaration();
                 default:
                     return ParseExpressionStatement();
             }

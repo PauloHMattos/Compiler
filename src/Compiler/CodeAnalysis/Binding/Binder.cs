@@ -63,7 +63,7 @@ namespace Compiler.CodeAnalysis.Binding
                                                   .OfType<FunctionDeclarationSyntax>();
             foreach (var functionSyntax in functionDeclarations)
             {
-                var function = binder.BindFunctionDeclaration(functionSyntax);
+                var function = binder.BindFunctionDeclaration(functionSyntax, null);
                 binder.Diagnostics.AddRange(function.BoundScope!.Diagnostics);
             }
 
@@ -123,15 +123,6 @@ namespace Compiler.CodeAnalysis.Binding
 
             foreach (var function in functionsToLower)
             {
-                // Structs generate declartions for their constructors.  However, these have no function bodies.
-                // We will skip attempting to lower the bodies for these and allow the Emitter to automatically
-                // generate the code necessary.  This will avoid the potential of reporting diagnostic errors to
-                // the user for code they never wrote.
-                if (function.ReturnType is StructSymbol && function.Name.EndsWith(".ctor"))
-                {
-                    continue;
-                }
-
                 Debug.Assert(function.BoundScope != null);
                 var binder = new Binder(function.BoundScope, function, function.Receiver);
                 var body = binder.BindStatement(function.Declaration!.Body);
@@ -160,7 +151,7 @@ namespace Compiler.CodeAnalysis.Binding
                                 ImmutableArray<TypeSymbol>.Empty);
         }
 
-        private FunctionSymbol BindFunctionDeclaration(FunctionDeclarationSyntax syntax)
+        private FunctionSymbol BindFunctionDeclaration(FunctionDeclarationSyntax syntax, List<FunctionSymbol>? functionsToLower)
         {
             var parameters = ImmutableArray.CreateBuilder<VariableSymbol>();
             var seenParameterNames = new HashSet<string>();
@@ -180,6 +171,12 @@ namespace Compiler.CodeAnalysis.Binding
                 }
             }
 
+            var localFunctions = syntax.Body.Statements.OfType<FunctionDeclarationSyntax>();
+            foreach (var localFunction in localFunctions)
+            {
+                BindFunctionDeclaration(localFunction, functionsToLower);
+            }
+
             var returnType = BindTypeClause(syntax.Type) ?? TypeSymbol.Void;
             var receiver = _type;
             var function = new FunctionSymbol(syntax.Identifier.Text,
@@ -190,6 +187,7 @@ namespace Compiler.CodeAnalysis.Binding
                                               receiver);
             
             _scope.TryDeclareFunction(function);
+            functionsToLower?.Add(function);
             return function;
         }
 
@@ -246,8 +244,7 @@ namespace Compiler.CodeAnalysis.Binding
 
                     case SyntaxKind.FunctionDeclaration:
                         var functionDeclarationSyntax = (FunctionDeclarationSyntax)statementSyntax;
-                        var functionSymbol = BindFunctionDeclaration(functionDeclarationSyntax);
-                        functionsToLower.Add(functionSymbol);
+                        BindFunctionDeclaration(functionDeclarationSyntax, functionsToLower);
                         break;
                     
                     default:
@@ -313,7 +310,7 @@ namespace Compiler.CodeAnalysis.Binding
             var statements = ImmutableArray.CreateBuilder<BoundStatement>();
             _scope = new BlockBoundScope(_scope);
 
-            foreach (var statementSyntax in syntax.Statements)
+            foreach (var statementSyntax in syntax.Statements.Where(s => s.Kind != SyntaxKind.FunctionDeclaration))
             {
                 var statement = BindStatement(statementSyntax);
                 statements.Add(statement);
