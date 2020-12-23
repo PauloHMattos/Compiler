@@ -244,7 +244,7 @@ namespace Compiler.CodeAnalysis.Binding
 
                     case SyntaxKind.FunctionDeclaration:
                         var functionDeclarationSyntax = (FunctionDeclarationSyntax)statementSyntax;
-                        var functionSymbol = BindFunctionDeclaration(functionDeclarationSyntax, functionsToLower);
+                        BindFunctionDeclaration(functionDeclarationSyntax, functionsToLower);
                         break;
                     
                     default:
