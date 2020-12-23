@@ -41,7 +41,50 @@ namespace Compiler.Tests.CodeAnalysis.Binding
                     var x = 0
                     if x + 10 > 5
                     {
-                        x = 10
+                    }
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+            };
+            AssertDiagnostics(text, diagnostics);
+        }
+        
+        [Fact]
+        public void Binder_IfStatement_WithElse()
+        {
+            var text = @"
+                function main()
+                {
+                    var x = 0
+                    if x + 10 > 5
+                    {
+                    }
+                    else
+                    {
+                    }
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+            };
+            AssertDiagnostics(text, diagnostics);
+        }
+        
+        [Fact]
+        public void Binder_IfStatement_WithElseIf()
+        {
+            var text = @"
+                function main()
+                {
+                    var x = 0
+                    if x + 10 > 15
+                    {
+                    }
+                    else if (x + 10 > 5)
+                    {
                     }
                 }
             ";
@@ -62,6 +105,50 @@ namespace Compiler.Tests.CodeAnalysis.Binding
                     while (x + 10 > 0)
                     {
                         x -= 1
+                    }
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+            };
+            AssertDiagnostics(text, diagnostics, true);
+        }
+
+        
+        [Fact]
+        public void Binder_WhileStatement_Break()
+        {
+            var text = @"
+                function main()
+                {
+                    var x = 10
+                    while (x + 10 > 0)
+                    {
+                        break
+                    }
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+            };
+            AssertDiagnostics(text, diagnostics, true);
+        }
+        
+        [Fact]
+        public void Binder_NestedLoop_BreakContinue()
+        {
+            var text = @"
+                function main()
+                {
+                    for x = 0 to 10
+                    {
+                        while (x + 10 > 0)
+                        {
+                            break
+                        }
+                        continue
                     }
                 }
             ";
@@ -201,11 +288,11 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             var diagnostics = new List<string>()
             {
                 DiagnosticCode.InvalidBreakOrContinue.GetDiagnostic("break"),
-                DiagnosticCode.InvalidBreakOrContinue.GetDiagnostic("continue")
+                DiagnosticCode.InvalidBreakOrContinue.GetDiagnostic("continue"),
             };
             AssertDiagnostics(text, diagnostics);
         }
-
+        
         [Fact]
         public void Binder_AssignmentExpression_Reports_Undefined()
         {
@@ -312,9 +399,61 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             };
             AssertDiagnostics(text, diagnostics);
         }
+        
+        [Fact]
+        public void Binder_AssignmentExpression_DefaultsNoTypeClause_Reports()
+        {
+            var text = @"
+                function main()
+                {
+                    var x : int
+                    var y = [default]
+                }";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.TypeNotFoundForDefault.GetDiagnostic()
+            };
+            AssertDiagnostics(text, diagnostics);
+        }
 
         [Fact]
-        public void Binder_MemberAccess()
+        public void Binder_EnumDeclaration()
+        {
+            var text = @"
+                enum A { A1, A2, A3 }
+                ";
+
+            var diagnostics = new List<string>()
+            {
+            };
+
+            var compilation = AssertDiagnostics(text, diagnostics);
+            var enumSymbol = Assert.Single(compilation.Types.OfType<EnumSymbol>());
+            Assert.Equal("A", enumSymbol.Name);
+            Assert.Equal(3, enumSymbol.Members.Length);
+            Assert.True(enumSymbol.IsEnum());
+        }
+        
+        [Fact]
+        public void Binder_EnumDeclaration_ReportsRepeatedValue()
+        {
+            var text = @"
+                enum A { A1, [A2 = 0], A3 }
+                ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.EnumerationAlreadyContainsValue.GetDiagnostic("A", 0, "A1")
+            };
+
+            var compilation = AssertDiagnostics(text, diagnostics);
+            var enumSymbol = Assert.Single(compilation.Types.OfType<EnumSymbol>());
+            Assert.Equal(3, enumSymbol.Members.Length);
+        }
+        
+        [Fact]
+        public void Binder_Enum_MemberAccess()
         {
             var text = @"
                 enum A { A1, A2, A3 }
@@ -328,11 +467,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             {
             };
 
-            var compilation = AssertDiagnostics(text, diagnostics);
-            var enumSymbol = Assert.Single(compilation.Types.OfType<EnumSymbol>());
-            Assert.Equal("A", enumSymbol.Name);
-            // Assert.Equal(3, enumSymbol.Members.Length);
-            Assert.True(enumSymbol.IsEnum());
+            AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
@@ -449,6 +584,25 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             var diagnostics = new List<string>()
             {
                 DiagnosticCode.SymbolAlreadyDeclared.GetDiagnostic("x")
+            };
+            AssertDiagnostics(text, diagnostics);
+        }
+        
+        [Fact]
+        public void Binder_VariableDeclaration_Reports_UnexpectedToken()
+        {
+            var text = @"
+                function main()
+                {
+                    var [=] 10
+                    var [:] int = 10
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.EqualsToken, SyntaxKind.IdentifierToken),
+                DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.ColonToken, SyntaxKind.IdentifierToken)
             };
             AssertDiagnostics(text, diagnostics);
         }
@@ -888,6 +1042,30 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         }
 
         [Fact]
+        public void Binder_MemberAssignment_ReadOnlyField_Reports_CannotReassign()
+        {
+            var text = @"
+                struct Test
+                {
+                    const a : int = 10
+                }
+
+                function main()
+                {
+                    var test : Test
+                    test.a [=] 100
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.VariableCannotReassigned.GetDiagnostic("a")
+            };
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
         public void Binder_MemberAccess_Nested()
         {
             var text = @"
@@ -1088,19 +1266,30 @@ namespace Compiler.Tests.CodeAnalysis.Binding
                     {
                         print(self.a)
                         print(self.b)
-                        printTest(self)
                     }
-                }
-                
-                function printTest(t : TestStruct)
-                {
-                    print(t.a)
-                    print(t.b)
                 }
             ";
 
             var diagnostics = new List<string>()
             {
+            };
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Binder_SelfExpression_Reports_CannotUseSelfOutsideOfReceiverFunctions()
+        {
+            var text = @"
+                function main()
+                {
+                    print([self])
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.CannotUseSelfOutsideOfReceiverFunctions.GetDiagnostic("main")
             };
 
             AssertDiagnostics(text, diagnostics);
@@ -1310,26 +1499,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             var compilation = Compilation.Create(syntaxTree);
             var diagnostic = compilation.Validate(generateGraph);
 
-            if (annotatedText.Spans.Length != diagnostic.Length)
-            {
-                _output.WriteLine($"Expected:  {annotatedText.Spans.Length}");
-                _output.WriteLine($"Actual:  {diagnostic.Length}");
-
-                for (var i = 0; i < diagnostic.Length; i++)
-                {
-                    var textSpan = syntaxTree.Text.ToString(diagnostic[i].Location.Span);
-                    _output.WriteLine($"{diagnostic[i].Message} - {textSpan}");
-                }
-
-                throw new InvalidOperationException("ERROR: Must mark the same number os spans as there are expected diagnostics");
-            }
-
-            Assert.Equal(expectedDiagnostics.Count, diagnostic.Length);
-            for (var i = 0; i < diagnostic.Length; i++)
-            {
-                Assert.Equal(expectedDiagnostics[i], diagnostic[i].Message);
-                Assert.Equal(annotatedText.Spans[i], diagnostic[i].Location.Span);
-            }
+            annotatedText.AssertDiagnostics(_output, expectedDiagnostics, diagnostic);
 
             return compilation;
         }

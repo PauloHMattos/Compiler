@@ -1,12 +1,43 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Compiler.CodeAnalysis.Diagnostics;
 using Compiler.CodeAnalysis.Syntax;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Compiler.Tests.CodeAnalysis.Syntax
 {
     public class ParserTests
     {
+        private readonly ITestOutputHelper _output;
+
+        public ParserTests(ITestOutputHelper output)
+        {
+            _output = output;
+        }
+
+        [Fact]
+        public void Parser_ReturnStatement_Reports_InvalidReturn()
+        {
+            var text = @"
+                struct TestStruct
+                {
+                    [return]
+                    [break]
+                    [continue]
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.ReportInvalidTokenInTypeDeclaration.GetDiagnostic(),
+                DiagnosticCode.ReportInvalidTokenInTypeDeclaration.GetDiagnostic(),
+                DiagnosticCode.ReportInvalidTokenInTypeDeclaration.GetDiagnostic(),
+            };
+            ParseStatement(text, diagnostics);
+        }
+
         [Theory]
         [MemberData(nameof(GetBinaryOperatorsPairsData))]
         public void Parser_BinaryExpression_HonorsPrecedences(SyntaxKind op1, SyntaxKind op2)
@@ -130,6 +161,14 @@ namespace Compiler.Tests.CodeAnalysis.Syntax
             var function = Assert.IsType<FunctionDeclarationSyntax>(member);
             var statement = Assert.Single(function.Body.Statements);
             return Assert.IsType<ExpressionStatementSyntax>(statement).Expression;
+        }
+        
+        private void ParseStatement(string text, List<string> expectedDiagnostics)
+        {
+            var annotatedText = AnnotatedText.Parse(text);
+            var syntaxTree = SyntaxTree.Parse(annotatedText.Text);
+            var diagnostic = syntaxTree.Diagnostics;
+            annotatedText.AssertDiagnostics(_output, expectedDiagnostics, diagnostic);
         }
 
         public static IEnumerable<object[]> GetBinaryOperatorsPairsData()

@@ -30,7 +30,7 @@ namespace Compiler.CodeAnalysis.Diagnostics
         InvalidExpressionStatement,
         InvalidGlobalStatement,
         MainMustHaveCorrectSignature,
-        InvalidReturnWithValueInGlobalStatements,
+        ReportInvalidTokenInTypeDeclaration,
         InvalidReference,
         RequiredTypeNotFound,
         RequiredTypeAmbiguous,
@@ -44,6 +44,7 @@ namespace Compiler.CodeAnalysis.Diagnostics
         CannotUseSelfOutsideOfReceiverFunctions,
         UnreachableCode,
         CannotAssignMethod,
+        TypeNotFoundForDefault,
     }
 
 
@@ -77,7 +78,7 @@ namespace Compiler.CodeAnalysis.Diagnostics
             {DiagnosticCode.InvalidExpressionStatement, "Only assignment and call expressions can be used as a statement."},
             {DiagnosticCode.InvalidGlobalStatement, "Invalid global statement."},
             {DiagnosticCode.MainMustHaveCorrectSignature, "main must not take arguments and not return anything."},
-            {DiagnosticCode.InvalidReturnWithValueInGlobalStatements, "The 'return' keyword cannot be followed by an expression in global statements."},
+            {DiagnosticCode.ReportInvalidTokenInTypeDeclaration, "Invalid token in type declaration."},
             {DiagnosticCode.InvalidReference, "The reference is not a valid .NET assembly {0}"},
             {DiagnosticCode.RequiredTypeNotFound, "The required type {0} cannot be resolved among the given references."},
             {DiagnosticCode.RequiredTypeAmbiguous, "The required type {0} was found in multiple references: {1}"},
@@ -91,6 +92,7 @@ namespace Compiler.CodeAnalysis.Diagnostics
             {DiagnosticCode.CannotUseSelfOutsideOfReceiverFunctions, "This can only be used in functions with a struct receiver.  Function '{0}' has no receiver defined."},
             {DiagnosticCode.UnreachableCode, "Unreachable code detected."},
             {DiagnosticCode.CannotAssignMethod, "Cannot assign method member {0} of type {1}."},
+            {DiagnosticCode.TypeNotFoundForDefault, "No type found for default literal."},
         };
 
         public static string GetDiagnostic(this DiagnosticCode code, params object[] arguments)

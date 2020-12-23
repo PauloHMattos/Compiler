@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Text;
+using Compiler.CodeAnalysis.Diagnostics;
 using Compiler.CodeAnalysis.Text;
+using Xunit;
+using Xunit.Abstractions;
 
 namespace Compiler.Tests.CodeAnalysis
 {
@@ -111,6 +114,29 @@ namespace Compiler.Tests.CodeAnalysis
             }
 
             return string.Join(Environment.NewLine, lines);
+        }
+
+        public void AssertDiagnostics(ITestOutputHelper output, List<string> expectedDiagnostics, ImmutableArray<Diagnostic> actualDiagnostics)
+        {
+            if (Spans.Length != actualDiagnostics.Length)
+            {
+                output.WriteLine($"Expected:  {Spans.Length}");
+                output.WriteLine($"Actual:  {actualDiagnostics.Length}");
+
+                for (var i = 0; i < actualDiagnostics.Length; i++)
+                {
+                    output.WriteLine($"{actualDiagnostics[i].Message}");
+                }
+
+                throw new InvalidOperationException("ERROR: Must mark the same number os spans as there are expected diagnostics");
+            }
+
+            Assert.Equal(expectedDiagnostics.Count, actualDiagnostics.Length);
+            for (var i = 0; i < actualDiagnostics.Length; i++)
+            {
+                Assert.Equal(expectedDiagnostics[i], actualDiagnostics[i].Message);
+                Assert.Equal(Spans[i], actualDiagnostics[i].Location.Span);
+            }
         }
     }
 }

@@ -213,9 +213,9 @@ namespace Compiler.CodeAnalysis.Diagnostics
             ReportError(location, DiagnosticCode.MainMustHaveCorrectSignature.GetDiagnostic());
         }
 
-        internal void ReportInvalidReturnWithValueInGlobalStatements(TextLocation location)
+        internal void ReportInvalidTokenInTypeDeclaration(TextLocation location)
         {
-            ReportError(location, DiagnosticCode.InvalidReturnWithValueInGlobalStatements.GetDiagnostic());
+            ReportError(location, DiagnosticCode.ReportInvalidTokenInTypeDeclaration.GetDiagnostic());
         }
 
         internal void ReportUnterminatedMultilineComment(in TextLocation location)
@@ -246,6 +246,11 @@ namespace Compiler.CodeAnalysis.Diagnostics
         internal void ReportCannotUseSelfOutsideOfReceiverFunctions(TextLocation location, string name)
         {
             ReportError(location, DiagnosticCode.CannotUseSelfOutsideOfReceiverFunctions.GetDiagnostic(name));
+        }
+
+        internal void ReportTypeNotFoundForDefault(in TextLocation location)
+        {
+            ReportError(location, DiagnosticCode.TypeNotFoundForDefault.GetDiagnostic());
         }
     }
 }

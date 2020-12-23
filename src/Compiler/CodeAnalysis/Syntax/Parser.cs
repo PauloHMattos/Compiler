@@ -12,7 +12,6 @@ namespace Compiler.CodeAnalysis.Syntax
         private readonly SourceText _text;
         private readonly ImmutableArray<SyntaxToken> _tokens;
         private int _currentTokenId;
-
         public DiagnosticBag Diagnostics { get; }
 
         public Parser(SyntaxTree syntaxTree)
@@ -115,7 +114,7 @@ namespace Compiler.CodeAnalysis.Syntax
                                    ImmutableArray<SyntaxTrivia>.Empty,
                                    ImmutableArray<SyntaxTrivia>.Empty);
         }
-        
+
         public CompilationUnitSyntax ParseCompilationUnit()
         {
             var members = ParseMembers();
@@ -153,42 +152,51 @@ namespace Compiler.CodeAnalysis.Syntax
             return members.ToImmutable();
         }
 
-        private MemberSyntax? ParseGlobalStatement()
+        private MemberSyntax? ParseGlobalStatement(bool report = true)
         {
             switch (Current.Kind)
             {
                 case SyntaxKind.FunctionKeyword:
                     return ParseFunctionDeclaration();
+
                 case SyntaxKind.EnumKeyword:
                     return ParseEnumDeclaration();
+
                 case SyntaxKind.StructKeyword:
                     return ParseStructDeclaration();
+
                 default:
                     // Discard statement and report error on it's location
                     var statement = ParseStatement();
-                    Diagnostics.ReportInvalidGlobalStatement(statement.Location);
+                    if (report)
+                    {
+                        Diagnostics.ReportInvalidGlobalStatement(statement.Location);
+                    }
                     return null;
             }
         }
 
-        
         private MemberSyntax? ParseMember()
         {
             switch (Current.Kind)
             {
                 case SyntaxKind.FunctionKeyword:
                     return ParseFunctionDeclaration();
+
                 case SyntaxKind.EnumKeyword:
                     return ParseEnumDeclaration();
+
                 case SyntaxKind.StructKeyword:
                     return ParseStructDeclaration();
+
                 case SyntaxKind.ConstKeyword:
                 case SyntaxKind.VarKeyword:
                     return ParseVariableDeclarationStatement();
+
                 default:
                     // Discard statement and report error on it's location
                     var statement = ParseStatement();
-                    Diagnostics.ReportInvalidGlobalStatement(statement.Location);
+                    Diagnostics.ReportInvalidTokenInTypeDeclaration(statement.Location);
                     return null;
             }
         }
@@ -635,7 +643,7 @@ namespace Compiler.CodeAnalysis.Syntax
         private NameExpressionSyntax ParseNameExpression(bool withSuffix = false)
         {
             var hasSuffix = withSuffix && Peek(1).Kind == SyntaxKind.DotToken;
-            
+
             if (Current.Kind == SyntaxKind.SelfKeyword)
             {
                 var selfExpression = new SelfKeywordSyntax(_syntaxTree, MatchToken(SyntaxKind.SelfKeyword));
@@ -689,7 +697,7 @@ namespace Compiler.CodeAnalysis.Syntax
 
             return new SeparatedSyntaxList<ExpressionSyntax>(nodesAndSeparators.ToImmutable());
         }
-        
+
         private MemberAccessExpressionSyntax ParseMemberAccess(NameExpressionSyntax? first = null)
         {
             var queue = new Queue<NameExpressionSyntax>();
@@ -704,7 +712,7 @@ namespace Compiler.CodeAnalysis.Syntax
             while (condition)
             {
                 queue.Enqueue(ParseNameOrCallExpression());
-                
+
                 if (Current.Kind == SyntaxKind.DotToken)
                 {
                     dotTokenQueue.Enqueue(MatchToken(SyntaxKind.DotToken));
