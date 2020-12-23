@@ -848,13 +848,12 @@ namespace Compiler.CodeAnalysis.Binding
 
         private BoundExpression BindMemberAccessExpression(MemberAccessExpressionSyntax syntax)
         {
-            BoundExpression? nameExpression = null;
+            BoundExpression nameExpression;
             if (syntax.ParentExpression.Kind == SyntaxKind.MemberAccessExpression)
             {
                 return BindMemberAccessExpression((MemberAccessExpressionSyntax)syntax.ParentExpression);
             }
-            else if (syntax.ParentExpression.Kind == SyntaxKind.NameExpression ||
-                     syntax.ParentExpression.Kind == SyntaxKind.SelfKeyword)
+            else
             {
                 nameExpression = BindNameExpression((NameExpressionSyntax)syntax.ParentExpression, true);
                 switch (syntax.MemberExpression.Kind)
@@ -878,7 +877,6 @@ namespace Compiler.CodeAnalysis.Binding
                 }
             }
 
-            Debug.Assert(nameExpression != null);
             Diagnostics.ReportCannotAccessMember(syntax.MemberExpression.Location, nameExpression.Type.Name, syntax.MemberExpression.IdentifierToken.Text);
             return new BoundErrorExpression(syntax);
         }
