@@ -711,8 +711,34 @@ namespace Compiler.CodeAnalysis.Emit
                     EmitSelfExpression(ilProcessor);
                     break;
 
+                case BoundNodeKind.MemberExpression:
+                    EmitMemberExpression(ilProcessor, (BoundMemberExpression)node);
+                    break;
+
                 default:
                     throw new InvalidOperationException($"Unexpected node kind {node.Kind}");
+            }
+        }
+
+        private void EmitMemberExpression(ILProcessor ilProcessor, BoundMemberExpression node)
+        {
+            Console.WriteLine($"EmitMemberExpression: {node}");
+            Debug.Assert(node.ReceiverType != null);
+            var typeDefinition = Import(node.ReceiverType).Resolve();
+            Debug.Assert(typeDefinition != null);
+
+            switch (node.MemberKind)
+            {
+                case MemberKind.Field:
+                    EmitFieldAccessExpression(ilProcessor, (FieldSymbol)node.Symbol, typeDefinition);
+                    break;
+                    
+                case MemberKind.Method:
+                    EmitCallExpression(ilProcessor, (BoundCallExpression)node, typeDefinition);
+                    break;
+
+                default:
+                    throw new InvalidOperationException($"Unexpected member type {node.MemberKind}");
             }
         }
 
@@ -724,26 +750,38 @@ namespace Compiler.CodeAnalysis.Emit
 
         private static void EmitConstantExpression(ILProcessor ilProcessor, BoundExpression node)
         {
-            Debug.Assert(node.ConstantValue != null);
-            if (node.Type == TypeSymbol.Bool)
+            EmitConstantExpression(ilProcessor, node.Type, node.ConstantValue);
+        }
+
+        private static void EmitConstantExpression(ILProcessor ilProcessor, TypeSymbol type, BoundConstant? constant)
+        {
+            Debug.Assert(constant != null);
+            if (type == TypeSymbol.Bool)
             {
-                var value = (bool)node.ConstantValue.Value;
+                var value = (bool)constant.Value;
                 var instruction = value ? OpCodes.Ldc_I4_1 : OpCodes.Ldc_I4_0;
                 ilProcessor.Emit(instruction);
             }
-            else if (node.Type == TypeSymbol.Int)
+            else if (type == TypeSymbol.Int)
             {
-                var value = (int)node.ConstantValue.Value;
+                var value = (int)constant.Value;
                 ilProcessor.Emit(OpCodes.Ldc_I4, value);
             }
-            else if (node.Type == TypeSymbol.String)
+            else if (type == TypeSymbol.String)
             {
-                var value = (string)node.ConstantValue.Value;
+                var value = (string)constant.Value;
                 ilProcessor.Emit(OpCodes.Ldstr, value);
             }
+            /*
+            else if (type.IsEnum())
+            {
+                var value = (int)constant.Value;
+                ilProcessor.Emit(OpCodes.Ldc_I4, value);
+            }
+            */
             else
             {
-                throw new InvalidOperationException($"Unexpected constant expression type: {node.Type}");
+                throw new InvalidOperationException($"Unexpected constant expression type: {type}");
             }
         }
 
@@ -982,7 +1020,7 @@ namespace Compiler.CodeAnalysis.Emit
             }
         }
 
-        private void EmitCallExpression(ILProcessor ilProcessor, BoundCallExpression node)
+        private void EmitCallExpression(ILProcessor ilProcessor, BoundCallExpression node, TypeDefinition? typeDefinition = null)
         {
             var function = (FunctionSymbol)node.Symbol;
             EmitExpressions(ilProcessor, node.Arguments);
@@ -997,11 +1035,13 @@ namespace Compiler.CodeAnalysis.Emit
             }
             else if (node.Symbol.Name.Equals(".ctor"))
             {
-                var className = function.ReturnType.Name;
-                var structSymbol = _declaredTypes.First(s => s.Key.Name == className).Value;
-
+                if (typeDefinition == null)
+                {
+                    typeDefinition = Import(node.Symbol.Type).Resolve();
+                }
+                Debug.Assert(typeDefinition != null);
                 // TODO: We should use a general overload resolution algorithm instead
-                ilProcessor.Emit(OpCodes.Newobj, structSymbol.Methods[0]);
+                ilProcessor.Emit(OpCodes.Newobj, typeDefinition.Methods[0]);
             }
             else
             {
@@ -1065,46 +1105,28 @@ namespace Compiler.CodeAnalysis.Emit
 
         private void EmitMemberAccessExpression(ILProcessor ilProcessor, BoundMemberAccessExpression node)
         {
-            var typeDefinition = Import(node.Instance.Type).Resolve();
-            Debug.Assert(typeDefinition != null);
-
-            if (node.Instance.Kind == BoundNodeKind.SelfExpression)
+            if (node.Type.IsEnum())
             {
-                EmitSelfExpression(ilProcessor);
-            }
-            else
-            {
-                EmitExpression(ilProcessor, node.Instance);
+                var field = (FieldSymbol)node.Member.Symbol;
+                EmitConstantExpression(ilProcessor, TypeSymbol.Int, field.Constant);
+                return;
             }
 
-            switch (node.Member.MemberKind)
-            {
-                case MemberKind.Field:
-                    EmitFieldAccessExpression(ilProcessor, (FieldSymbol)node.Member.Symbol, typeDefinition);
-                    break;
-                    
-                case MemberKind.Method:
-                    EmitCallExpression(ilProcessor, (BoundCallExpression)node.Member);
-                    break;
-
-                default:
-                    throw new InvalidOperationException($"Unexpected member type {node.Member.MemberKind}");
-            }
+            Console.WriteLine("EmitMemberAccessExpression");
+            EmitExpression(ilProcessor, node.Instance);
+            EmitMemberExpression(ilProcessor, node.Member);
         }
 
         private static void EmitFieldAccessExpression(ILProcessor ilProcessor, FieldSymbol field, TypeDefinition typeDefinition)
         {
+            if (field.Constant != null)
+            {
+                EmitConstantExpression(ilProcessor, field.Type, field.Constant);
+            }
+
             var fieldDefinition = GetField(field, typeDefinition);
             Debug.Assert(fieldDefinition != null);
-
-            if (fieldDefinition.Constant != null)
-            {
-                ilProcessor.Emit(OpCodes.Ldc_I4, (int)fieldDefinition.Constant);
-            }
-            else
-            {
-                ilProcessor.Emit(OpCodes.Ldfld, fieldDefinition);
-            }
+            ilProcessor.Emit(OpCodes.Ldfld, fieldDefinition);
         }
 
         private static FieldDefinition? GetField(MemberSymbol member, TypeDefinition typeDefinition)
