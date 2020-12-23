@@ -209,8 +209,19 @@ namespace Compiler.CodeAnalysis.Syntax
             var parameters = ParseParameterList();
             var closeParenthesisToken = MatchToken(SyntaxKind.CloseParenthesisToken);
             var type = ParseOptionalTypeClause();
-            var body = ParseBlockStatement();
+            var body = ParseBlockStatementInternal(ParseFunctionStatement);
             return new FunctionDeclarationSyntax(_syntaxTree, functionKeyword, identifier, openParenthesisToken, parameters, closeParenthesisToken, type, body);
+        }
+
+        private StatementSyntax ParseFunctionStatement()
+        {
+            switch (Current.Kind)
+            {
+                case SyntaxKind.FunctionKeyword:
+                    return ParseFunctionDeclaration();
+                default:
+                    return ParseStatement();
+            }
         }
 
         private SeparatedSyntaxList<ParameterSyntax> ParseParameterList()
@@ -411,6 +422,11 @@ namespace Compiler.CodeAnalysis.Syntax
 
         private BlockStatementSyntax ParseBlockStatement()
         {
+            return ParseBlockStatementInternal(ParseStatement);
+        }
+        
+        private BlockStatementSyntax ParseBlockStatementInternal(Func<StatementSyntax> func)
+        {
             var statements = ImmutableArray.CreateBuilder<StatementSyntax>();
             var openBraceToken = MatchToken(SyntaxKind.OpenBraceToken);
 
@@ -418,7 +434,7 @@ namespace Compiler.CodeAnalysis.Syntax
             {
                 var startToken = Current;
 
-                var statement = ParseStatement();
+                var statement = func();
                 statements.Add(statement);
 
                 // If ParseStatement() did not consume any tokens,
