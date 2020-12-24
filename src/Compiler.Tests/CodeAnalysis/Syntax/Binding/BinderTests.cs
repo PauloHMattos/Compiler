@@ -1119,6 +1119,33 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         }
 
         [Fact]
+        public void Binder_MemberAccess_Nested_Reports_CannotAccessMember()
+        {
+            var text = @"
+                struct Point
+                {
+                }
+                
+                struct Line
+                {
+                    var start: Point
+                }
+
+                function main()
+                {
+                    var nested = Line()
+                    var x = nested.start.[x]
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.CannotAccessMember.GetDiagnostic("x", "Point"),
+            };
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
         public void Binder_MemberAccess_NestedCall()
         {
             var text = @"

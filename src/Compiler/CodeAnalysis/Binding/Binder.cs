@@ -921,18 +921,6 @@ namespace Compiler.CodeAnalysis.Binding
             return new BoundConversionExpression(expression.Syntax, type, expression);
         }
 
-        private T? GetAncestorScope<T>() where T : class, IBoundScope
-        {
-            var result = _scope as T;
-            var parent = _scope.Parent;
-            while (result == null && parent != null)
-            {
-                result = parent as T;
-                parent = parent.Parent;
-            }
-            return result;
-        }
-
         private BoundExpression BindMemberOrNestedTypeExpression(NameExpressionSyntax syntax)
         {
             if (syntax.IdentifierToken.IsMissing)
@@ -945,8 +933,8 @@ namespace Compiler.CodeAnalysis.Binding
                 return BindCallExpression((CallExpressionSyntax)syntax);
             }
 
-            var typeScope = GetAncestorScope<TypeBoundScope>();
-            Debug.Assert(typeScope?.OwnerType != null);
+            var typeScope = _scope as TypeBoundScope;
+            Debug.Assert(typeScope != null);
 
             var symbol = BindSymbolReference(syntax.IdentifierToken, false);
             if (symbol == null)
