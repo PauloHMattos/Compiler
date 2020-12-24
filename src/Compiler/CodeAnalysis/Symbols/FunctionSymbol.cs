@@ -10,7 +10,6 @@ namespace Compiler.CodeAnalysis.Symbols
         public ImmutableArray<VariableSymbol> Parameters { get; }
         public TypeSymbol ReturnType { get; }
         public FunctionDeclarationSyntax? Declaration { get; }
-        public TypeSymbol? Receiver { get; }
         public override SymbolKind Kind => SymbolKind.Function;
         public override MemberKind MemberKind => MemberKind.Method;
 
@@ -36,14 +35,12 @@ namespace Compiler.CodeAnalysis.Symbols
                                 FunctionDeclarationSyntax? declaration = null,
                                 IBoundScope? parentScope = null,
                                 TypeSymbol? receiver = null)
-            : base(declaration?.Identifier, name, true, false, type, null)
+            : base(declaration?.Identifier, name, true, false, receiver, type, null)
         {
             Parameters = parameters;
             ReturnType = type;
             Declaration = declaration;
-            Receiver = receiver;
             OverloadsBuilder = new List<FunctionSymbol>();
-            
             if (parentScope!= null)
             {
                 BoundScope = new FunctionBoundScope(receiver, this, parentScope);

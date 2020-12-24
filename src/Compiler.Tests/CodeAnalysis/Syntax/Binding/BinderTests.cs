@@ -919,7 +919,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         }
 
         [Fact]
-        public void Binder_Cannot_Access_Member()
+        public void Binder_MemberAccess_Reports_CannotAccessMember()
         {
             const string? text = @"
                 function main()
@@ -931,7 +931,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             ";
             var diagnostics = new List<string>()
             {
-                DiagnosticCode.UndefinedName.GetDiagnostic("length"),
+                DiagnosticCode.CannotAccessMember.GetDiagnostic("length", "int"),
                 DiagnosticCode.UndefinedFunction.GetDiagnostic("length"),
             };
             AssertDiagnostics(text, diagnostics);
@@ -1239,8 +1239,12 @@ namespace Compiler.Tests.CodeAnalysis.Binding
                     function f(i : int)
                     {
                         print(b)
-                        print(self.a + 1)
-                        print(i)
+                        g()
+                    }
+
+                    function g()
+                    {
+
                     }
                 }
             ";
@@ -1276,7 +1280,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
 
             AssertDiagnostics(text, diagnostics);
         }
-
+        
         [Fact]
         public void Binder_SelfExpression_Reports_CannotUseSelfOutsideOfReceiverFunctions()
         {
@@ -1313,13 +1317,13 @@ namespace Compiler.Tests.CodeAnalysis.Binding
 
                 function printTest(t : TestStruct)
                 {
-                    t.[f] = 10
+                    t.f [=] 10
                 }
             ";
 
             var diagnostics = new List<string>()
             {
-                DiagnosticCode.NotAVariable.GetDiagnostic("f")
+                DiagnosticCode.CannotAssignMethod.GetDiagnostic("f", "TestStruct")
             };
 
             AssertDiagnostics(text, diagnostics);

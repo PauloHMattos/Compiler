@@ -13,26 +13,31 @@ namespace Compiler.CodeAnalysis.Symbols
                             string name,
                             bool isReadOnly,
                             bool isStatic,
+                            TypeSymbol receiverType,
                             TypeSymbol type,
                             BoundExpression initializer)
-            : base(syntax, name, isReadOnly, isStatic, type, initializer.ConstantValue)
+            : base(syntax, name, isReadOnly, isStatic, receiverType, type, initializer.ConstantValue)
         {
             Initializer = initializer;
         }
 
 
-        internal FieldSymbol(VariableSymbol variable, BoundExpression initializer) 
+        internal FieldSymbol(VariableSymbol variable, 
+                            TypeSymbol receiverType,
+                            BoundExpression initializer) 
             : this(variable.Syntax,
                    variable.Name,
                    variable.IsReadOnly,
                    variable.IsStatic,
+                   receiverType,
                    variable.Type,
                    initializer)
         {
         }
 
-        internal FieldSymbol(BoundVariableDeclarationStatement declaration)
-            : this(declaration.Variable, declaration.Initializer)
+        internal FieldSymbol(BoundVariableDeclarationStatement declaration,
+                            TypeSymbol receiverType)
+            : this(declaration.Variable, receiverType, declaration.Initializer)
         {
         }
     }

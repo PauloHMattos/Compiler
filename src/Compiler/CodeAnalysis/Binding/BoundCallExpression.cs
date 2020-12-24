@@ -11,9 +11,8 @@ namespace Compiler.CodeAnalysis.Binding
 
         public BoundCallExpression(SyntaxNode syntax,
                                    FunctionSymbol function,
-                                   TypeSymbol? receiverType,
                                    ImmutableArray<BoundExpression> arguments)
-            : base(syntax, function, receiverType!)
+            : base(syntax, function)
         {
             Arguments = arguments;
         }

@@ -375,7 +375,7 @@ namespace Compiler.CodeAnalysis.Emit
         private void EmitFunctionDeclaration(FunctionSymbol function)
         {
             var functionType = Import(function.ReturnType);
-            var methodAttributes = function.Receiver == null ? MethodAttributes.Static
+            var methodAttributes = function.ReceiverType == null ? MethodAttributes.Static
                                                                | MethodAttributes.Public
                                                              : MethodAttributes.Public;
             var method = new MethodDefinition(function.Name, methodAttributes, functionType);
@@ -388,13 +388,13 @@ namespace Compiler.CodeAnalysis.Emit
                 method.Parameters.Add(parameterDefinition);
             }
 
-            if (function.Receiver == null)
+            if (function.ReceiverType == null)
             {
                 _typeDefinition.Methods.Add(method);
             }
             else
             {
-                _declaredTypes[function.Receiver].Methods.Add(method);
+                _declaredTypes[function.ReceiverType].Methods.Add(method);
             }
 
             _methods.Add(function, method);
@@ -723,8 +723,8 @@ namespace Compiler.CodeAnalysis.Emit
         private void EmitMemberExpression(ILProcessor ilProcessor, BoundMemberExpression node)
         {
             Console.WriteLine($"EmitMemberExpression: {node}");
-            Debug.Assert(node.ReceiverType != null);
-            var typeDefinition = Import(node.ReceiverType).Resolve();
+            Debug.Assert(node.Symbol.ReceiverType != null);
+            var typeDefinition = Import(node.Symbol.ReceiverType).Resolve();
             Debug.Assert(typeDefinition != null);
 
             switch (node.MemberKind)
