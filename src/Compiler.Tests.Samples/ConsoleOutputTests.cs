@@ -21,13 +21,13 @@ namespace Compiler.Tests.Samples
         }
 
         [Theory]
-        //[InlineData("HelloWorld", null)]
-        //[InlineData("Evaluation")]
-        //[InlineData("Input", "Paulo", "24")]
-        //[InlineData("IsEven", "2", "10", "5")]
-        //[InlineData("Enum")]
+        [InlineData("HelloWorld", null)]
+        [InlineData("Evaluation")]
+        [InlineData("Input", "Paulo", "24")]
+        [InlineData("IsEven", "2", "10", "5")]
+        [InlineData("Enum")]
         [InlineData("Struct")]
-        [InlineData("NestedType")]
+        //[InlineData("NestedType")]
         public async Task SamplesTests(string filenamePrefix, params string[] inputs)
         {
             var psi = new ProcessStartInfo
