@@ -31,5 +31,6 @@
         MemberAccessExpression,
         SelfExpression,
         MemberExpression,
+        NestedTypeAccessExpression,
     }
 }

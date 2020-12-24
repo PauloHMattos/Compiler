@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Compiler.CodeAnalysis.Binding;
+using Compiler.CodeAnalysis.Binding.Scopes;
 using Compiler.CodeAnalysis.Diagnostics;
 using Compiler.CodeAnalysis.Symbols;
 using Compiler.CodeAnalysis.Syntax;
@@ -12,11 +13,23 @@ using Compiler.CodeAnalysis.Text;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Cecil.Rocks;
+using Mono.Collections.Generic;
 
 namespace Compiler.CodeAnalysis.Emit
 {
     internal class Emitter
     {
+        const TypeAttributes _enumAttributes = TypeAttributes.Class
+                                               | TypeAttributes.NotPublic
+                                               | TypeAttributes.AnsiClass
+                                               | TypeAttributes.Sealed;
+
+        const TypeAttributes _structAttributes = TypeAttributes.Class
+                                                 //| TypeAttributes.Public
+                                                 | TypeAttributes.SequentialLayout
+                                                 | TypeAttributes.AnsiClass
+                                                 | TypeAttributes.Sealed
+                                                 | TypeAttributes.BeforeFieldInit;
         private readonly DiagnosticBag _diagnostics;
         private readonly AssemblyDefinition _assemblyDefinition;
         private readonly TypeDefinition _typeDefinition;
@@ -260,6 +273,8 @@ namespace Compiler.CodeAnalysis.Emit
 
         private void EmitTypeBody(TypeSymbol typeSymbol)
         {
+            Debug.Assert(typeSymbol.BoundScope != null);
+
             var typeDefinition = _declaredTypes[typeSymbol];
             EmitFields(typeSymbol, typeDefinition);
 
@@ -274,6 +289,13 @@ namespace Compiler.CodeAnalysis.Emit
 
                 default:
                     throw new InvalidOperationException($"Unexpected declaration kind {typeSymbol.Declaration.TypeKind}");
+            }
+
+            
+            var nestedTypes = typeSymbol.BoundScope.GetDeclaredSymbols<TypeSymbol>();
+            foreach (var nestedType in nestedTypes)
+            {
+                EmitTypeBody(nestedType);
             }
         }
 
@@ -308,18 +330,32 @@ namespace Compiler.CodeAnalysis.Emit
 
         private void EmitTypeDeclaration(TypeSymbol typeSymbol)
         {
+            Debug.Assert(typeSymbol.BoundScope != null);
+
+            TypeAttributes? modifiers = null;
+            if (typeSymbol.BoundScope.Parent is TypeBoundScope)
+            {
+                modifiers = TypeAttributes.NestedPublic;
+            }
+
             switch (typeSymbol.Declaration!.TypeKind)
             {
                 case TypeDeclarationKind.Enum:
-                    EmitEnumDeclaration((EnumSymbol)typeSymbol);
+                    EmitEnumDeclaration((EnumSymbol)typeSymbol, modifiers);
                     break;
 
                 case TypeDeclarationKind.Struct:
-                    EmitStructDeclaration((StructSymbol)typeSymbol);
+                    EmitStructDeclaration((StructSymbol)typeSymbol, modifiers);
                     break;
 
                 default:
                     throw new InvalidOperationException($"Unexpected declaration kind {typeSymbol.Declaration.TypeKind}");
+            }
+
+            var nestedTypes = typeSymbol.BoundScope.GetDeclaredSymbols<TypeSymbol>();
+            foreach (var nestedType in nestedTypes)
+            {
+                EmitTypeDeclaration(nestedType);
             }
         }
 
@@ -339,7 +375,7 @@ namespace Compiler.CodeAnalysis.Emit
         private void EmitFunctionDeclaration(FunctionSymbol function)
         {
             var functionType = Import(function.ReturnType);
-            var methodAttributes = function.Receiver == null ? MethodAttributes.Static
+            var methodAttributes = function.ReceiverType == null ? MethodAttributes.Static
                                                                | MethodAttributes.Public
                                                              : MethodAttributes.Public;
             var method = new MethodDefinition(function.Name, methodAttributes, functionType);
@@ -352,13 +388,13 @@ namespace Compiler.CodeAnalysis.Emit
                 method.Parameters.Add(parameterDefinition);
             }
 
-            if (function.Receiver == null)
+            if (function.ReceiverType == null)
             {
                 _typeDefinition.Methods.Add(method);
             }
             else
             {
-                _declaredTypes[function.Receiver].Methods.Add(method);
+                _declaredTypes[function.ReceiverType].Methods.Add(method);
             }
 
             _methods.Add(function, method);
@@ -405,39 +441,55 @@ namespace Compiler.CodeAnalysis.Emit
             }
         }
 
-        private void EmitEnumDeclaration(EnumSymbol enumSymbol)
+        private void EmitEnumDeclaration(EnumSymbol enumSymbol, TypeAttributes? modifiers)
         {
-            const TypeAttributes _enumAttributes = TypeAttributes.Class
-                                                   | TypeAttributes.NotPublic
-                                                   | TypeAttributes.AnsiClass
-                                                   | TypeAttributes.Sealed;
             const FieldAttributes _enumSpecialAttributes = FieldAttributes.Public
                                                            | FieldAttributes.SpecialName
                                                            | FieldAttributes.RTSpecialName;
 
-            var enumType = new TypeDefinition("", enumSymbol.Name, _enumAttributes, Import(TypeSymbol.Enum));
-            _assemblyDefinition.MainModule.Types.Add(enumType);
+            var attributes = _enumAttributes;
+            if (modifiers.HasValue)
+            {
+                attributes |= modifiers.Value;
+            }
+
+            var enumType = new TypeDefinition("", enumSymbol.Name, attributes, Import(TypeSymbol.Enum));
+            GetCollectionFor(enumSymbol).Add(enumType);
             _declaredTypes.Add(enumSymbol, enumType);
             _resolvedTypes.Add(enumSymbol, enumType);
 
             var specialField = new FieldDefinition("value__", _enumSpecialAttributes, Import(TypeSymbol.Int));
             enumType.Fields.Add(specialField);
         }
-
-        private void EmitStructDeclaration(StructSymbol structSymbol)
+        
+        private Collection<TypeDefinition> GetCollectionFor(TypeSymbol type)
         {
-            const TypeAttributes _structAttributes = TypeAttributes.Class
-                                                     | TypeAttributes.Public
-                                                     | TypeAttributes.SequentialLayout
-                                                     | TypeAttributes.AnsiClass
-                                                     | TypeAttributes.Sealed
-                                                     | TypeAttributes.BeforeFieldInit;
+            Debug.Assert(type.BoundScope != null);
+            if (type.BoundScope.Parent is not TypeBoundScope parentScope)
+            {
+                return _assemblyDefinition.MainModule.Types;
+            }
+            if (type.BoundScope.Parent == null)
+            {
+                return _assemblyDefinition.MainModule.Types;
+            }
+            var parentType = parentScope.OwnerType;
+            var parentTypeDefinition = _declaredTypes[parentType];
+            return parentTypeDefinition.NestedTypes;
+        }
 
-            var structType = new TypeDefinition("", structSymbol.Name, _structAttributes, Import(TypeSymbol.Struct));
-            _assemblyDefinition.MainModule.Types.Add(structType);
+        private void EmitStructDeclaration(StructSymbol structSymbol, TypeAttributes? modifiers)
+        {
+            var attributes = _structAttributes;
+            if (modifiers.HasValue)
+            {
+                attributes |= modifiers.Value;
+            }
+            var structType = new TypeDefinition("", structSymbol.Name, attributes, Import(TypeSymbol.Struct));
+            GetCollectionFor(structSymbol).Add(structType);
             _declaredTypes.Add(structSymbol, structType);
             _resolvedTypes.Add(structSymbol, structType);
-
+            
             // Forward-declare empty constructor
             var emptyCtorDefinition = new MethodDefinition(
                 ".ctor",
@@ -459,14 +511,12 @@ namespace Compiler.CodeAnalysis.Emit
         {
             // Get empty constructor declaration
             var constructor = typeDefinition.Methods[0];
-
             var ilProcessor = constructor.Body.GetILProcessor();
 
             foreach (var field in structSymbol.Members.OfType<FieldSymbol>())
             {
                 var fieldDefinition = typeDefinition.Fields.Single(f => f.Name == field.Name);
-                var defaultValue = new BoundLiteralExpression(null!, field.Type, field.Type.DefaultValue!);            
-                EmitFieldAssignment(ilProcessor, defaultValue, fieldDefinition);
+                EmitFieldAssignment(ilProcessor, field.Initializer, fieldDefinition);
             }
 
             ilProcessor.Emit(OpCodes.Ret);
@@ -661,8 +711,34 @@ namespace Compiler.CodeAnalysis.Emit
                     EmitSelfExpression(ilProcessor);
                     break;
 
+                case BoundNodeKind.MemberExpression:
+                    EmitMemberExpression(ilProcessor, (BoundMemberExpression)node);
+                    break;
+
                 default:
                     throw new InvalidOperationException($"Unexpected node kind {node.Kind}");
+            }
+        }
+
+        private void EmitMemberExpression(ILProcessor ilProcessor, BoundMemberExpression node)
+        {
+            Console.WriteLine($"EmitMemberExpression: {node}");
+            Debug.Assert(node.Symbol.ReceiverType != null);
+            var typeDefinition = Import(node.Symbol.ReceiverType).Resolve();
+            Debug.Assert(typeDefinition != null);
+
+            switch (node.MemberKind)
+            {
+                case MemberKind.Field:
+                    EmitFieldAccessExpression(ilProcessor, (FieldSymbol)node.Symbol, typeDefinition);
+                    break;
+                    
+                case MemberKind.Method:
+                    EmitCallExpression(ilProcessor, (BoundCallExpression)node, typeDefinition);
+                    break;
+
+                default:
+                    throw new InvalidOperationException($"Unexpected member type {node.MemberKind}");
             }
         }
 
@@ -674,27 +750,31 @@ namespace Compiler.CodeAnalysis.Emit
 
         private static void EmitConstantExpression(ILProcessor ilProcessor, BoundExpression node)
         {
-            Debug.Assert(node.ConstantValue != null);
+            EmitConstantExpression(ilProcessor, node.Type, node.ConstantValue);
+        }
 
-            if (node.Type == TypeSymbol.Bool)
+        private static void EmitConstantExpression(ILProcessor ilProcessor, TypeSymbol type, BoundConstant? constant)
+        {
+            Debug.Assert(constant != null);
+            if (type == TypeSymbol.Bool)
             {
-                var value = (bool)node.ConstantValue.Value;
+                var value = (bool)constant.Value;
                 var instruction = value ? OpCodes.Ldc_I4_1 : OpCodes.Ldc_I4_0;
                 ilProcessor.Emit(instruction);
             }
-            else if (node.Type == TypeSymbol.Int)
+            else if (type == TypeSymbol.Int)
             {
-                var value = (int)node.ConstantValue.Value;
+                var value = (int)constant.Value;
                 ilProcessor.Emit(OpCodes.Ldc_I4, value);
             }
-            else if (node.Type == TypeSymbol.String)
+            else if (type == TypeSymbol.String)
             {
-                var value = (string)node.ConstantValue.Value;
+                var value = (string)constant.Value;
                 ilProcessor.Emit(OpCodes.Ldstr, value);
             }
             else
             {
-                throw new InvalidOperationException($"Unexpected constant expression type: {node.Type}");
+                throw new InvalidOperationException($"Unexpected constant expression type: {type}");
             }
         }
 
@@ -933,7 +1013,7 @@ namespace Compiler.CodeAnalysis.Emit
             }
         }
 
-        private void EmitCallExpression(ILProcessor ilProcessor, BoundCallExpression node)
+        private void EmitCallExpression(ILProcessor ilProcessor, BoundCallExpression node, TypeDefinition? typeDefinition = null)
         {
             var function = (FunctionSymbol)node.Symbol;
             EmitExpressions(ilProcessor, node.Arguments);
@@ -948,12 +1028,13 @@ namespace Compiler.CodeAnalysis.Emit
             }
             else if (node.Symbol.Name.Equals(".ctor"))
             {
-                var className = function.ReturnType.Name;
-                Console.WriteLine(className);
-                var structSymbol = _declaredTypes.First(s => s.Key.Name == className).Value;
-
+                if (typeDefinition == null)
+                {
+                    typeDefinition = Import(node.Symbol.Type).Resolve();
+                }
+                Debug.Assert(typeDefinition != null);
                 // TODO: We should use a general overload resolution algorithm instead
-                ilProcessor.Emit(OpCodes.Newobj, structSymbol.Methods[0]);
+                ilProcessor.Emit(OpCodes.Newobj, typeDefinition.Methods[0]);
             }
             else
             {
@@ -1017,46 +1098,28 @@ namespace Compiler.CodeAnalysis.Emit
 
         private void EmitMemberAccessExpression(ILProcessor ilProcessor, BoundMemberAccessExpression node)
         {
-            var typeDefinition = Import(node.Instance.Type).Resolve();
-            Debug.Assert(typeDefinition != null);
-
-            if (node.Instance.Kind == BoundNodeKind.SelfExpression)
+            if (node.Type.IsEnum())
             {
-                EmitSelfExpression(ilProcessor);
-            }
-            else
-            {
-                EmitExpression(ilProcessor, node.Instance);
+                var field = (FieldSymbol)node.Member.Symbol;
+                EmitConstantExpression(ilProcessor, TypeSymbol.Int, field.Constant);
+                return;
             }
 
-            switch (node.Member.MemberKind)
-            {
-                case MemberKind.Field:
-                    EmitFieldAccessExpression(ilProcessor, (FieldSymbol)node.Member.Symbol, typeDefinition);
-                    break;
-                    
-                case MemberKind.Method:
-                    EmitCallExpression(ilProcessor, (BoundCallExpression)node.Member);
-                    break;
-
-                default:
-                    throw new InvalidOperationException($"Unexpected member type {node.Member.MemberKind}");
-            }
+            Console.WriteLine("EmitMemberAccessExpression");
+            EmitExpression(ilProcessor, node.Instance);
+            EmitMemberExpression(ilProcessor, node.Member);
         }
 
         private static void EmitFieldAccessExpression(ILProcessor ilProcessor, FieldSymbol field, TypeDefinition typeDefinition)
         {
+            if (field.Constant != null)
+            {
+                EmitConstantExpression(ilProcessor, field.Type, field.Constant);
+            }
+
             var fieldDefinition = GetField(field, typeDefinition);
             Debug.Assert(fieldDefinition != null);
-
-            if (fieldDefinition.Constant != null)
-            {
-                ilProcessor.Emit(OpCodes.Ldc_I4, (int)fieldDefinition.Constant);
-            }
-            else
-            {
-                ilProcessor.Emit(OpCodes.Ldfld, fieldDefinition);
-            }
+            ilProcessor.Emit(OpCodes.Ldfld, fieldDefinition);
         }
 
         private static FieldDefinition? GetField(MemberSymbol member, TypeDefinition typeDefinition)
@@ -1081,7 +1144,6 @@ namespace Compiler.CodeAnalysis.Emit
             for (var i = 0; i < method.Parameters.Count; i++)
             {
                 var other = method.Parameters[i];
-                Console.WriteLine(other.Name);
                 if (other.Name == parameter.Name)
                 {
                     return i + (method.HasThis ? 1 : 0);

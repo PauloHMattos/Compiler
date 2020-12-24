@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Compiler.CodeAnalysis;
 using Compiler.CodeAnalysis.Diagnostics;
 using Compiler.CodeAnalysis.Symbols;
@@ -606,6 +605,30 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             };
             AssertDiagnostics(text, diagnostics);
         }
+        
+        [Fact]
+        public void Binder_MemberAccess_Reports_UnexpectedToken()
+        {
+            var text = @"
+                struct TestStruct
+                {
+                }
+
+                function main()
+                {
+                    TestStruct. [=] 10
+                    TestStruct.[(][)]
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.EqualsToken, SyntaxKind.IdentifierToken),
+                DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.OpenParenthesisToken, SyntaxKind.IdentifierToken),
+                DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.CloseParenthesisToken, SyntaxKind.IdentifierToken)
+            };
+            AssertDiagnostics(text, diagnostics);
+        }
 
         [Fact]
         public void Binder_NameExpression_Reports_NoErrorForInsertedToken()
@@ -703,7 +726,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             var text = @"
                 function sum(a: int, b: int, [a: int]) : int
                 {
-                    return a + b + c
+                    return a + b
                 }
             ";
 
@@ -919,20 +942,20 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         }
 
         [Fact]
-        public void Binder_Cannot_Access_Member()
+        public void Binder_MemberAccess_Reports_CannotAccessMember()
         {
             const string? text = @"
                 function main()
                 {
                     var p: int = 0
                     p.[length] = 10
-                    p.[length()]
+                    p.[length]()
                 }
             ";
             var diagnostics = new List<string>()
             {
                 DiagnosticCode.CannotAccessMember.GetDiagnostic("length", "int"),
-                DiagnosticCode.CannotAccessMember.GetDiagnostic("length", "int"),
+                DiagnosticCode.UndefinedFunction.GetDiagnostic("length"),
             };
             AssertDiagnostics(text, diagnostics);
         }
@@ -1096,6 +1119,33 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         }
 
         [Fact]
+        public void Binder_MemberAccess_Nested_Reports_CannotAccessMember()
+        {
+            var text = @"
+                struct Point
+                {
+                }
+                
+                struct Line
+                {
+                    var start: Point
+                }
+
+                function main()
+                {
+                    var nested = Line()
+                    var x = nested.start.[x]
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.CannotAccessMember.GetDiagnostic("x", "Point"),
+            };
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
         public void Binder_MemberAccess_NestedCall()
         {
             var text = @"
@@ -1239,8 +1289,12 @@ namespace Compiler.Tests.CodeAnalysis.Binding
                     function f(i : int)
                     {
                         print(b)
-                        print(self.a + 1)
-                        print(i)
+                        g()
+                    }
+
+                    function g()
+                    {
+
                     }
                 }
             ";
@@ -1276,7 +1330,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
 
             AssertDiagnostics(text, diagnostics);
         }
-
+        
         [Fact]
         public void Binder_SelfExpression_Reports_CannotUseSelfOutsideOfReceiverFunctions()
         {
@@ -1360,6 +1414,90 @@ namespace Compiler.Tests.CodeAnalysis.Binding
                 DiagnosticCode.AlreadyDeclaredMember.GetDiagnostic("TestStruct", "a"),
                 DiagnosticCode.AlreadyDeclaredMember.GetDiagnostic("TestStruct", "b"),
                 DiagnosticCode.AlreadyDeclaredMember.GetDiagnostic("TestEnum", "A")
+            };
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Binder_TypeDeclaration_NestedType()
+        {
+            var text = @"
+                struct Line
+                {
+                    var p1 : Point
+                    var p2 : Point
+                    
+                    struct Point
+                    {
+                        var x : int
+                        var y : int
+                    }
+                }";
+
+            var diagnostics = new List<string>()
+            {
+            };
+
+            AssertDiagnostics(text, diagnostics);
+        }
+        
+        [Fact]
+        public void Binder_VariableDeclaration_NestedType()
+        {
+            var text = @"
+                struct Line
+                {
+                    var p1 : Point
+                    var p2 : Point
+                    
+                    struct Point
+                    {
+                        var x : int
+                        var y : int
+
+                        struct Point1
+                        {
+                        }
+                    }
+                }
+                
+                function main()
+                {
+                    var p = Line.Point.Point1()
+                }";
+
+            var diagnostics = new List<string>()
+            {
+            };
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Binder_MemberAccess_NestedType()
+        {
+            var text = @"
+                struct Line
+                {
+                    var p1 : Point
+                    var p2 : Point
+                    
+                    struct Point
+                    {
+                        var x : int
+                        var y : int
+                    }
+                }
+                
+                function main()
+                {
+                    var line = Line()
+                    line.p1.x = 10
+                }";
+
+            var diagnostics = new List<string>()
+            {
             };
 
             AssertDiagnostics(text, diagnostics);
@@ -1461,6 +1599,32 @@ namespace Compiler.Tests.CodeAnalysis.Binding
         
         [Fact]
         public void Binder_TypeDeclaration_SupportsOverloading()
+        {
+            var text = @"
+                struct TestStruct
+                {
+                    function a(x : int)
+                    {
+                        a(string(x))
+                    }
+
+                    function a(x : string)
+                    {
+
+                    }
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+            };
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        
+        [Fact]
+        public void Binder_MemberAccess_SupportsOverloading()
         {
             var text = @"
                 struct TestStruct

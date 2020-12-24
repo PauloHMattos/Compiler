@@ -7,6 +7,12 @@ namespace Compiler.CodeAnalysis.Symbols
     {
         public bool IsReadOnly { get; }
         public bool IsStatic { get; }
+        // TODO - HACK:
+        // Should not be nullable
+        // For now it's because functions can be global statements
+        // In the future they will only be valid inside classes/structs
+        // and this will be fixed
+        public TypeSymbol? ReceiverType { get; }
         public abstract MemberKind MemberKind { get; }
         public override SymbolKind Kind => SymbolKind.Member;
 
@@ -14,12 +20,14 @@ namespace Compiler.CodeAnalysis.Symbols
                                        string name,
                                        bool isReadOnly,
                                        bool isStatic,
+                                       TypeSymbol? receiverType,
                                        TypeSymbol type,
                                        BoundConstant? constant)
             : base(syntax, name, type, isReadOnly ? constant : null)
         {
             IsReadOnly = isReadOnly;
             IsStatic = isStatic;
+            ReceiverType = receiverType;
         }
     }
 }
