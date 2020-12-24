@@ -772,13 +772,6 @@ namespace Compiler.CodeAnalysis.Emit
                 var value = (string)constant.Value;
                 ilProcessor.Emit(OpCodes.Ldstr, value);
             }
-            /*
-            else if (type.IsEnum())
-            {
-                var value = (int)constant.Value;
-                ilProcessor.Emit(OpCodes.Ldc_I4, value);
-            }
-            */
             else
             {
                 throw new InvalidOperationException($"Unexpected constant expression type: {type}");

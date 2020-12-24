@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Compiler.CodeAnalysis;
 using Compiler.CodeAnalysis.Diagnostics;
 using Compiler.CodeAnalysis.Symbols;
@@ -606,6 +605,30 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             };
             AssertDiagnostics(text, diagnostics);
         }
+        
+        [Fact]
+        public void Binder_MemberAccess_Reports_UnexpectedToken()
+        {
+            var text = @"
+                struct TestStruct
+                {
+                }
+
+                function main()
+                {
+                    TestStruct. [=] 10
+                    TestStruct.[(][)]
+                }
+            ";
+
+            var diagnostics = new List<string>()
+            {
+                DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.EqualsToken, SyntaxKind.IdentifierToken),
+                DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.OpenParenthesisToken, SyntaxKind.IdentifierToken),
+                DiagnosticCode.UnexpectedToken.GetDiagnostic(SyntaxKind.CloseParenthesisToken, SyntaxKind.IdentifierToken)
+            };
+            AssertDiagnostics(text, diagnostics);
+        }
 
         [Fact]
         public void Binder_NameExpression_Reports_NoErrorForInsertedToken()
@@ -703,7 +726,7 @@ namespace Compiler.Tests.CodeAnalysis.Binding
             var text = @"
                 function sum(a: int, b: int, [a: int]) : int
                 {
-                    return a + b + c
+                    return a + b
                 }
             ";
 

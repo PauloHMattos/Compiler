@@ -39,18 +39,8 @@ namespace Compiler.CodeAnalysis.Binding
         {
             var parentScope = CreateRootScope();
             var binder = new Binder(parentScope, null, null);
-
             binder.Diagnostics.AddRange(syntaxTrees.SelectMany(st => st.Diagnostics));
-            if (binder.Diagnostics.HasErrors())
-            {
-                return new BoundGlobalScope(
-                    binder.Diagnostics.ToImmutableArray(),
-                    null,
-                    ImmutableArray<FunctionSymbol>.Empty,
-                    ImmutableArray<TypeSymbol>.Empty);
-            }
-
-
+            
             var typeDeclarations = syntaxTrees.SelectMany(st => st.Root.Members)
                                               .OfType<TypeDeclarationSyntax>();
 
@@ -113,13 +103,10 @@ namespace Compiler.CodeAnalysis.Binding
 
         public static BoundProgram BindProgram(BoundGlobalScope globalScope)
         {
-            if (globalScope.Diagnostics.HasErrors())
-            {
-                return EmptyProgram(globalScope);
-            }
+            var diagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
+            diagnostics.AddRange(globalScope.Diagnostics);
 
             var functionBodies = ImmutableDictionary.CreateBuilder<FunctionSymbol, BoundBlockStatement>();
-            var diagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
 
             var functionsToLower = new List<FunctionSymbol>(globalScope.Functions.Where(f => f.Declaration != null));
 
@@ -160,14 +147,6 @@ namespace Compiler.CodeAnalysis.Binding
                                     globalScope.MainFunction,
                                     functionBodies.ToImmutable(),
                                     globalScope.Types);
-        }
-
-        private static BoundProgram EmptyProgram(BoundGlobalScope globalScope)
-        {
-            return new BoundProgram(globalScope.Diagnostics,
-                                null,
-                                ImmutableDictionary<FunctionSymbol, BoundBlockStatement>.Empty,
-                                ImmutableArray<TypeSymbol>.Empty);
         }
 
         private FunctionSymbol BindFunctionDeclaration(FunctionDeclarationSyntax syntax)
@@ -992,7 +971,7 @@ namespace Compiler.CodeAnalysis.Binding
             }
         }
 
-        private BoundExpression BindNameExpression(NameExpressionSyntax syntax, bool byReference = false, BoundExpression? boundParent = null)
+        private BoundExpression BindNameExpression(NameExpressionSyntax syntax, bool byReference = false)
         {
             if (syntax.IdentifierToken.IsMissing)
             {
