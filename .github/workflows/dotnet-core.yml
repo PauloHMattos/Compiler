@@ -34,11 +34,20 @@ jobs:
     - name: Build
       run: dotnet build --configuration Release --no-restore
       
-    - name: Test
-      run: dotnet test --no-restore --verbosity normal --logger:"nunit;LogFilePath=TestResult/xunit_results.xml"
-
-    - uses: MirageNet/nunit-reporter@v1.0.11
-      if: always()
+    - name: Unit Tests report
+      uses: zyborg/dotnet-tests-report@v1
       with:
-        path: ./**/TestResult/*.xml
-        access-token: ${{ secrets.GITHUB_TOKEN }}
+        project_path: src/Compiler.Tests #Compiler.Tests.Samples
+        report_name: unit_tests
+        report_title: Unit tests report 
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        
+        
+    - name: Sample Tests report
+      uses: zyborg/dotnet-tests-report@v1
+      with:
+        project_path: src/Compiler.Tests.Samples
+        report_name: samples_tests
+        report_title: Sample tests report 
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        
